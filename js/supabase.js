@@ -9,7 +9,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
 window.SiloSupabase = {
   client: supabaseClient,
-  async getUser(){ const {data,error}=await supabaseClient.auth.getUser(); if(error)throw error; return data.user||null; },
+  async getUser(){ const {data,error}=await supabaseClient.auth.getUser(); if(error){ const msg=String(error.message||"").toLowerCase(); if(msg.includes("auth session missing")) return null; throw error; } return data.user||null; },
   async signIn(email,password){ return await supabaseClient.auth.signInWithPassword({email,password}); },
   async signOut(){ return await supabaseClient.auth.signOut(); },
   async getProfile(){ const u=await this.getUser(); if(!u)return null; const {data,error}=await supabaseClient.from("profiles").select("*").eq("id",u.id).maybeSingle(); if(error)throw error; return data; },
