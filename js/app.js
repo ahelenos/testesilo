@@ -74,30 +74,33 @@ async function refresh(){state.settings=await SiloSupabase.getSettings();state.m
 const DEFAULT_VIEWER_EMAIL="viewer@teste.com";
 const DEFAULT_VIEWER_PASSWORD="123456";
 async function boot(){
-  state.user=await SiloSupabase.getUser();
-  if(!state.user){
-    $("loginEmail").value=DEFAULT_VIEWER_EMAIL;
-    $("loginPassword").value=DEFAULT_VIEWER_PASSWORD;
-    try{
-      const {error}=await SiloSupabase.signIn(DEFAULT_VIEWER_EMAIL,DEFAULT_VIEWER_PASSWORD);
-      if(!error){
-        state.user=await SiloSupabase.getUser();
-      }else{
-        throw error;
-      }
-    }catch(x){
-      $("loginScreen").classList.remove("hidden");
-      $("appScreen").classList.add("hidden");
-      $("loginError").textContent="Login automático indisponível. Entre manualmente.";
-      console.warn("Login automático do Viewer não realizado:",x);
-      return;
+  try{
+    state.user=await SiloSupabase.getUser();
+
+    if(!state.user){
+      $("loginEmail").value=DEFAULT_VIEWER_EMAIL;
+      $("loginPassword").value=DEFAULT_VIEWER_PASSWORD;
+
+      const result=await SiloSupabase.signIn(DEFAULT_VIEWER_EMAIL,DEFAULT_VIEWER_PASSWORD);
+      if(result?.error) throw result.error;
+
+      // Use the authenticated user returned by Supabase immediately.
+      state.user=result?.data?.user||await SiloSupabase.getUser();
+      if(!state.user) throw new Error("O login automático não retornou uma sessão.");
     }
+
+    state.profile=await SiloSupabase.getProfile();
+    if(!state.profile) throw new Error("Perfil do usuário Viewer não encontrado.");
+
+    $("loginScreen").classList.add("hidden");
+    $("appScreen").classList.remove("hidden");
+    await refresh();
+  }catch(x){
+    $("loginScreen").classList.remove("hidden");
+    $("appScreen").classList.add("hidden");
+    $("loginError").textContent=x?.message||"Não foi possível iniciar o login automático.";
+    console.error("Login automático do Viewer:",x);
   }
-  state.profile=await SiloSupabase.getProfile();
-  if(!state.profile)throw new Error("Perfil do usuário não encontrado.");
-  $("loginScreen").classList.add("hidden");
-  $("appScreen").classList.remove("hidden");
-  await refresh();
 }
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginError").textContent="";try{await SiloSupabase.signIn($("loginEmail").value.trim(),$("loginPassword").value);await boot()}catch(x){$("loginError").textContent=x.message||"Falha no login."}});
 $("logoutBtn").addEventListener("click",async()=>{await SiloSupabase.signOut();location.reload()});
