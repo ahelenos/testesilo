@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#2563eb"
+    >
+
+    <title>
+        Controle de Silo
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     CABEÇALHO
+===================================================== -->
+
+<header class="app-header">
+
+    <div class="header-inner">
+
+        <div class="brand">
+
+            <div class="brand-icon">
+                🏭
+            </div>
+
+            <div>
+
+                <span class="brand-label">
+                    CONTROLE DE SILO
+                </span>
+
+                <h1 id="siloNameDisplay">
+                    Silo 01
+                </h1>
+
+            </div>
+
+        </div>
+
+
+        <div class="header-status">
+
+            <span class="status-dot"></span>
+
+            <span id="statusText">
+                Normal
+            </span>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+
+<main class="container">
+
+
+<!-- =====================================================
+     ESTOQUE PRINCIPAL
+===================================================== -->
+
+<section class="dashboard">
+
+
+    <div class="card main-stock-card">
+
+        <div class="card-header">
+
+            <div>
+
+                <span class="label">
+                    ESTOQUE ATUAL
+                </span>
+
+                <h2>
+
+                    <span id="currentStock">
+                        0
+                    </span>
+
+                    <small id="currentStockUnit">
+                        kg
+                    </small>
+
+                </h2>
+
+            </div>
+
+
+            <div class="stock-icon">
+                🏭
+            </div>
+
+        </div>
+
+
+        <div class="progress-section">
+
+            <div class="progress-info">
+
+                <span>
+                    Ocupação do silo
+                </span>
+
+                <strong id="stockPercentage">
+                    0%
+                </strong>
+
+            </div>
+
+
+            <div class="progress-bar">
+
+                <div
+                    id="progressFill"
+                    class="progress-fill"
+                    style="width: 0%"
+                ></div>
+
+            </div>
+
+
+            <div class="capacity-info">
+
+                <span>
+                    0
+                </span>
+
+                <span id="maxCapacityLabel">
+                    Capacidade: 30.000 kg
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="stock-actions">
+
+            <button
+                type="button"
+                id="entryButton"
+                class="action-button entry-button"
+            >
+
+                <span class="action-icon">
+                    +
+                </span>
+
+                <span>
+
+                    <strong>
+                        Registrar entrada
+                    </strong>
+
+                    <small>
+                        Adicionar cimento
+                    </small>
+
+                </span>
+
+            </button>
+
+
+            <button
+                type="button"
+                id="consumptionButton"
+                class="action-button consumption-button"
+            >
+
+                <span class="action-icon">
+                    −
+                </span>
+
+                <span>
+
+                    <strong>
+                        Registrar consumo
+                    </strong>
+
+                    <small>
+                        Registrar retirada
+                    </small>
+
+                </span>
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =================================================
+         STATUS
+    ================================================= -->
+
+    <div
+        id="alertCard"
+        class="card alert-card"
+    >
+
+        <div class="alert-icon">
+            ⚠
+        </div>
+
+        <div>
+
+            <span class="label">
+                STATUS DO ESTOQUE
+            </span>
+
+            <h3 id="alertTitle">
+                Estoque normal
+            </h3>
+
+            <p id="alertMessage">
+                O nível de cimento está dentro do esperado.
+            </p>
+
+        </div>
+
+    </div>
+
+
+</section>
+
+
+
+<!-- =====================================================
+     INDICADORES
+===================================================== -->
+
+<section class="metrics-grid">
+
+
+    <div class="card metric-card">
+
+        <span class="label">
+            TOTAL RECEBIDO
+        </span>
+
+        <div class="metric-value">
+
+            <strong id="totalReceived">
+                0
+            </strong>
+
+            <small id="totalReceivedUnit">
+                kg
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <div class="card metric-card">
+
+        <span class="label">
+            TOTAL CONSUMIDO
+        </span>
+
+        <div class="metric-value">
+
+            <strong id="totalConsumed">
+                0
+            </strong>
+
+            <small id="totalConsumedUnit">
+                kg
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <div class="card metric-card">
+
+        <span class="label">
+            MÉDIA MENSAL
+        </span>
+
+        <div class="metric-value">
+
+            <strong id="dailyAverage">
+                0
+            </strong>
+
+            <small id="dailyAverageUnit">
+                kg/dia
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <div class="card metric-card">
+
+        <span class="label">
+            AUTONOMIA ESTIMADA
+        </span>
+
+        <div class="metric-value">
+
+            <strong id="estimatedDays">
+                —
+            </strong>
+
+            <small>
+                dias
+            </small>
+
+        </div>
+
+    </div>
+
+
+</section>
+
+
+
+<!-- =====================================================
+     ÚLTIMA ENTRADA / ÚLTIMO CONSUMO
+===================================================== -->
+
+<section class="last-movements-grid">
+
+
+    <div class="card last-movement-card">
+
+        <div class="last-movement-icon entry-icon">
+            ↑
+        </div>
+
+        <div>
+
+            <span class="label">
+                ÚLTIMA ENTRADA
+            </span>
+
+            <strong id="lastEntryValue">
+                —
+            </strong>
+
+            <small id="lastEntryDate">
+                Nenhuma entrada registrada
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <div class="card last-movement-card">
+
+        <div class="last-movement-icon consumption-icon">
+            ↓
+        </div>
+
+        <div>
+
+            <span class="label">
+                ÚLTIMO CONSUMO
+            </span>
+
+            <strong id="lastConsumptionValue">
+                —
+            </strong>
+
+            <small id="lastConsumptionDate">
+                Nenhum consumo registrado
+            </small>
+
+        </div>
+
+    </div>
+
+
+</section>
+
+
+
+<!-- =====================================================
+     V1.4 — RESUMO MENSAL
+===================================================== -->
+
+<section class="card monthly-summary-card">
+
+    <div class="section-header">
+
+        <div>
+
+            <span class="label">
+                V1.4
+            </span>
+
+            <h2>
+                Resumo mensal
+            </h2>
+
+        </div>
+
+
+        <div class="monthly-period">
+
+            <strong id="monthlyPeriod">
+                —
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <div class="monthly-summary-grid">
+
+
+        <div class="monthly-summary-item">
+
+            <span class="label">
+                CONSUMO DO MÊS
+            </span>
+
+            <strong id="monthlyConsumption">
+                0
+            </strong>
+
+            <small id="monthlyConsumptionUnit">
+                kg
+            </small>
+
+        </div>
+
+
+        <div class="monthly-summary-item">
+
+            <span class="label">
+                DIAS COM CONSUMO
+            </span>
+
+            <strong id="monthlyConsumptionDays">
+                0
+            </strong>
+
+            <small>
+                dias
+            </small>
+
+        </div>
+
+
+        <div class="monthly-summary-item">
+
+            <span class="label">
+                MÉDIA MENSAL
+            </span>
+
+            <strong id="monthlyAverage">
+                0
+            </strong>
+
+            <small id="monthlyAverageUnit">
+                kg/dia
+            </small>
+
+        </div>
+
+
+        <div class="monthly-summary-item">
+
+            <span class="label">
+                PREVISÃO ATÉ O MÍNIMO
+            </span>
+
+            <strong id="monthlyForecast">
+                —
+            </strong>
+
+            <small>
+                dias
+            </small>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     V1.4 — GRÁFICO DE CONSUMO
+===================================================== -->
+
+<section class="card consumption-chart-card">
+
+    <div class="section-header">
+
+        <div>
+
+            <span class="label">
+                CONSUMO
+            </span>
+
+            <h2>
+                Consumo diário
+            </h2>
+
+        </div>
+
+
+        <div class="chart-period">
+
+            <span id="chartPeriod">
+                —
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <div class="chart-container">
+
+        <canvas
+            id="consumptionChart"
+        ></canvas>
+
+
+        <div
+            id="chartEmptyState"
+            class="chart-empty-state"
+        >
+
+            <span>
+                📊
+            </span>
+
+            <strong>
+                Nenhum consumo registrado neste mês
+            </strong>
+
+            <small>
+                O gráfico aparecerá automaticamente quando houver consumo.
+            </small>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     V1.4 — PREVISÃO DE ESTOQUE
+===================================================== -->
+
+<section class="card forecast-card">
+
+    <div class="forecast-header">
+
+        <div>
+
+            <span class="label">
+                PREVISÃO
+            </span>
+
+            <h2>
+                Evolução do estoque
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="forecast-content">
+
+
+        <div class="forecast-item">
+
+            <span class="label">
+                ESTOQUE ATUAL
+            </span>
+
+            <strong id="forecastCurrentStock">
+                0
+            </strong>
+
+            <small id="forecastCurrentStockUnit">
+                kg
+            </small>
+
+        </div>
+
+
+        <div class="forecast-arrow">
+            →
+        </div>
+
+
+        <div class="forecast-item">
+
+            <span class="label">
+                ESTOQUE MÍNIMO
+            </span>
+
+            <strong id="forecastMinimumStock">
+                0
+            </strong>
+
+            <small id="forecastMinimumStockUnit">
+                kg
+            </small>
+
+        </div>
+
+
+        <div class="forecast-result">
+
+            <span class="label">
+                PREVISÃO
+            </span>
+
+            <strong id="forecastDays">
+                —
+            </strong>
+
+            <small id="forecastMessage">
+                Aguardando dados de consumo
+            </small>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     HISTÓRICO
+===================================================== -->
+
+<section class="card history-card">
+
+
+    <div class="history-header">
+
+        <div>
+
+            <span class="label">
+                HISTÓRICO
+            </span>
+
+            <h2>
+                Movimentações
+            </h2>
+
+        </div>
+
+
+        <div class="history-actions">
+
+            <button
+                type="button"
+                id="exportCsvButton"
+                class="secondary-button"
+            >
+                Exportar CSV
+            </button>
+
+
+            <button
+                type="button"
+                id="clearHistoryButton"
+                class="secondary-button"
+            >
+                Limpar histórico
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <div
+        id="emptyState"
+        class="empty-state"
+    >
+
+        <div class="empty-icon">
+            📋
+        </div>
+
+        <strong>
+            Nenhuma movimentação registrada
+        </strong>
+
+        <p>
+            Registre uma entrada ou consumo para começar.
+        </p>
+
+    </div>
+
+
+    <div class="table-wrapper">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Data
+                    </th>
+
+                    <th>
+                        Tipo
+                    </th>
+
+                    <th>
+                        Quantidade
+                    </th>
+
+                    <th>
+                        Observação
+                    </th>
+
+                    <th>
+                        Saldo
+                    </th>
+
+                    <th>
+                        Ações
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="historyTable">
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     CONFIGURAÇÕES
+===================================================== -->
+
+<section class="card settings-card">
+
+
+    <div class="section-header">
+
+        <div>
+
+            <span class="label">
+                CONFIGURAÇÕES
+            </span>
+
+            <h2>
+                Configurações do silo
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="settings-grid">
+
+
+        <div class="setting-item">
+
+            <div>
+
+                <span class="label">
+                    NOME DO SILO
+                </span>
+
+                <strong id="settingsSiloName">
+                    Silo 01
+                </strong>
+
+            </div>
+
+
+            <button
+                type="button"
+                id="editSiloNameButton"
+                class="edit-button"
+            >
+                ✎
+            </button>
+
+        </div>
+
+
+        <div class="setting-item">
+
+            <div>
+
+                <span class="label">
+                    CAPACIDADE
+                </span>
+
+                <strong>
+
+                    <span id="capacityValue">
+                        30.000
+                    </span>
+
+                    <small id="capacityUnit">
+                        kg
+                    </small>
+
+                </strong>
+
+            </div>
+
+
+            <button
+                type="button"
+                id="editCapacityButton"
+                class="edit-button"
+            >
+                ✎
+            </button>
+
+        </div>
+
+
+        <div class="setting-item">
+
+            <div>
+
+                <span class="label">
+                    ESTOQUE MÍNIMO
+                </span>
+
+                <strong>
+
+                    <span id="minimumStockValue">
+                        5.000
+                    </span>
+
+                    <small id="minimumStockUnit">
+                        kg
+                    </small>
+
+                </strong>
+
+            </div>
+
+
+            <button
+                type="button"
+                id="editMinimumButton"
+                class="edit-button"
+            >
+                ✎
+            </button>
+
+        </div>
+
+
+        <div class="setting-item">
+
+            <div>
+
+                <span class="label">
+                    UNIDADE
+                </span>
+
+                <strong id="settingsUnit">
+                    Quilogramas (kg)
+                </strong>
+
+            </div>
+
+
+            <button
+                type="button"
+                id="editUnitButton"
+                class="edit-button"
+            >
+                ✎
+            </button>
+
+        </div>
+
+
+    </div>
+
+
+</section>
+
+
+
+<!-- =====================================================
+     BACKUP
+===================================================== -->
+
+<section class="card backup-card">
+
+
+    <div>
+
+        <span class="label">
+            DADOS
+        </span>
+
+        <h2>
+            Backup e restauração
+        </h2>
+
+        <p>
+            Faça uma cópia dos dados para restaurá-los posteriormente.
+        </p>
+
+    </div>
+
+
+    <div class="backup-actions">
+
+        <button
+            type="button"
+            id="backupButton"
+            class="secondary-button"
+        >
+            Fazer backup
+        </button>
+
+
+        <button
+            type="button"
+            id="restoreButton"
+            class="secondary-button"
+        >
+            Restaurar backup
+        </button>
+
+
+        <input
+            type="file"
+            id="restoreFile"
+            accept=".json,application/json"
+            style="display:none"
+        >
+
+    </div>
+
+</section>
+
+
+</main>
+
+
+
+<!-- =====================================================
+     MODAL — MOVIMENTAÇÃO
+===================================================== -->
+
+<div
+    id="movementModal"
+    class="modal-overlay"
+>
+
+    <div class="modal">
+
+
+        <button
+            type="button"
+            id="closeMovementModal"
+            class="modal-close"
+        >
+            ×
+        </button>
+
+
+        <div class="modal-header">
+
+            <div
+                id="movementModalIcon"
+                class="modal-icon"
+            >
+                +
+            </div>
+
+            <div>
+
+                <span
+                    id="movementModalLabel"
+                    class="label"
+                >
+                    ENTRADA
+                </span>
+
+                <h2 id="movementModalTitle">
+                    Registrar entrada
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <form id="movementForm">
+
+
+            <div class="form-group">
+
+                <label for="quantity">
+                    Quantidade
+                </label>
+
+
+                <div class="input-with-unit">
+
+                    <input
+                        type="number"
+                        id="quantity"
+                        name="quantity"
+                        min="0.01"
+                        step="0.01"
+                        required
+                    >
+
+                    <span id="quantityUnit">
+                        kg
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="observation">
+                    Observação
+                </label>
+
+                <textarea
+                    id="observation"
+                    name="observation"
+                    rows="3"
+                    maxlength="200"
+                    placeholder="Opcional"
+                ></textarea>
+
+            </div>
+
+
+            <div
+                id="movementError"
+                class="form-error"
+            ></div>
+
+
+            <div class="modal-actions">
+
+                <button
+                    type="button"
+                    id="cancelMovement"
+                    class="secondary-button"
+                >
+                    Cancelar
+                </button>
+
+
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Salvar movimentação
+                </button>
+
+            </div>
+
+
+        </form>
+
+    </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     MODAL — EDITAR MOVIMENTAÇÃO
+===================================================== -->
+
+<div
+    id="editMovementModal"
+    class="modal-overlay"
+>
+
+    <div class="modal">
+
+
+        <button
+            type="button"
+            id="closeEditMovementModal"
+            class="modal-close"
+        >
+            ×
+        </button>
+
+
+        <div class="modal-header">
+
+            <div class="modal-icon edit-icon">
+                ✎
+            </div>
+
+            <div>
+
+                <span class="label">
+                    HISTÓRICO
+                </span>
+
+                <h2>
+                    Editar movimentação
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <form id="editMovementForm">
+<div class="form-group">
+    <label for="editDate">Data</label>
+    <input
+        type="date"
+        id="editDate"
+        name="editDate"
+        required
+    >
+</div>
+
+<div class="form-group">
+    <label for="editTime">Hora</label>
+    <input
+        type="time"
+        id="editTime"
+        name="editTime"
+        required
+    >
+</div>
+
+            <div class="form-group">
+
+                <label for="editQuantity">
+                    Quantidade
+                </label>
+
+
+                <div class="input-with-unit">
+
+                    <input
+                        type="number"
+                        id="editQuantity"
+                        name="editQuantity"
+                        min="0.01"
+                        step="0.01"
+                        required
+                    >
+
+                    <span id="editMovementUnit">
+                        kg
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="editObservation">
+                    Observação
+                </label>
+
+                <textarea
+                    id="editObservation"
+                    name="editObservation"
+                    rows="3"
+                    maxlength="200"
+                ></textarea>
+
+            </div>
+
+
+            <div
+                id="editMovementError"
+                class="form-error"
+            ></div>
+
+
+            <div class="modal-actions">
+
+                <button
+                    type="button"
+                    id="cancelEditMovement"
+                    class="secondary-button"
+                >
+                    Cancelar
+                </button>
+
+
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Salvar alteração
+                </button>
+
+            </div>
+
+
+        </form>
+
+    </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     MODAL — CONFIGURAÇÕES
+===================================================== -->
+
+<div
+    id="settingsModal"
+    class="modal-overlay"
+>
+
+    <div class="modal">
+
+
+        <button
+            type="button"
+            id="closeSettingsModal"
+            class="modal-close"
+        >
+            ×
+        </button>
+
+
+        <div class="modal-header">
+
+            <div class="modal-icon settings-icon">
+                ⚙
+            </div>
+
+            <div>
+
+                <span class="label">
+                    CONFIGURAÇÃO
+                </span>
+
+                <h2 id="settingsTitle">
+                    Alterar configuração
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <form id="settingsForm">
+
+
+            <div
+                id="settingsValueGroup"
+                class="form-group"
+                style="display:none"
+            >
+
+                <label for="settingsValue">
+                    Valor
+                </label>
+
+
+                <div class="input-with-unit">
+
+                    <input
+                        type="number"
+                        id="settingsValue"
+                        name="settingsValue"
+                        min="0.01"
+                        step="0.01"
+                    >
+
+                    <span id="settingsValueUnit">
+                        kg
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="siloNameGroup"
+                class="form-group"
+                style="display:none"
+            >
+
+                <label for="siloNameInput">
+                    Nome do silo
+                </label>
+
+
+                <input
+                    type="text"
+                    id="siloNameInput"
+                    name="siloNameInput"
+                    maxlength="50"
+                >
+
+            </div>
+
+
+            <div
+                id="unitGroup"
+                class="form-group"
+                style="display:none"
+            >
+
+                <label for="settingsUnitSelect">
+                    Unidade
+                </label>
+
+
+                <select
+                    id="settingsUnitSelect"
+                    name="settingsUnitSelect"
+                >
+
+                    <option value="kg">
+                        Quilogramas (kg)
+                    </option>
+
+                    <option value="t">
+                        Toneladas (t)
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div
+                id="settingsError"
+                class="form-error"
+            ></div>
+
+
+            <div class="modal-actions">
+
+                <button
+                    type="button"
+                    id="cancelSettings"
+                    class="secondary-button"
+                >
+                    Cancelar
+                </button>
+
+
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Salvar alteração
+                </button>
+
+            </div>
+
+
+        </form>
+
+    </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     MODAL — CONFIRMAÇÃO
+===================================================== -->
+
+<div
+    id="confirmModal"
+    class="modal-overlay"
+>
+
+    <div class="modal confirm-modal">
+
+
+        <div class="modal-header">
+
+            <div class="modal-icon danger-icon">
+                !
+            </div>
+
+            <div>
+
+                <span class="label">
+                    CONFIRMAÇÃO
+                </span>
+
+                <h2 id="confirmTitle">
+                    Confirmar ação
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <p
+            id="confirmMessage"
+            class="confirm-message"
+        >
+            Deseja realmente continuar?
+        </p>
+
+
+        <div class="modal-actions">
+
+            <button
+                type="button"
+                id="confirmCancel"
+                class="secondary-button"
+            >
+                Cancelar
+            </button>
+
+
+            <button
+                type="button"
+                id="confirmAction"
+                class="danger-button"
+            >
+                Confirmar
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     TOAST
+===================================================== -->
+
+<div
+    id="toast"
+    class="toast"
+>
+
+    <div
+        id="toastIcon"
+        class="toast-icon"
+    >
+        ✓
+    </div>
+
+    <div
+        id="toastMessage"
+        class="toast-message"
+    >
+        Operação realizada.
+    </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     JAVASCRIPT
+===================================================== -->
+
+<script
+    src="js/app.js"
+></script>
+
+
+</body>
+
+</html>
