@@ -3,3 +3,5 @@
 
 .mobile-notice{display:none;margin:-8px 0 16px;padding:11px 14px;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:11px;font-size:12px;font-weight:700}
 @media(max-width:650px){.mobile-notice{display:block}.admin-only{display:none!important}}
+
+/* V2.4 - login viewer prefilled */

@@ -71,7 +71,34 @@ function render(){renderRole(); $("userRole").textContent=isMobile()?"VISUALIZA�
 function setDateTime(){const d=new Date();$("movementDate").value=d.toISOString().slice(0,10);$("movementTime").value=d.toTimeString().slice(0,5)}
 function resetForm(){$("movementId").value="";$("movementType").value="entrada";$("movementQuantity").value="";$("movementObservation").value="";setDateTime();$("cancelEdit").classList.add("hidden")}
 async function refresh(){state.settings=await SiloSupabase.getSettings();state.movements=await SiloSupabase.getMovements();render()}
-async function boot(){state.user=await SiloSupabase.getUser();if(!state.user){$("loginScreen").classList.remove("hidden");$("appScreen").classList.add("hidden");return}state.profile=await SiloSupabase.getProfile();if(!state.profile)throw new Error("Perfil do usuário não encontrado.");$("loginScreen").classList.add("hidden");$("appScreen").classList.remove("hidden");await refresh()}
+const DEFAULT_VIEWER_EMAIL="viewer@teste.com";
+const DEFAULT_VIEWER_PASSWORD="123456";
+async function boot(){
+  state.user=await SiloSupabase.getUser();
+  if(!state.user){
+    $("loginEmail").value=DEFAULT_VIEWER_EMAIL;
+    $("loginPassword").value=DEFAULT_VIEWER_PASSWORD;
+    try{
+      const {error}=await SiloSupabase.signIn(DEFAULT_VIEWER_EMAIL,DEFAULT_VIEWER_PASSWORD);
+      if(!error){
+        state.user=await SiloSupabase.getUser();
+      }else{
+        throw error;
+      }
+    }catch(x){
+      $("loginScreen").classList.remove("hidden");
+      $("appScreen").classList.add("hidden");
+      $("loginError").textContent="Login automático indisponível. Entre manualmente.";
+      console.warn("Login automático do Viewer não realizado:",x);
+      return;
+    }
+  }
+  state.profile=await SiloSupabase.getProfile();
+  if(!state.profile)throw new Error("Perfil do usuário não encontrado.");
+  $("loginScreen").classList.add("hidden");
+  $("appScreen").classList.remove("hidden");
+  await refresh();
+}
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginError").textContent="";try{await SiloSupabase.signIn($("loginEmail").value.trim(),$("loginPassword").value);await boot()}catch(x){$("loginError").textContent=x.message||"Falha no login."}});
 $("logoutBtn").addEventListener("click",async()=>{await SiloSupabase.signOut();location.reload()});
 $("monthPicker").addEventListener("change",e=>{state.month=e.target.value;render()});
