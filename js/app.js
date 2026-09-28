@@ -1,3 +1,4 @@
+const APP_VERSION = "2.6.4";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
