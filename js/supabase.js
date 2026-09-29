@@ -14,8 +14,15 @@ window.SiloSupabase = {
   async signOut(){ return await supabaseClient.auth.signOut(); },
   async getProfile(){ const u=await this.getUser(); if(!u)return null; const {data,error}=await supabaseClient.from("profiles").select("*").eq("id",u.id).maybeSingle(); if(error)throw error; return data; },
   async getSettings(){ const {data,error}=await supabaseClient.from("silo_settings").select("*").order("created_at",{ascending:true}).limit(1).maybeSingle(); if(error)throw error; return data; },
-  async saveSettings(name,capacity){
-    const current=await this.getSettings(), payload={name:String(name).trim(),capacity:Number(capacity),unit:"kg"};
+  async saveSettings(name,capacity,minimumStock,criticalStock,nextDeliveryDate){
+    const current=await this.getSettings(), payload={
+      name:String(name).trim(),
+      capacity:Number(capacity),
+      minimum_stock:Number(minimumStock),
+      critical_stock:Number(criticalStock),
+      next_delivery_date:nextDeliveryDate||null,
+      unit:"kg"
+    };
     if(current){const {data,error}=await supabaseClient.from("silo_settings").update(payload).eq("id",current.id).select().single();if(error)throw error;return data;}
     const {data,error}=await supabaseClient.from("silo_settings").insert(payload).select().single();if(error)throw error;return data;
   },

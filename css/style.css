@@ -47,3 +47,16 @@
     font-size:13px;
   }
 }
+
+.stock-alert{display:flex;align-items:center;gap:14px;margin:0 0 18px;padding:16px 18px;border:1px solid #f5c2c7;background:#fff5f5;border-radius:14px}
+.stock-alert.hidden{display:none}
+.stock-alert-icon{width:36px;height:36px;display:grid;place-items:center;border-radius:50%;font-weight:900;background:#dc2626;color:#fff}
+.stock-alert strong{display:block;font-size:14px;color:#991b1b}
+.stock-alert span{display:block;margin-top:3px;color:#7f1d1d;font-size:12px}
+.stock-alert.warning{border-color:#f4d28a;background:#fffbeb}
+.stock-alert.warning .stock-alert-icon{background:#d97706}
+.stock-alert.warning strong,.stock-alert.warning span{color:#92400e}
+.next-delivery{display:flex;justify-content:space-between;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid #edf0f4;font-size:11px}
+.next-delivery span{color:#7b8794}
+.next-delivery strong{color:#344054}
+@media(max-width:650px){.next-delivery{flex-direction:column;gap:4px}.stock-alert{margin-bottom:14px}}

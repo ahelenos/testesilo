@@ -1,4 +1,4 @@
-const APP_VERSION = "2.6.4";
+const APP_VERSION = "2.7.0";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -18,8 +18,31 @@ function monthlyAverage(movs){const vals=[...dailyConsumption(movs).values()];re
 function previousMonth(key){const [y,m]=key.split("-").map(Number);const d=new Date(y,m-2,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function percent(a,b){return b?((a-b)/b)*100:null}
 function renderRole(){document.querySelectorAll(".admin-only").forEach(e=>e.classList.toggle("hidden",!canEdit()));$("userRole").textContent=isAdmin()?"ADMIN":"VISUALIZAÇÃO"}
+function renderStockAlert(allStock){
+ const minimum=Number(state.settings?.minimum_stock||0);
+ const critical=Number(state.settings?.critical_stock||0);
+ const alert=$("stockAlert");
+ if(!alert)return;
+ if(minimum<=0 || allStock>minimum){
+   alert.classList.add("hidden");
+   alert.classList.remove("critical","warning");
+   return;
+ }
+ alert.classList.remove("hidden");
+ if(critical>0 && allStock<=critical){
+   alert.classList.add("critical"); alert.classList.remove("warning");
+   $("stockAlertTitle").textContent="Estoque crítico — solicitar carga de cimento";
+   $("stockAlertText").textContent=`Estoque atual de ${fmtKg(allStock)} está abaixo do nível crítico de ${fmtKg(critical)}.`;
+ }else{
+   alert.classList.add("warning"); alert.classList.remove("critical");
+   $("stockAlertTitle").textContent="Solicitar carga de cimento";
+   $("stockAlertText").textContent=`Estoque atual de ${fmtKg(allStock)} atingiu o nível mínimo de ${fmtKg(minimum)}.`;
+ }
+}
 function renderTop(){
  const allStock=stock(), cap=Number(state.settings?.capacity||0), occ=cap?allStock/cap*100:0, mm=monthMovements(), avg=monthlyAverage(mm);
+ renderStockAlert(allStock);
+ $("nextDeliveryDate").textContent=state.settings?.next_delivery_date?new Date(`${state.settings.next_delivery_date}T00:00:00`).toLocaleDateString("pt-BR"):"Não informada";
  const autonomy=avg>0?Math.max(0,allStock/avg):null;
  $("autonomyDays").textContent=autonomy===null?"—":autonomy.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1});
  $("autonomyStock").textContent=fmtKg(allStock);
@@ -68,7 +91,10 @@ function drawMixChart(){
  ctx.textAlign="left";ctx.fillStyle="#2563eb";ctx.fillRect(20,210,10,10);ctx.fillStyle="#475467";ctx.fillText(`Entradas  ${fmtNum(en)} kg`,38,219);
  ctx.fillStyle="#f59e0b";ctx.fillRect(170,210,10,10);ctx.fillStyle="#475467";ctx.fillText(`Consumos  ${fmtNum(co)} kg`,188,219);
 }
-function render(){renderRole(); $("userRole").textContent=isMobile()?"VISUALIZAÇÃO • CELULAR":(isAdmin()?"ADMIN":"VISUALIZAÇÃO"); renderTop();renderHistory();drawConsumptionChart();$("monthPicker").value=state.month;$("siloName").value=state.settings?.name||"";$("siloCapacity").value=state.settings?.capacity||""}
+function render(){renderRole(); $("userRole").textContent=isMobile()?"VISUALIZAÇÃO • CELULAR":(isAdmin()?"ADMIN":"VISUALIZAÇÃO"); renderTop();renderHistory();drawConsumptionChart();$("monthPicker").value=state.month;$("siloName").value=state.settings?.name||"";$("siloCapacity").value=state.settings?.capacity||"";
+ $("siloMinimum").value=state.settings?.minimum_stock??"";
+ $("siloCritical").value=state.settings?.critical_stock??"";
+ $("siloNextDelivery").value=state.settings?.next_delivery_date||""}
 function setDateTime(){const d=new Date();$("movementDate").value=d.toISOString().slice(0,10);$("movementTime").value=d.toTimeString().slice(0,5)}
 function resetForm(){$("movementId").value="";$("movementType").value="entrada";$("movementQuantity").value="";$("movementObservation").value="";setDateTime();$("cancelEdit").classList.add("hidden")}
 async function refresh(){state.settings=await SiloSupabase.getSettings();state.movements=await SiloSupabase.getMovements();render()}
@@ -137,7 +163,11 @@ $("nextMonth").addEventListener("click",()=>{const [y,m]=state.month.split("-").
 $("movementForm").addEventListener("submit",async e=>{e.preventDefault();if(!canEdit())return;try{const m={type:$("movementType").value,quantity:Number($("movementQuantity").value),date:`${$("movementDate").value}T${$("movementTime").value}:00`,observation:$("movementObservation").value.trim()},id=$("movementId").value;if(!m.quantity||m.quantity<=0)throw Error("Informe uma quantidade válida.");id?await SiloSupabase.updateMovement(id,m):await SiloSupabase.insertMovement(m);resetForm();await refresh()}catch(x){$("movementError").textContent=x.message||"Erro ao salvar."}});
 $("cancelEdit").addEventListener("click",resetForm);
 if(isMobile())return; $("historyBody").addEventListener("click",async e=>{const edit=e.target.closest("[data-edit]"),del=e.target.closest("[data-delete]");if(edit){const m=state.movements.find(x=>String(x.id)===edit.dataset.edit);if(!m)return;const d=new Date(m.date);$("movementId").value=m.id;$("movementType").value=m.type;$("movementQuantity").value=m.quantity;$("movementDate").value=String(m.date).slice(0,10);$("movementTime").value=d.toTimeString().slice(0,5);$("movementObservation").value=m.observation||"";$("cancelEdit").classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"})}if(del&&confirm("Excluir esta movimentação?")){try{await SiloSupabase.deleteMovement(del.dataset.delete);await refresh()}catch(x){alert(x.message)}}});
-$("settingsForm").addEventListener("submit",async e=>{e.preventDefault();if(!canEdit())return;try{await SiloSupabase.saveSettings($("siloName").value.trim(),Number($("siloCapacity").value));await refresh()}catch(x){$("settingsError").textContent=x.message||"Erro ao salvar."}});
+$("settingsForm").addEventListener("submit",async e=>{e.preventDefault();if(!canEdit())return;try{const minimum=Number($("siloMinimum").value), critical=Number($("siloCritical").value);
+ if(critical>minimum)throw Error("O estoque crítico não pode ser maior que o estoque mínimo.");
+ if(minimum>Number($("siloCapacity").value))throw Error("O estoque mínimo não pode ser maior que a capacidade do silo.");
+ if(critical>Number($("siloCapacity").value))throw Error("O estoque crítico não pode ser maior que a capacidade do silo.");
+ await SiloSupabase.saveSettings($("siloName").value.trim(),Number($("siloCapacity").value),minimum,critical,$("siloNextDelivery").value);await refresh()}catch(x){$("settingsError").textContent=x.message||"Erro ao salvar."}});
 window.addEventListener("resize",()=>{
   if(!document.getElementById("appScreen").classList.contains("hidden")){
     render();
