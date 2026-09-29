@@ -26,6 +26,23 @@ window.SiloSupabase = {
     if(current){const {data,error}=await supabaseClient.from("silo_settings").update(payload).eq("id",current.id).select().single();if(error)throw error;return data;}
     const {data,error}=await supabaseClient.from("silo_settings").insert(payload).select().single();if(error)throw error;return data;
   },
+  async clearNextDelivery(){
+    const current=await this.getSettings();
+    if(!current) return null;
+    const {data,error}=await supabaseClient.from("silo_settings").update({next_delivery_date:null}).eq("id",current.id).select().single();
+    if(error)throw error;
+    return data;
+  },
+  async getDeliveryHistory(){
+    const {data,error}=await supabaseClient.from("cement_deliveries").select("id,delivered_at").order("delivered_at",{ascending:false}).limit(5);
+    if(error)throw error;
+    return data||[];
+  },
+  async registerCementDelivery(){
+    const {data,error}=await supabaseClient.rpc("register_cement_delivery");
+    if(error)throw error;
+    return data;
+  },
   async getMovements(){const {data,error}=await supabaseClient.from("movements").select("*").order("date",{ascending:true});if(error)throw error;return data||[];},
   async insertMovement(m){const u=await this.getUser();if(!u)throw new Error("Usuário não autenticado.");const payload={type:m.type,quantity:Number(m.quantity),date:m.date,observation:m.observation||"",user_id:u.id};const {data,error}=await supabaseClient.from("movements").insert(payload).select().single();if(error)throw error;return data;},
   async updateMovement(id,m){const payload={type:m.type,quantity:Number(m.quantity),date:m.date,observation:m.observation||""};const {data,error}=await supabaseClient.from("movements").update(payload).eq("id",id).select().single();if(error)throw error;return data;},

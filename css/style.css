@@ -63,3 +63,46 @@
 
 .export-btn{white-space:nowrap;font-size:12px;min-height:38px;padding:8px 13px}
 @media(max-width:650px){.export-btn{width:100%;margin-top:4px}.panel-head:has(.export-btn){flex-direction:column;gap:10px}}
+
+
+.next-delivery-banner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  margin:0 0 18px;
+  padding:16px 18px;
+  border:1px solid #dce3eb;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 5px 18px #10182808;
+}
+.next-delivery-info{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  min-width:0;
+}
+.next-delivery-info .eyebrow{margin-bottom:2px}
+.next-delivery-info strong{font-size:14px;color:#172033}
+.next-delivery-info > span:last-child{font-size:13px;font-weight:750;color:#475467}
+#cementDeliveredBtn{white-space:nowrap}
+#cementDeliveredBtn:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:650px){
+  .next-delivery-banner{align-items:stretch;flex-direction:column;gap:12px}
+  #cementDeliveredBtn{width:100%}
+}
+
+
+/* V2.7.3 - Histórico das últimas 5 entregas de cimento */
+.delivery-history-panel{margin-bottom:18px}
+.delivery-history-list{display:grid;gap:0;border:1px solid #edf0f4;border-radius:12px;overflow:hidden}
+.delivery-history-row{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:10px;padding:12px 14px;background:#fff;border-bottom:1px solid #eef1f4;font-size:13px}
+.delivery-history-row:last-child{border-bottom:0}
+.delivery-history-row strong{font-size:13px;color:#172033}
+.delivery-history-index{width:25px;height:25px;border-radius:8px;display:grid;place-items:center;background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:800}
+.delivery-history-empty{padding:22px;text-align:center;color:#98a2b3;font-size:12px}
+@media(max-width:650px){
+  .delivery-history-row{grid-template-columns:30px 1fr auto;padding:11px 10px;font-size:12px}
+  .delivery-history-row strong{font-size:12px}
+}
