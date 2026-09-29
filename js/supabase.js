@@ -5,12 +5,37 @@ if (!window.supabase || typeof window.supabase.createClient !== "function") {
   throw new Error("Biblioteca Supabase não foi carregada.");
 }
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});
 
 window.SiloSupabase = {
   client: supabaseClient,
   async getUser(){ const {data,error}=await supabaseClient.auth.getUser(); if(error){ const msg=String(error.message||"").toLowerCase(); if(msg.includes("auth session missing")) return null; throw error; } return data.user||null; },
-  async signIn(email,password){ return await supabaseClient.auth.signInWithPassword({email,password}); },
+  async signIn(email,password){
+    const result=await supabaseClient.auth.signInWithPassword({email,password});
+    if(result?.error || !result?.data?.session) return result;
+
+    // Garante que a sessão retornada pelo login seja instalada
+    // no cliente antes de qualquer consulta ao perfil.
+    const {data:sessionData,error:sessionError}=await supabaseClient.auth.setSession({
+      access_token:result.data.session.access_token,
+      refresh_token:result.data.session.refresh_token
+    });
+    if(sessionError) return {data:sessionData,error:sessionError};
+
+    return {
+      data:{
+        user:sessionData?.session?.user || result.data.user,
+        session:sessionData?.session || result.data.session
+      },
+      error:null
+    };
+  },
   async signOut(){ return await supabaseClient.auth.signOut(); },
   async getProfile(){ const u=await this.getUser(); if(!u)return null; const {data,error}=await supabaseClient.from("profiles").select("*").eq("id",u.id).maybeSingle(); if(error)throw error; return data; },
   async getSettings(){ const {data,error}=await supabaseClient.from("silo_settings").select("*").order("created_at",{ascending:true}).limit(1).maybeSingle(); if(error)throw error; return data; },

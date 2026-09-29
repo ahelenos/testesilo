@@ -1,4 +1,4 @@
-const APP_VERSION = "2.7.6";
+const APP_VERSION = "2.7.7";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -165,22 +165,12 @@ const DEFAULT_VIEWER_EMAIL="viewer@teste.com";
 const DEFAULT_VIEWER_PASSWORD="123456";
 const AUTO_LOGIN_BLOCKED_KEY="controleSiloManualLogout";
 
-function translateAuthError(error){
-  const message=String(error?.message||error||"").trim();
-  const n=message.toLowerCase();
-  if(n.includes("invalid login credentials")) return "E-mail ou senha inválidos.";
-  if(n.includes("email not confirmed")) return "O e-mail ainda não foi confirmado.";
-  if(n.includes("auth session missing")) return "Sessão de acesso não encontrada. Faça login novamente.";
-  if(n.includes("user already registered")) return "Este usuário já está cadastrado.";
-  if(n.includes("too many requests")) return "Muitas tentativas. Aguarde alguns instantes e tente novamente.";
-  if(n.includes("network")) return "Erro de conexão. Verifique sua internet e tente novamente.";
-  return message||"Não foi possível realizar o acesso.";
-}
-
 async function boot(){
   try{
     state.user=await SiloSupabase.getUser();
 
+    // Depois de clicar em "Sair", não fazemos o login automático novamente.
+    // Isso permite que o usuário escolha outra conta, como o Admin.
     const manualLogout=sessionStorage.getItem(AUTO_LOGIN_BLOCKED_KEY)==="1";
 
     if(!state.user && !manualLogout){
@@ -190,6 +180,7 @@ async function boot(){
       const result=await SiloSupabase.signIn(DEFAULT_VIEWER_EMAIL,DEFAULT_VIEWER_PASSWORD);
       if(result?.error) throw result.error;
 
+      // Use o usuário autenticado retornado pelo Supabase imediatamente.
       state.user=result?.data?.user||await SiloSupabase.getUser();
       if(!state.user) throw new Error("O login automático não retornou uma sessão.");
     }
@@ -202,12 +193,11 @@ async function boot(){
       return;
     }
 
+    // Uma autenticação manual bem-sucedida libera novamente o fluxo normal.
     sessionStorage.removeItem(AUTO_LOGIN_BLOCKED_KEY);
 
     state.profile=await SiloSupabase.getProfile();
-    if(!state.profile){
-      throw new Error("Perfil do usuário não foi encontrado para a sessão autenticada.");
-    }
+    if(!state.profile) throw new Error("Perfil do usuário Viewer não encontrado.");
 
     $("loginScreen").classList.add("hidden");
     $("appScreen").classList.remove("hidden");
@@ -215,8 +205,8 @@ async function boot(){
   }catch(x){
     $("loginScreen").classList.remove("hidden");
     $("appScreen").classList.add("hidden");
-    $("loginError").textContent=translateAuthError(x);
-    console.error("Inicialização/login:",x);
+    $("loginError").textContent=x?.message||"Não foi possível iniciar o login automático.";
+    console.error("Login automático do Viewer:",x);
   }
 }
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginError").textContent="";try{await SiloSupabase.signIn($("loginEmail").value.trim(),$("loginPassword").value);await boot()}catch(x){$("loginError").textContent=x.message||"Falha no login."}});
