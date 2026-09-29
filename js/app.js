@@ -1,4 +1,4 @@
-const APP_VERSION = "2.8.10";
+const APP_VERSION = "3.0.0";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -14,6 +14,12 @@ const monthLabel=m=>{const [y,mo]=m.split("-");return new Date(Number(y),Number(
 const monthMovements=()=>state.movements.filter(m=>String(m.date||"").slice(0,7)===state.month);
 const stock=()=>state.movements.reduce((s,m)=>s+(m.type==="entrada"?Number(m.quantity||0):-Number(m.quantity||0)),0);
 function dailyConsumption(movs){const map=new Map();movs.filter(m=>m.type==="consumo").forEach(m=>{const d=String(m.date).slice(0,10);map.set(d,(map.get(d)||0)+Number(m.quantity||0));});return map}
+function totalConcrete(movs){return movs.filter(m=>m.type==="consumo").reduce((s,m)=>s+Number(m.concretagem_m3||0),0)}
+function concreteRatio(movs){
+ const kg=movs.filter(m=>m.type==="consumo").reduce((s,m)=>s+Number(m.quantity||0),0);
+ const m3=totalConcrete(movs);
+ return m3>0?kg/m3:null;
+}
 function monthlyAverage(movs){const vals=[...dailyConsumption(movs).values()];return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0}
 function historicalAverage(){return monthlyAverage(state.movements)}
 function recentTenDayAverage(movs){
@@ -82,6 +88,7 @@ function renderTop(){
  if(autonomy!==null){const eta=new Date();eta.setDate(eta.getDate()+Math.floor(autonomy));$("autonomyDate").textContent=`Estimativa: ${eta.toLocaleDateString("pt-BR")}`}else $("autonomyDate").textContent="—";
  const entries=mm.filter(m=>m.type==="entrada").reduce((s,m)=>s+Number(m.quantity||0),0);
  const cons=mm.filter(m=>m.type==="consumo").reduce((s,m)=>s+Number(m.quantity||0),0);
+ const concrete=totalConcrete(mm), ratio=concreteRatio(mm);
  const days=dailyConsumption(mm).size;
  $("stockValue").textContent=fmtKg(allStock);$("capacityValue").textContent=fmtKg(cap);$("occupancyValue").textContent=`${fmtNum(occ)}% ocupado`;
  $("monthlyAverageValue").textContent=`${fmtNum(avg)} kg/dia`;$("movementCount").textContent=mm.length;
@@ -90,6 +97,8 @@ function renderTop(){
  $("minConsumptionValue").textContent=extremes.min?`${fmtNum(extremes.min[1])} kg`:"—";
  $("minConsumptionDate").textContent=extremes.min?formatDayBr(extremes.min[0]):"Sem consumo registrado";
  $("monthEntries").textContent=fmtKg(entries);$("monthConsumption").textContent=fmtKg(cons);$("consumptionDays").textContent=days;$("monthAverage").textContent=`${fmtNum(avg)} kg/dia`;
+ if($("monthConcrete"))$("monthConcrete").textContent=`${fmtNum(concrete)} m³`;
+ if($("monthConcreteRatio"))$("monthConcreteRatio").textContent=ratio===null?"—":`${fmtNum(ratio)} kg/m³`;
  const ring=document.querySelector(".stock-ring");
  if(ring){
    const ringOcc=Math.min(Math.max(Number(occ)||0,0),100);
@@ -116,7 +125,7 @@ function exportMovementsCsv(){
    alert("Não há movimentações para exportar.");
    return;
  }
- const header=["Data","Tipo","Quantidade (kg)","Observação"];
+ const header=["Data","Tipo","Quantidade (kg)","Concretagem (m³)","Observação"];
  const lines=[header.map(csvCell).join(";")];
  rows.forEach(m=>{
    const d=new Date(m.date);
@@ -126,6 +135,7 @@ function exportMovementsCsv(){
      date,
      type,
      Number(m.quantity||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}),
+     m.type==="consumo" ? Number(m.concretagem_m3||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}) : "",
      m.observation||""
    ].map(csvCell).join(";"));
  });
@@ -143,7 +153,7 @@ function exportMovementsCsv(){
 }
 function renderHistory(){
  const mm=monthMovements().slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
- $("historyBody").innerHTML=mm.map(m=>`<tr><td>${new Date(m.date).toLocaleDateString("pt-BR")} ${new Date(m.date).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</td><td><span class="pill ${m.type}">${m.type==="entrada"?"Entrada":"Consumo"}</span></td><td>${fmtKg(m.quantity)}</td><td>${escapeHtml(m.observation||"")}</td>${isAdmin()?`<td><button class="tiny" data-edit="${escapeHtml(m.id)}">Editar</button><button class="tiny danger" data-delete="${escapeHtml(m.id)}">Excluir</button></td>`:""}</tr>`).join("")||`<tr><td colspan="5" class="empty">Nenhuma movimentação neste mês.</td></tr>`;
+ $("historyBody").innerHTML=mm.map(m=>`<tr><td>${new Date(m.date).toLocaleDateString("pt-BR")} ${new Date(m.date).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</td><td><span class="pill ${m.type}">${m.type==="entrada"?"Entrada":"Consumo"}</span></td><td>${fmtKg(m.quantity)}</td><td>${m.type==="consumo"?(m.concretagem_m3!=null?`${fmtNum(m.concretagem_m3)} m³`:"—"):"—"}</td><td>${escapeHtml(m.observation||"")}</td>${isAdmin()?`<td><button class="tiny" data-edit="${escapeHtml(m.id)}">Editar</button><button class="tiny danger" data-delete="${escapeHtml(m.id)}">Excluir</button></td>`:""}</tr>`).join("")||`<tr><td colspan="6" class="empty">Nenhuma movimentação neste mês.</td></tr>`;
 }
 function drawConsumptionChart(){
  const c=$("consumptionChart"),ctx=c.getContext("2d"),rect=c.getBoundingClientRect(),dpr=devicePixelRatio||1,w=Math.max(300,rect.width),h=300;
@@ -252,7 +262,17 @@ function render(){renderRole(); $("userRole").textContent=isMobile()?"VISUALIZA�
  $("siloCritical").value=state.settings?.critical_stock??"";
  $("siloNextDelivery").value=state.settings?.next_delivery_date||""}
 function setDateTime(){const d=new Date();$("movementDate").value=d.toISOString().slice(0,10);$("movementTime").value=d.toTimeString().slice(0,5)}
-function resetForm(){$("movementId").value="";$("movementType").value="entrada";$("movementQuantity").value="";$("movementObservation").value="";setDateTime();$("cancelEdit").classList.add("hidden")}
+function toggleConcreteField(){
+ const field=$("movementConcreteField"), input=$("movementConcrete");
+ const isConsumption=$("movementType").value==="consumo";
+ if(field)field.classList.toggle("hidden",!isConsumption);
+ if(input){
+   input.required=isConsumption;
+   input.disabled=!isConsumption;
+   if(!isConsumption)input.value="";
+ }
+}
+function resetForm(){$("movementId").value="";$("movementType").value="entrada";$("movementQuantity").value="";$("movementConcrete").value="";$("movementObservation").value="";setDateTime();$("cancelEdit").classList.add("hidden");toggleConcreteField()}
 async function refresh(){state.settings=await SiloSupabase.getSettings();state.movements=await SiloSupabase.getMovements();state.deliveryHistory=await SiloSupabase.getDeliveryHistory();render()}
 const DEFAULT_VIEWER_EMAIL="viewer@teste.com";
 const DEFAULT_VIEWER_PASSWORD="123456";
@@ -339,9 +359,18 @@ $("monthPicker").addEventListener("change",e=>{state.month=e.target.value;render
 $("exportCsvBtn").addEventListener("click",exportMovementsCsv);
 $("prevMonth").addEventListener("click",()=>{state.month=previousMonth(state.month);render()});
 $("nextMonth").addEventListener("click",()=>{const [y,m]=state.month.split("-").map(Number);const d=new Date(y,m,1);state.month=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;render()});
-$("movementForm").addEventListener("submit",async e=>{e.preventDefault();if(!canEdit())return;try{const m={type:$("movementType").value,quantity:Number($("movementQuantity").value),date:`${$("movementDate").value}T${$("movementTime").value}:00`,observation:$("movementObservation").value.trim()},id=$("movementId").value;if(!m.quantity||m.quantity<=0)throw Error("Informe uma quantidade válida.");id?await SiloSupabase.updateMovement(id,m):await SiloSupabase.insertMovement(m);resetForm();await refresh()}catch(x){$("movementError").textContent=x.message||"Erro ao salvar."}});
+$("movementForm").addEventListener("submit",async e=>{e.preventDefault();if(!canEdit())return;try{
+ const type=$("movementType").value;
+ const concrete=Number($("movementConcrete").value);
+ const m={type,quantity:Number($("movementQuantity").value),concretagem_m3:type==="consumo"?concrete:null,date:`${$("movementDate").value}T${$("movementTime").value}:00`,observation:$("movementObservation").value.trim()},id=$("movementId").value;
+ if(!m.quantity||m.quantity<=0)throw Error("Informe uma quantidade válida.");
+ if(type==="consumo"&&(!Number.isFinite(concrete)||concrete<=0))throw Error("Informe a quantidade de concretagem em m³.");
+ id?await SiloSupabase.updateMovement(id,m):await SiloSupabase.insertMovement(m);
+ resetForm();await refresh();
+}catch(x){$("movementError").textContent=x.message||"Erro ao salvar."}});
 $("cancelEdit").addEventListener("click",resetForm);
-if(isMobile())return; $("historyBody").addEventListener("click",async e=>{const edit=e.target.closest("[data-edit]"),del=e.target.closest("[data-delete]");if(edit){const m=state.movements.find(x=>String(x.id)===edit.dataset.edit);if(!m)return;const d=new Date(m.date);$("movementId").value=m.id;$("movementType").value=m.type;$("movementQuantity").value=m.quantity;$("movementDate").value=String(m.date).slice(0,10);$("movementTime").value=d.toTimeString().slice(0,5);$("movementObservation").value=m.observation||"";$("cancelEdit").classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"})}if(del&&confirm("Excluir esta movimentação?")){try{await SiloSupabase.deleteMovement(del.dataset.delete);await refresh()}catch(x){alert(x.message)}}});
+$("movementType").addEventListener("change",toggleConcreteField);
+if(isMobile())return; $("historyBody").addEventListener("click",async e=>{const edit=e.target.closest("[data-edit]"),del=e.target.closest("[data-delete]");if(edit){const m=state.movements.find(x=>String(x.id)===edit.dataset.edit);if(!m)return;const d=new Date(m.date);$("movementId").value=m.id;$("movementType").value=m.type;$("movementQuantity").value=m.quantity;$("movementDate").value=String(m.date).slice(0,10);$("movementTime").value=d.toTimeString().slice(0,5);$("movementObservation").value=m.observation||"";$("movementConcrete").value=m.concretagem_m3??"";$("cancelEdit").classList.remove("hidden");toggleConcreteField();window.scrollTo({top:0,behavior:"smooth"})}if(del&&confirm("Excluir esta movimentação?")){try{await SiloSupabase.deleteMovement(del.dataset.delete);await refresh()}catch(x){alert(x.message)}}});
 document.addEventListener("click",e=>{
  const btn=e.target.closest(".btn-delete-delivery");
  if(btn) deleteDeliveryRecord(btn.dataset.deliveryId);
@@ -367,5 +396,5 @@ window.addEventListener("resize",()=>{
     drawConsumptionChart();
   }
 });
-state.month=monthNow();setDateTime();boot().catch(x=>{$("loginError").textContent=x.message||"Erro ao iniciar.";console.error(x)});
+state.month=monthNow();setDateTime();toggleConcreteField();boot().catch(x=>{$("loginError").textContent=x.message||"Erro ao iniciar.";console.error(x)});
 })();
