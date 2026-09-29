@@ -165,6 +165,20 @@ const DEFAULT_VIEWER_EMAIL="viewer@teste.com";
 const DEFAULT_VIEWER_PASSWORD="123456";
 const AUTO_LOGIN_BLOCKED_KEY="controleSiloManualLogout";
 
+function showLogin(){
+  const loginScreen=$("loginScreen");
+  const appScreen=$("appScreen");
+  if(loginScreen) loginScreen.classList.remove("hidden");
+  if(appScreen) appScreen.classList.add("hidden");
+}
+
+function showDashboard(){
+  const loginScreen=$("loginScreen");
+  const appScreen=$("appScreen");
+  if(loginScreen) loginScreen.classList.add("hidden");
+  if(appScreen) appScreen.classList.remove("hidden");
+}
+
 async function boot(){
   try{
     let session = (await supabaseClient.auth.getSession()).data.session;
