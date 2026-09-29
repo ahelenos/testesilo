@@ -107,14 +107,15 @@ const SiloSupabase = {
     if(error)throw error;
     return data||[];
   },
-  async registerCementDelivery(){
-    const {data,error}=await supabaseClient.rpc("register_cement_delivery");
+  async registerCementDelivery(quantity){
+    const {data,error}=await supabaseClient.rpc("register_cement_delivery",{p_quantity:Number(quantity)});
     if(error)throw error;
     return data;
   },
   async deleteCementDelivery(id){
-    const {error}=await supabaseClient.from("cement_deliveries").delete().eq("id",id);
+    const {data,error}=await supabaseClient.rpc("delete_cement_delivery",{p_id:id});
     if(error)throw error;
+    return data;
   },
   async getMovements(){const {data,error}=await supabaseClient.from("movements").select("*").order("date",{ascending:true});if(error)throw error;return data||[];},
   async insertMovement(m){const u=await this.getUser();if(!u)throw new Error("Usuário não autenticado.");const payload={type:m.type,quantity:Number(m.quantity),concretagem_m3:m.type==="consumo"?Number(m.concretagem_m3):null,date:m.date,observation:m.observation||"",user_id:u.id};const {data,error}=await supabaseClient.from("movements").insert(payload).select().single();if(error)throw error;return data;},

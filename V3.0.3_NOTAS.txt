@@ -1,0 +1,14 @@
+CONTROLE DE SILO — V3.0.3
+
+Correção:
+- A função de registro de entrega agora grava movements.date usando now().
+- Isso corrige o problema de o Supabase armazenar meia-noite UTC e o navegador
+  brasileiro exibir 21:00 do dia anterior.
+- Nenhuma alteração de estrutura do banco é necessária.
+
+IMPORTANTE:
+1. Execute supabase_v3_0_3.sql UMA VEZ no Supabase.
+2. Se o registro de teste de 28/09/2026 foi criado pela V3.0.2, exclua-o pelo
+   botão "Excluir" do histórico antes de testar novamente. A função de exclusão
+   remove também a entrada vinculada.
+3. Cadastre novamente a entrega e confira a data no histórico.

@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.1";
+const APP_VERSION = "3.0.2";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -93,7 +93,12 @@ function renderTop(){
  const deliveryBtn=$("cementDeliveredBtn");
  if(deliveryBtn){
    deliveryBtn.disabled=!nextDelivery||!canEdit();
-   deliveryBtn.title=nextDelivery?"Marcar a entrega de cimento como realizada":"Não há uma data de entrega cadastrada";
+   deliveryBtn.title=nextDelivery?"Registrar a entrega e informar os kg recebidos":"Não há uma data de entrega cadastrada";
+ }
+ const cancelDeliveryBtn=$("cancelScheduledDeliveryBtn");
+ if(cancelDeliveryBtn){
+   cancelDeliveryBtn.disabled=!nextDelivery||!canEdit();
+   cancelDeliveryBtn.title=nextDelivery?"Excluir somente a data prevista da entrega":"Não há uma entrega programada";
  }
  const autonomy=recentAvg>0?Math.max(0,allStock/recentAvg):null;
  $("autonomyDays").textContent=autonomy===null?"—":autonomy.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1});
@@ -255,6 +260,18 @@ function drawMixChart(){
  ctx.textAlign="left";ctx.fillStyle="#2563eb";ctx.fillRect(20,210,10,10);ctx.fillStyle="#475467";ctx.fillText(`Entradas  ${fmtNum(en)} kg`,38,219);
  ctx.fillStyle="#f59e0b";ctx.fillRect(170,210,10,10);ctx.fillStyle="#475467";ctx.fillText(`Consumos  ${fmtNum(co)} kg`,188,219);
 }
+async function cancelScheduledDelivery(){
+ if(!canEdit()||!state.settings?.next_delivery_date)return;
+ if(!confirm("Excluir a data prevista desta entrega? Nenhuma entrada de cimento será criada."))return;
+ try{
+   await SiloSupabase.clearNextDelivery();
+   await refresh();
+ }catch(x){
+   const el=$("settingsError");
+   if(el)el.textContent=x.message||"Erro ao excluir a entrega programada.";
+   else alert(x.message||"Erro ao excluir a entrega programada.");
+ }
+}
 function renderDeliveryHistory(){
  const body=$("deliveryHistoryBody");
  if(!body)return;
@@ -267,13 +284,14 @@ function renderDeliveryHistory(){
 }
 async function deleteDeliveryRecord(id){
  if(!canEdit()||!id)return;
- if(!confirm("Tem certeza que deseja apagar este registro de entrega?"))return;
+ if(!confirm("Tem certeza que deseja apagar esta entrega? A entrada de cimento criada por ela também será excluída."))return;
  try{
    await SiloSupabase.deleteCementDelivery(id);
    await refresh();
  }catch(x){
    const el=$("settingsError");
    if(el)el.textContent=x.message||"Erro ao apagar o registro da entrega.";
+   else alert(x.message||"Erro ao apagar o registro da entrega.");
  }
 }
 function render(){renderRole(); $("userRole").textContent=isMobile()?"VISUALIZAÇÃO • CELULAR":(isAdmin()?"ADMIN":"VISUALIZAÇÃO"); renderTop();renderHistory();renderDeliveryHistory();drawConsumptionChart();$("monthPicker").value=state.month;$("siloName").value=state.settings?.name||"";$("siloCapacity").value=state.settings?.capacity||"";
@@ -396,14 +414,25 @@ document.addEventListener("click",e=>{
 });
 $("cementDeliveredBtn").addEventListener("click",async()=>{
  if(!canEdit()||!state.settings?.next_delivery_date)return;
- if(!confirm("Confirmar que o cimento foi entregue? A entrega será registrada no histórico e a data prevista atual será apagada."))return;
+ const raw=prompt("Quantos kg de cimento foram entregues?");
+ if(raw===null)return;
+ const normalized=String(raw).trim().replace(/\\./g,"").replace(",",".");
+ const quantity=Number(normalized);
+ if(!Number.isFinite(quantity)||quantity<=0){
+   alert("Informe uma quantidade válida em kg, maior que zero.");
+   return;
+ }
+ if(!confirm(`Confirmar entrega de ${fmtKg(quantity)}? Será criada uma entrada no estoque com a data de hoje.`))return;
  try{
-   await SiloSupabase.registerCementDelivery();
+   await SiloSupabase.registerCementDelivery(quantity);
    await refresh();
  }catch(x){
-   $("settingsError").textContent=x.message||"Erro ao registrar a entrega do cimento.";
+   const el=$("settingsError");
+   if(el)el.textContent=x.message||"Erro ao registrar a entrega do cimento.";
+   else alert(x.message||"Erro ao registrar a entrega do cimento.");
  }
 });
+$("cancelScheduledDeliveryBtn").addEventListener("click",async()=>{await cancelScheduledDelivery()});
 $("settingsForm").addEventListener("submit",async e=>{e.preventDefault();if(!canEdit())return;try{const minimum=Number($("siloMinimum").value), critical=Number($("siloCritical").value);
  if(critical>minimum)throw Error("O estoque crítico não pode ser maior que o estoque mínimo.");
  if(minimum>Number($("siloCapacity").value))throw Error("O estoque mínimo não pode ser maior que a capacidade do silo.");
