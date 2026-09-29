@@ -107,7 +107,7 @@
   .delivery-history-row strong{font-size:12px}
 }
 
-/* V2.7.5 - Ação de exclusão alinhada ao histórico */
+/* V2.7.6 - Ação de exclusão alinhada ao histórico */
 .delivery-history-row{
   grid-template-columns:34px minmax(0,1fr) auto auto;
 }
