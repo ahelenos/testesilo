@@ -284,3 +284,51 @@
 
 /* V3.0.0 — campo de concretagem */
 #movementConcreteField input:focus{outline:2px solid rgba(37,99,235,.15);outline-offset:1px}
+
+/* V3.0.1 - Consumo por m³ e status visual da próxima entrega */
+.concrete-ratio-kpi .kpi-icon{
+  font-size:9px;
+  letter-spacing:-.02em;
+}
+.delivery-kpi{
+  transition:background .2s ease,border-color .2s ease,box-shadow .2s ease;
+}
+.delivery-kpi.delivery-today{
+  background:linear-gradient(135deg,#f0fdf4,#ffffff);
+  border-color:#bbf7d0;
+  box-shadow:0 7px 24px #16a34a10;
+}
+.delivery-kpi.delivery-today .kpi-icon{
+  background:#dcfce7;
+  color:#166534;
+}
+.delivery-kpi.delivery-today #nextDeliveryLabel,
+.delivery-kpi.delivery-today #nextDeliveryDate,
+.delivery-kpi.delivery-today #nextDeliveryStatus{
+  color:#166534;
+}
+.delivery-kpi.delivery-pending{
+  background:linear-gradient(135deg,#fffaf0,#ffffff);
+  border-color:#f3dfb1;
+}
+.delivery-kpi.delivery-pending .kpi-icon{
+  background:#fff3d6;
+  color:#92400e;
+}
+.delivery-kpi.delivery-pending #nextDeliveryLabel{
+  color:#92400e;
+}
+.delivery-kpi.delivery-pending #nextDeliveryStatus{
+  color:#b45309;
+  font-weight:700;
+}
+.delivery-kpi.delivery-none #nextDeliveryDate{
+  color:#98a2b3;
+  font-size:17px;
+}
+@media(max-width:1000px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:650px){
+  .concrete-ratio-kpi strong{font-size:21px}
+}

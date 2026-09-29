@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.0";
+const APP_VERSION = "3.0.1";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -68,11 +68,28 @@ function renderStockAlert(allStock){
    $("stockAlertText").textContent=`Estoque atual de ${fmtKg(allStock)} atingiu o nível mínimo de ${fmtKg(minimum)}.`;
  }
 }
+function getDeliveryStatus(dateValue){
+ const raw=String(dateValue||"").slice(0,10);
+ if(!raw) return {key:"none",label:"Próxima entrega de cimento",date:"Sem data de próxima entrega",note:"Data prevista"};
+ const today=new Date();
+ const todayIso=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+ if(raw===todayIso) return {key:"today",label:"Entrega hoje",date:new Date(`${raw}T00:00:00`).toLocaleDateString("pt-BR"),note:"Programada para hoje"};
+ if(raw<todayIso) return {key:"pending",label:"Entrega pendente",date:new Date(`${raw}T00:00:00`).toLocaleDateString("pt-BR"),note:"Data prevista já passou"};
+ return {key:"upcoming",label:"Próxima entrega de cimento",date:new Date(`${raw}T00:00:00`).toLocaleDateString("pt-BR"),note:"Data prevista"};
+}
 function renderTop(){
  const allStock=stock(), cap=Number(state.settings?.capacity||0), occ=cap?allStock/cap*100:0, mm=monthMovements(), avg=monthlyAverage(mm), histAvg=historicalAverage(), recentAvg=recentTenDayAverage(state.movements), extremes=monthlyConsumptionExtremes(mm);
  renderStockAlert(allStock);
  const nextDelivery=state.settings?.next_delivery_date||"";
- $("nextDeliveryDate").textContent=nextDelivery?new Date(`${nextDelivery}T00:00:00`).toLocaleDateString("pt-BR"):"Sem data de proxima entrega";
+ const deliveryStatus=getDeliveryStatus(nextDelivery);
+ const deliveryKpi=$("deliveryKpi");
+ if(deliveryKpi){
+   deliveryKpi.classList.remove("delivery-upcoming","delivery-today","delivery-pending","delivery-none");
+   deliveryKpi.classList.add(`delivery-${deliveryStatus.key}`);
+ }
+ if($("nextDeliveryLabel"))$("nextDeliveryLabel").textContent=deliveryStatus.label;
+ $("nextDeliveryDate").textContent=deliveryStatus.date;
+ $("nextDeliveryStatus").textContent=deliveryStatus.note;
  const deliveryBtn=$("cementDeliveredBtn");
  if(deliveryBtn){
    deliveryBtn.disabled=!nextDelivery||!canEdit();
@@ -96,6 +113,8 @@ function renderTop(){
  $("maxConsumptionDate").textContent=extremes.max?formatDayBr(extremes.max[0]):"Sem consumo registrado";
  $("minConsumptionValue").textContent=extremes.min?`${fmtNum(extremes.min[1])} kg`:"—";
  $("minConsumptionDate").textContent=extremes.min?formatDayBr(extremes.min[0]):"Sem consumo registrado";
+ $("consumptionPerM3Value").textContent=ratio===null?"—":`${fmtNum(ratio)} kg/m³`;
+ $("consumptionPerM3Note").textContent=ratio===null?"Sem produção registrada":"no período";
  $("monthEntries").textContent=fmtKg(entries);$("monthConsumption").textContent=fmtKg(cons);$("consumptionDays").textContent=days;$("monthAverage").textContent=`${fmtNum(avg)} kg/dia`;
  if($("monthConcrete"))$("monthConcrete").textContent=`${fmtNum(concrete)} m³`;
  if($("monthConcreteRatio"))$("monthConcreteRatio").textContent=ratio===null?"—":`${fmtNum(ratio)} kg/m³`;

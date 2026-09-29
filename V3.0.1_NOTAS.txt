@@ -1,0 +1,12 @@
+V3.0.1 — Controle de Silo
+
+Base: controle_silo_v3_0_0.zip
+
+Alterações:
+1. Novo KPI "Consumo por m³", calculado como total de consumo de cimento / total de concretagem do mês selecionado.
+2. Card de próxima entrega com estados:
+   - Próxima entrega de cimento: data futura.
+   - Entrega hoje: destaque verde suave.
+   - Entrega pendente: destaque discreto quando a data já passou.
+3. Versão atualizada para V3.0.1 nos elementos visíveis e nos parâmetros de cache de CSS/JS/imagens.
+4. Nenhuma alteração na estrutura do banco de dados foi necessária.
