@@ -166,90 +166,57 @@ const DEFAULT_VIEWER_PASSWORD="123456";
 const AUTO_LOGIN_BLOCKED_KEY="controleSiloManualLogout";
 
 function translateAuthError(error){
-  const message = String(error?.message || error || "").trim();
-  const normalized = message.toLowerCase();
-
-  if(normalized.includes("invalid login credentials")){
-    return "E-mail ou senha inválidos.";
-  }
-  if(normalized.includes("email not confirmed")){
-    return "O e-mail ainda não foi confirmado.";
-  }
-  if(normalized.includes("auth session missing")){
-    return "Sessão de acesso não encontrada. Faça login novamente.";
-  }
-  if(normalized.includes("user already registered")){
-    return "Este usuário já está cadastrado.";
-  }
-  if(normalized.includes("too many requests")){
-    return "Muitas tentativas. Aguarde alguns instantes e tente novamente.";
-  }
-  if(normalized.includes("network")){
-    return "Erro de conexão. Verifique sua internet e tente novamente.";
-  }
-
-  return message || "Não foi possível realizar o acesso.";
-}
-
-function showLogin(){
-  const loginScreen=$("loginScreen");
-  const appScreen=$("appScreen");
-  if(loginScreen) loginScreen.classList.remove("hidden");
-  if(appScreen) appScreen.classList.add("hidden");
-}
-
-function showDashboard(){
-  const loginScreen=$("loginScreen");
-  const appScreen=$("appScreen");
-  if(loginScreen) loginScreen.classList.add("hidden");
-  if(appScreen) appScreen.classList.remove("hidden");
+  const message=String(error?.message||error||"").trim();
+  const n=message.toLowerCase();
+  if(n.includes("invalid login credentials")) return "E-mail ou senha inválidos.";
+  if(n.includes("email not confirmed")) return "O e-mail ainda não foi confirmado.";
+  if(n.includes("auth session missing")) return "Sessão de acesso não encontrada. Faça login novamente.";
+  if(n.includes("user already registered")) return "Este usuário já está cadastrado.";
+  if(n.includes("too many requests")) return "Muitas tentativas. Aguarde alguns instantes e tente novamente.";
+  if(n.includes("network")) return "Erro de conexão. Verifique sua internet e tente novamente.";
+  return message||"Não foi possível realizar o acesso.";
 }
 
 async function boot(){
   try{
-    let session = (await supabaseClient.auth.getSession()).data.session;
+    state.user=await SiloSupabase.getUser();
 
-    if(!session){
-      const {data,error}=await supabaseClient.auth.signInWithPassword({
-        email:"viewer@teste.com",
-        password:"123456"
-      });
-      if(error)throw error;
-      session=data.session;
+    const manualLogout=sessionStorage.getItem(AUTO_LOGIN_BLOCKED_KEY)==="1";
+
+    if(!state.user && !manualLogout){
+      $("loginEmail").value=DEFAULT_VIEWER_EMAIL;
+      $("loginPassword").value=DEFAULT_VIEWER_PASSWORD;
+
+      const result=await SiloSupabase.signIn(DEFAULT_VIEWER_EMAIL,DEFAULT_VIEWER_PASSWORD);
+      if(result?.error) throw result.error;
+
+      state.user=result?.data?.user||await SiloSupabase.getUser();
+      if(!state.user) throw new Error("O login automático não retornou uma sessão.");
     }
 
-    if(!session?.user?.id){
-      throw new Error("Não foi possível obter a sessão do Viewer.");
+    if(!state.user){
+      $("loginEmail").value=DEFAULT_VIEWER_EMAIL;
+      $("loginPassword").value=DEFAULT_VIEWER_PASSWORD;
+      $("loginScreen").classList.remove("hidden");
+      $("appScreen").classList.add("hidden");
+      return;
     }
 
-    const {data:profile,error:profileError}=await supabaseClient
-      .from("profiles")
-      .select("*")
-      .eq("id",session.user.id)
-      .maybeSingle();
+    sessionStorage.removeItem(AUTO_LOGIN_BLOCKED_KEY);
 
-    if(profileError)throw profileError;
-
-    if(!profile){
-      throw new Error("Perfil do usuário Viewer não encontrado.");
-    }
-    if(profile.role!=="viewer" && profile.role!=="admin"){
-      throw new Error("Perfil de usuário sem permissão válida.");
+    state.profile=await SiloSupabase.getProfile();
+    if(!state.profile){
+      throw new Error("Perfil do usuário não foi encontrado para a sessão autenticada.");
     }
 
-    state.user=session.user;
-    state.profile=profile;
-
+    $("loginScreen").classList.add("hidden");
+    $("appScreen").classList.remove("hidden");
     await refresh();
-
-    showDashboard();
-  }catch(error){
-    console.error("Login automático do Viewer:",error);
-    state.user=null;
-    state.profile=null;
-    showLogin();
-    const msg=translateAuthError(error);
-    if($("loginError"))$("loginError").textContent=msg;
+  }catch(x){
+    $("loginScreen").classList.remove("hidden");
+    $("appScreen").classList.add("hidden");
+    $("loginError").textContent=translateAuthError(x);
+    console.error("Inicialização/login:",x);
   }
 }
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginError").textContent="";try{await SiloSupabase.signIn($("loginEmail").value.trim(),$("loginPassword").value);await boot()}catch(x){$("loginError").textContent=x.message||"Falha no login."}});
