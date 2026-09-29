@@ -1,4 +1,4 @@
-const APP_VERSION = "2.8.5";
+const APP_VERSION = "2.8.10";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -22,6 +22,21 @@ function recentTenDayAverage(movs){
    .slice(-10)
    .map(([,value])=>value);
  return days.length?days.reduce((a,b)=>a+b,0)/days.length:0;
+}
+function monthlyConsumptionExtremes(movs){
+ const entries=[...dailyConsumption(movs).entries()].filter(([,value])=>Number(value)>0);
+ if(!entries.length)return {max:null,min:null};
+ let max=entries[0],min=entries[0];
+ for(const entry of entries){
+   if(Number(entry[1])>Number(max[1]))max=entry;
+   if(Number(entry[1])<Number(min[1]))min=entry;
+ }
+ return {max,min};
+}
+function formatDayBr(iso){
+ if(!iso)return "Sem consumo registrado";
+ const d=new Date(`${iso}T00:00:00`);
+ return Number.isNaN(d.getTime())?"Sem consumo registrado":`em ${d.toLocaleDateString("pt-BR")}`;
 }
 function previousMonth(key){const [y,m]=key.split("-").map(Number);const d=new Date(y,m-2,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function percent(a,b){return b?((a-b)/b)*100:null}
@@ -48,7 +63,7 @@ function renderStockAlert(allStock){
  }
 }
 function renderTop(){
- const allStock=stock(), cap=Number(state.settings?.capacity||0), occ=cap?allStock/cap*100:0, mm=monthMovements(), avg=monthlyAverage(mm), histAvg=historicalAverage(), recentAvg=recentTenDayAverage(state.movements);
+ const allStock=stock(), cap=Number(state.settings?.capacity||0), occ=cap?allStock/cap*100:0, mm=monthMovements(), avg=monthlyAverage(mm), histAvg=historicalAverage(), recentAvg=recentTenDayAverage(state.movements), extremes=monthlyConsumptionExtremes(mm);
  renderStockAlert(allStock);
  const nextDelivery=state.settings?.next_delivery_date||"";
  $("nextDeliveryDate").textContent=nextDelivery?new Date(`${nextDelivery}T00:00:00`).toLocaleDateString("pt-BR"):"Sem data de proxima entrega";
@@ -70,7 +85,16 @@ function renderTop(){
  const days=dailyConsumption(mm).size;
  $("stockValue").textContent=fmtKg(allStock);$("capacityValue").textContent=fmtKg(cap);$("occupancyValue").textContent=`${fmtNum(occ)}% ocupado`;
  $("monthlyAverageValue").textContent=`${fmtNum(avg)} kg/dia`;$("movementCount").textContent=mm.length;
+ $("maxConsumptionValue").textContent=extremes.max?`${fmtNum(extremes.max[1])} kg`:"—";
+ $("maxConsumptionDate").textContent=extremes.max?formatDayBr(extremes.max[0]):"Sem consumo registrado";
+ $("minConsumptionValue").textContent=extremes.min?`${fmtNum(extremes.min[1])} kg`:"—";
+ $("minConsumptionDate").textContent=extremes.min?formatDayBr(extremes.min[0]):"Sem consumo registrado";
  $("monthEntries").textContent=fmtKg(entries);$("monthConsumption").textContent=fmtKg(cons);$("consumptionDays").textContent=days;$("monthAverage").textContent=`${fmtNum(avg)} kg/dia`;
+ const ring=document.querySelector(".stock-ring");
+ if(ring){
+   const ringOcc=Math.min(Math.max(Number(occ)||0,0),100);
+   ring.style.background=`conic-gradient(#2563eb 0deg ${ringOcc*3.6}deg, #e9eef5 ${ringOcc*3.6}deg 360deg)`;
+ }
  $("siloTitle").textContent=state.settings?.name||"Controle de Silo";$("welcomeTitle").textContent=state.settings?.name||"Painel de controle";
  $("periodLabel").textContent=monthLabel(state.month);$("stockPercent").textContent=`${fmtNum(occ)}%`;
  $("stockBar").style.width=`${Math.min(Math.max(occ,0),100)}%`;
@@ -124,12 +148,73 @@ function renderHistory(){
 function drawConsumptionChart(){
  const c=$("consumptionChart"),ctx=c.getContext("2d"),rect=c.getBoundingClientRect(),dpr=devicePixelRatio||1,w=Math.max(300,rect.width),h=300;
  c.width=w*dpr;c.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
- const mm=monthMovements(),map=dailyConsumption(mm),[yy,mo]=state.month.split("-").map(Number),days=new Date(yy,mo,0).getDate(), vals=Array.from({length:days},(_,i)=>map.get(`${state.month}-${String(i+1).padStart(2,"0")}`)||0), max=Math.max(...vals,1), left=42,right=18,top=18,bottom=38,cw=w-left-right,ch=h-top-bottom;
+
+ const mm=monthMovements(),map=dailyConsumption(mm),[yy,mo]=state.month.split("-").map(Number),days=new Date(yy,mo,0).getDate(),vals=Array.from({length:days},(_,i)=>map.get(`${state.month}-${String(i+1).padStart(2,"0")}`)||0),max=Math.max(...vals,1),left=42,right=18,top=18,bottom=38,cw=w-left-right,ch=h-top-bottom;
+
  ctx.strokeStyle="#e6eaf0";ctx.lineWidth=1;ctx.font="11px Inter, sans-serif";ctx.fillStyle="#7b8794";
  for(let i=0;i<=4;i++){const y=top+ch-i*ch/4;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(left+cw,y);ctx.stroke();ctx.fillText(fmtNum(max*i/4),4,y+4)}
+
  ctx.beginPath();vals.forEach((v,i)=>{const x=left+(days===1?0:i/(days-1))*cw,y=top+ch-(v/max)*ch;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.lineTo(left+cw,top+ch);ctx.lineTo(left,top+ch);ctx.closePath();ctx.fillStyle="rgba(37,99,235,.10)";ctx.fill();
+
  ctx.beginPath();vals.forEach((v,i)=>{const x=left+(days===1?0:i/(days-1))*cw,y=top+ch-(v/max)*ch;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.strokeStyle="#2563eb";ctx.lineWidth=3;ctx.stroke();
+
  ctx.fillStyle="#7b8794";[0,Math.floor((days-1)/3),Math.floor((days-1)*2/3),days-1].forEach(i=>{const x=left+(days===1?0:i/(days-1))*cw;ctx.fillText(String(i+1).padStart(2,"0"),x-6,h-12)});
+
+ /* Tooltip interativo */
+ const panel=c.closest(".chart-panel") || c.parentElement;
+ panel.classList.add("chart-tooltip-host");
+
+ let tooltip=panel.querySelector(".chart-tooltip");
+ if(!tooltip){
+   tooltip=document.createElement("div");
+   tooltip.className="chart-tooltip";
+   tooltip.setAttribute("role","status");
+   tooltip.setAttribute("aria-live","polite");
+   panel.appendChild(tooltip);
+ }
+
+ const hideTooltip=()=>{
+   tooltip.classList.remove("visible");
+ };
+
+ const showTooltip=(clientX,clientY)=>{
+   const canvasRect=c.getBoundingClientRect();
+   const px=clientX-canvasRect.left;
+   const plotX=Math.max(left,Math.min(left+cw,px));
+   const ratio=days>1?(plotX-left)/cw:0;
+   const index=Math.max(0,Math.min(days-1,Math.round(ratio*(days-1))));
+   const day=String(index+1).padStart(2,"0");
+   const iso=`${state.month}-${day}`;
+   const value=Number(vals[index]||0);
+
+   tooltip.innerHTML =
+     `<strong>${new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR")}</strong>` +
+     `<span>Consumo: <b>${fmtNum(value)} kg</b></span>`;
+
+   const hostRect=panel.getBoundingClientRect();
+   let leftPos=clientX-hostRect.left+12;
+   let topPos=clientY-hostRect.top-82;
+
+   if(leftPos+180>hostRect.width) leftPos=clientX-hostRect.left-192;
+   if(leftPos<8) leftPos=8;
+   if(topPos<8) topPos=clientY-hostRect.top+14;
+
+   tooltip.style.left=`${leftPos}px`;
+   tooltip.style.top=`${topPos}px`;
+   tooltip.classList.add("visible");
+ };
+
+ c.onpointermove=(event)=>{
+   showTooltip(event.clientX,event.clientY);
+ };
+
+ c.onpointerleave=()=>{
+   hideTooltip();
+ };
+
+ c.onpointerdown=(event)=>{
+   showTooltip(event.clientX,event.clientY);
+ };
 }
 function drawMixChart(){
  const c=$("mixChart"),ctx=c.getContext("2d"),r=c.getBoundingClientRect(),dpr=devicePixelRatio||1,w=Math.max(260,r.width),h=250;c.width=w*dpr;c.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
