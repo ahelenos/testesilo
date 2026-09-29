@@ -165,6 +165,32 @@ const DEFAULT_VIEWER_EMAIL="viewer@teste.com";
 const DEFAULT_VIEWER_PASSWORD="123456";
 const AUTO_LOGIN_BLOCKED_KEY="controleSiloManualLogout";
 
+function translateAuthError(error){
+  const message = String(error?.message || error || "").trim();
+  const normalized = message.toLowerCase();
+
+  if(normalized.includes("invalid login credentials")){
+    return "E-mail ou senha inválidos.";
+  }
+  if(normalized.includes("email not confirmed")){
+    return "O e-mail ainda não foi confirmado.";
+  }
+  if(normalized.includes("auth session missing")){
+    return "Sessão de acesso não encontrada. Faça login novamente.";
+  }
+  if(normalized.includes("user already registered")){
+    return "Este usuário já está cadastrado.";
+  }
+  if(normalized.includes("too many requests")){
+    return "Muitas tentativas. Aguarde alguns instantes e tente novamente.";
+  }
+  if(normalized.includes("network")){
+    return "Erro de conexão. Verifique sua internet e tente novamente.";
+  }
+
+  return message || "Não foi possível realizar o acesso.";
+}
+
 function showLogin(){
   const loginScreen=$("loginScreen");
   const appScreen=$("appScreen");
