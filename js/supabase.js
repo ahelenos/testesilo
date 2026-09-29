@@ -42,8 +42,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
   }
 });
 
-window.SiloSupabase = {
-  client: supabaseClient,
+const SiloSupabase = {
   async getUser(){
     const {data,error}=await supabaseClient.auth.getUser();
     if(error){
@@ -122,3 +121,4 @@ window.SiloSupabase = {
   async updateMovement(id,m){const payload={type:m.type,quantity:Number(m.quantity),date:m.date,observation:m.observation||""};const {data,error}=await supabaseClient.from("movements").update(payload).eq("id",id).select().single();if(error)throw error;return data;},
   async deleteMovement(id){const {error}=await supabaseClient.from("movements").delete().eq("id",id);if(error)throw error;}
 };
+window.SiloSupabase = SiloSupabase;

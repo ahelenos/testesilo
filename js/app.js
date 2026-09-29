@@ -1,4 +1,4 @@
-const APP_VERSION = "2.7.9";
+const APP_VERSION = "2.8.0";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -15,6 +15,7 @@ const monthMovements=()=>state.movements.filter(m=>String(m.date||"").slice(0,7)
 const stock=()=>state.movements.reduce((s,m)=>s+(m.type==="entrada"?Number(m.quantity||0):-Number(m.quantity||0)),0);
 function dailyConsumption(movs){const map=new Map();movs.filter(m=>m.type==="consumo").forEach(m=>{const d=String(m.date).slice(0,10);map.set(d,(map.get(d)||0)+Number(m.quantity||0));});return map}
 function monthlyAverage(movs){const vals=[...dailyConsumption(movs).values()];return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0}
+function historicalAverage(){return monthlyAverage(state.movements)}
 function previousMonth(key){const [y,m]=key.split("-").map(Number);const d=new Date(y,m-2,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function percent(a,b){return b?((a-b)/b)*100:null}
 function renderRole(){document.querySelectorAll(".admin-only").forEach(e=>e.classList.toggle("hidden",!canEdit()));$("userRole").textContent=isAdmin()?"ADMIN":"VISUALIZAÇÃO"}
@@ -40,7 +41,7 @@ function renderStockAlert(allStock){
  }
 }
 function renderTop(){
- const allStock=stock(), cap=Number(state.settings?.capacity||0), occ=cap?allStock/cap*100:0, mm=monthMovements(), avg=monthlyAverage(mm);
+ const allStock=stock(), cap=Number(state.settings?.capacity||0), occ=cap?allStock/cap*100:0, mm=monthMovements(), avg=monthlyAverage(mm), histAvg=historicalAverage();
  renderStockAlert(allStock);
  const nextDelivery=state.settings?.next_delivery_date||"";
  $("nextDeliveryDate").textContent=nextDelivery?new Date(`${nextDelivery}T00:00:00`).toLocaleDateString("pt-BR"):"Sem data de proxima entrega";
@@ -49,10 +50,10 @@ function renderTop(){
    deliveryBtn.disabled=!nextDelivery||!canEdit();
    deliveryBtn.title=nextDelivery?"Marcar a entrega de cimento como realizada":"Não há uma data de entrega cadastrada";
  }
- const autonomy=avg>0?Math.max(0,allStock/avg):null;
+ const autonomy=histAvg>0?Math.max(0,allStock/histAvg):null;
  $("autonomyDays").textContent=autonomy===null?"—":autonomy.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1});
  $("autonomyStock").textContent=fmtKg(allStock);
- $("autonomyAverage").textContent=avg>0?`${fmtNum(avg)} kg/dia`:"—";
+ $("autonomyAverage").textContent=histAvg>0?`${fmtNum(histAvg)} kg/dia`:"—";
  const autonomyBar=autonomy===null?0:Math.min(autonomy/60*100,100);
  $("autonomyBar").style.width=`${autonomyBar}%`;
  $("autonomyMessage").textContent=autonomy===null?"Ainda não há consumo suficiente para estimar a autonomia":autonomy<7?"Estoque com autonomia inferior a 7 dias":autonomy<15?"Estoque com autonomia inferior a 15 dias":"Estoque com autonomia estimada acima de 15 dias";
@@ -61,7 +62,7 @@ function renderTop(){
  const cons=mm.filter(m=>m.type==="consumo").reduce((s,m)=>s+Number(m.quantity||0),0);
  const days=dailyConsumption(mm).size;
  $("stockValue").textContent=fmtKg(allStock);$("capacityValue").textContent=fmtKg(cap);$("occupancyValue").textContent=`${fmtNum(occ)}% ocupado`;
- $("monthlyAverageValue").textContent=`${fmtNum(avg)} kg/dia`;$("movementCount").textContent=mm.length;
+ $("monthlyAverageValue").textContent=`${fmtNum(histAvg)} kg/dia`;$("movementCount").textContent=mm.length;
  $("monthEntries").textContent=fmtKg(entries);$("monthConsumption").textContent=fmtKg(cons);$("consumptionDays").textContent=days;$("monthAverage").textContent=`${fmtNum(avg)} kg/dia`;
  $("siloTitle").textContent=state.settings?.name||"Controle de Silo";$("welcomeTitle").textContent=state.settings?.name||"Painel de controle";
  $("periodLabel").textContent=monthLabel(state.month);$("stockPercent").textContent=`${fmtNum(occ)}%`;
