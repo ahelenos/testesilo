@@ -5,20 +5,43 @@ if (!window.supabase || typeof window.supabase.createClient !== "function") {
   throw new Error("Biblioteca Supabase não foi carregada.");
 }
 
-const AUTH_STORAGE_KEY = "controle-silo-v2.7.8-auth";
+const AUTH_STORAGE_KEY = "controle-silo-v2.7.9-auth";
+
+// Armazenamento resiliente: usa localStorage normalmente, mas cai para
+// sessionStorage/memoria se o armazenamento persistente estiver bloqueado.
+const memoryStorage = (() => {
+  const data = Object.create(null);
+  return {
+    getItem(key){ return Object.prototype.hasOwnProperty.call(data,key) ? data[key] : null; },
+    setItem(key,value){ data[key]=String(value); },
+    removeItem(key){ delete data[key]; }
+  };
+})();
+
+function storageWorks(storage){
+  try{
+    const key = "__controle_silo_storage_test__";
+    storage.setItem(key,"1");
+    const ok = storage.getItem(key)==="1";
+    storage.removeItem(key);
+    return ok;
+  }catch(_){ return false; }
+}
+
+const authStorage = storageWorks(window.localStorage)
+  ? window.localStorage
+  : (storageWorks(window.sessionStorage) ? window.sessionStorage : memoryStorage);
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storageKey: AUTH_STORAGE_KEY,
-    storage: window.localStorage,
+    storage: authStorage,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true
   }
 });
 
-window.SiloSupabase = {
-  client: supabaseClient,
   async getUser(){
     const {data,error}=await supabaseClient.auth.getUser();
     if(error){
@@ -37,36 +60,17 @@ window.SiloSupabase = {
     const result=await supabaseClient.auth.signInWithPassword({email,password});
     if(result?.error || !result?.data?.session) return result;
 
-    const session=result.data.session;
-    const {data:sessionData,error:sessionError}=await supabaseClient.auth.setSession({
-      access_token:session.access_token,
-      refresh_token:session.refresh_token
-    });
-    if(sessionError) return {data:sessionData,error:sessionError};
-
-    // Confirma que a sessão ficou instalada no armazenamento do cliente.
-    const storedSession=await this.getSession();
-    if(!storedSession){
-      return {
-        data:sessionData,
-        error:new Error("A sessão foi autenticada, mas não pôde ser armazenada no navegador.")
-      };
-    }
-
-    return {
-      data:{
-        user:sessionData?.session?.user || result.data.user,
-        session:storedSession
-      },
-      error:null
-    };
+    // signInWithPassword já instala a sessão no cliente. Não chamamos
+    // setSession novamente e não tratamos uma leitura imediata do storage
+    // como prova de falha, pois alguns navegadores podem bloquear o storage.
+    return result;
   },
   async signOut(){
     try{
       return await supabaseClient.auth.signOut();
     }finally{
       // Remove também a sessão persistida pelo cliente atual.
-      try{ window.localStorage.removeItem(AUTH_STORAGE_KEY); }catch(_){}
+      try{ window.localStorage.removeItem(AUTH_STORAGE_KEY); }catch(_){}\n      try{ window.sessionStorage.removeItem(AUTH_STORAGE_KEY); }catch(_){}
     }
   },
   async getProfile(user){
