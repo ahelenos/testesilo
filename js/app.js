@@ -1,4 +1,4 @@
-const APP_VERSION = "2.7.4";
+const APP_VERSION = "2.7.5";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -140,7 +140,7 @@ function renderDeliveryHistory(){
  body.innerHTML=rows.map((d,i)=>{
    const raw=String(d.delivered_at||"").slice(0,10);
    const date=raw?new Date(`${raw}T00:00:00`).toLocaleDateString("pt-BR"):"—";
-   return `<div class="delivery-history-row"><span class="delivery-history-index">${i+1}</span><span>Entrega de cimento</span><strong>${date}</strong>${canEdit()?`<button class="btn-delete-delivery" data-delivery-id="${d.id}" title="Apagar registro">Apagar</button>`:""}</div>`;
+   return `<div class="delivery-history-row"><span class="delivery-history-index">${i+1}</span><span class="delivery-history-label">Entrega de cimento</span><strong class="delivery-history-date">${date}</strong>${canEdit()?`<button type="button" class="btn-delete-delivery" data-delivery-id="${d.id}" title="Apagar registro">Excluir</button>`:""}</div>`;
  }).join("") || `<div class="delivery-history-empty">Nenhuma entrega registrada.</div>`;
 }
 async function deleteDeliveryRecord(id){
