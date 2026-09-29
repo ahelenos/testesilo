@@ -1,4 +1,4 @@
-const APP_VERSION = "2.7.0";
+const APP_VERSION = "2.7.1";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -66,6 +66,42 @@ function renderTop(){
  const pa=monthlyAverage(prev), diff=percent(avg,pa);
  $("trendValue").textContent=diff===null?"—":`${diff>=0?"↑":"↓"} ${Math.abs(diff).toLocaleString("pt-BR",{maximumFractionDigits:1})}%`;
  $("trendText").textContent=diff===null?"Sem comparação":`vs. ${monthLabel(previousMonth(state.month))}`;
+}
+function csvCell(value){
+ const text=String(value??"");
+ const safe=/^[=+\-@]/.test(text.trimStart()) ? "'"+text : text;
+ return `"${safe.replaceAll('"','""')}"`;
+}
+function exportMovementsCsv(){
+ const rows=state.movements.slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
+ if(!rows.length){
+   alert("Não há movimentações para exportar.");
+   return;
+ }
+ const header=["Data","Tipo","Quantidade (kg)","Observação"];
+ const lines=[header.map(csvCell).join(";")];
+ rows.forEach(m=>{
+   const d=new Date(m.date);
+   const date=Number.isNaN(d.getTime())?String(m.date||""):d.toLocaleString("pt-BR");
+   const type=m.type==="entrada"?"Entrada":"Consumo";
+   lines.push([
+     date,
+     type,
+     Number(m.quantity||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}),
+     m.observation||""
+   ].map(csvCell).join(";"));
+ });
+ const csv="\uFEFF"+lines.join("\r\n");
+ const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement("a");
+ const stamp=new Date().toISOString().slice(0,10);
+ a.href=url;
+ a.download=`controle-silo-movimentacoes-${stamp}.csv`;
+ document.body.appendChild(a);
+ a.click();
+ a.remove();
+ URL.revokeObjectURL(url);
 }
 function renderHistory(){
  const mm=monthMovements().slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -158,6 +194,7 @@ $("logoutBtn").addEventListener("click",async()=>{
   }
 });
 $("monthPicker").addEventListener("change",e=>{state.month=e.target.value;render()});
+$("exportCsvBtn").addEventListener("click",exportMovementsCsv);
 $("prevMonth").addEventListener("click",()=>{state.month=previousMonth(state.month);render()});
 $("nextMonth").addEventListener("click",()=>{const [y,m]=state.month.split("-").map(Number);const d=new Date(y,m,1);state.month=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;render()});
 $("movementForm").addEventListener("submit",async e=>{e.preventDefault();if(!canEdit())return;try{const m={type:$("movementType").value,quantity:Number($("movementQuantity").value),date:`${$("movementDate").value}T${$("movementTime").value}:00`,observation:$("movementObservation").value.trim()},id=$("movementId").value;if(!m.quantity||m.quantity<=0)throw Error("Informe uma quantidade válida.");id?await SiloSupabase.updateMovement(id,m):await SiloSupabase.insertMovement(m);resetForm();await refresh()}catch(x){$("movementError").textContent=x.message||"Erro ao salvar."}});
