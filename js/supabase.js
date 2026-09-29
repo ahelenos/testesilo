@@ -42,6 +42,8 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
   }
 });
 
+window.SiloSupabase = {
+  client: supabaseClient,
   async getUser(){
     const {data,error}=await supabaseClient.auth.getUser();
     if(error){
@@ -70,7 +72,8 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
       return await supabaseClient.auth.signOut();
     }finally{
       // Remove também a sessão persistida pelo cliente atual.
-      try{ window.localStorage.removeItem(AUTH_STORAGE_KEY); }catch(_){}\n      try{ window.sessionStorage.removeItem(AUTH_STORAGE_KEY); }catch(_){}
+      try{ window.localStorage.removeItem(AUTH_STORAGE_KEY); }catch(_){}
+      try{ window.sessionStorage.removeItem(AUTH_STORAGE_KEY); }catch(_){}
     }
   },
   async getProfile(user){
