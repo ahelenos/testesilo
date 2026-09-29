@@ -1,4 +1,4 @@
-const APP_VERSION = "2.7.7";
+const APP_VERSION = "2.7.8";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -164,13 +164,21 @@ async function refresh(){state.settings=await SiloSupabase.getSettings();state.m
 const DEFAULT_VIEWER_EMAIL="viewer@teste.com";
 const DEFAULT_VIEWER_PASSWORD="123456";
 const AUTO_LOGIN_BLOCKED_KEY="controleSiloManualLogout";
+function translateAuthError(message){
+  const m=String(message||"");
+  const l=m.toLowerCase();
+  if(l.includes("invalid login credentials")) return "E-mail ou senha inválidos.";
+  if(l.includes("email not confirmed")) return "O e-mail do usuário ainda não foi confirmado.";
+  if(l.includes("auth session missing")) return "A sessão expirou. Faça login novamente.";
+  if(l.includes("network")) return "Não foi possível conectar ao servidor.";
+  return m;
+}
 
 async function boot(){
   try{
     state.user=await SiloSupabase.getUser();
 
     // Depois de clicar em "Sair", não fazemos o login automático novamente.
-    // Isso permite que o usuário escolha outra conta, como o Admin.
     const manualLogout=sessionStorage.getItem(AUTO_LOGIN_BLOCKED_KEY)==="1";
 
     if(!state.user && !manualLogout){
@@ -180,9 +188,10 @@ async function boot(){
       const result=await SiloSupabase.signIn(DEFAULT_VIEWER_EMAIL,DEFAULT_VIEWER_PASSWORD);
       if(result?.error) throw result.error;
 
-      // Use o usuário autenticado retornado pelo Supabase imediatamente.
-      state.user=result?.data?.user||await SiloSupabase.getUser();
-      if(!state.user) throw new Error("O login automático não retornou uma sessão.");
+      // Usa o usuário retornado pelo próprio login. Não depende de uma
+      // segunda leitura imediata da sessão para continuar o boot.
+      state.user=result?.data?.user||null;
+      if(!state.user) throw new Error("O login automático não retornou um usuário.");
     }
 
     if(!state.user){
@@ -193,11 +202,24 @@ async function boot(){
       return;
     }
 
-    // Uma autenticação manual bem-sucedida libera novamente o fluxo normal.
+    // Uma autenticação manual/automática bem-sucedida libera o fluxo normal.
     sessionStorage.removeItem(AUTO_LOGIN_BLOCKED_KEY);
 
-    state.profile=await SiloSupabase.getProfile();
-    if(!state.profile) throw new Error("Perfil do usuário Viewer não encontrado.");
+    // O getProfile recebe o usuário já autenticado, evitando uma segunda
+    // chamada auth.getUser() durante o primeiro carregamento.
+    state.profile=await SiloSupabase.getProfile(state.user);
+    if(!state.profile){
+      // Se a sessão persistida estava velha, tenta uma vez limpar e
+      // refazer o login padrão do Viewer.
+      if(state.user.email===DEFAULT_VIEWER_EMAIL){
+        await SiloSupabase.signOut();
+        const retry=await SiloSupabase.signIn(DEFAULT_VIEWER_EMAIL,DEFAULT_VIEWER_PASSWORD);
+        if(retry?.error) throw retry.error;
+        state.user=retry?.data?.user||null;
+        state.profile=state.user?await SiloSupabase.getProfile(state.user):null;
+      }
+    }
+    if(!state.profile) throw new Error("Perfil do usuário não foi encontrado para a sessão autenticada.");
 
     $("loginScreen").classList.add("hidden");
     $("appScreen").classList.remove("hidden");
@@ -205,11 +227,11 @@ async function boot(){
   }catch(x){
     $("loginScreen").classList.remove("hidden");
     $("appScreen").classList.add("hidden");
-    $("loginError").textContent=x?.message||"Não foi possível iniciar o login automático.";
-    console.error("Login automático do Viewer:",x);
+    $("loginError").textContent=translateAuthError(x?.message||"Não foi possível iniciar a sessão.");
+    console.error("Inicialização do Controle de Silo:",x);
   }
 }
-$("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginError").textContent="";try{await SiloSupabase.signIn($("loginEmail").value.trim(),$("loginPassword").value);await boot()}catch(x){$("loginError").textContent=x.message||"Falha no login."}});
+$("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginError").textContent="";try{await SiloSupabase.signIn($("loginEmail").value.trim(),$("loginPassword").value);await boot()}catch(x){$("loginError").textContent=translateAuthError(x?.message||"Falha no login.")}});
 $("logoutBtn").addEventListener("click",async()=>{
   try{
     await SiloSupabase.signOut();

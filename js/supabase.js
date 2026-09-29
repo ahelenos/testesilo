@@ -5,8 +5,12 @@ if (!window.supabase || typeof window.supabase.createClient !== "function") {
   throw new Error("Biblioteca Supabase não foi carregada.");
 }
 
+const AUTH_STORAGE_KEY = "controle-silo-v2.7.8-auth";
+
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
+    storageKey: AUTH_STORAGE_KEY,
+    storage: window.localStorage,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true
@@ -15,29 +19,63 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
 window.SiloSupabase = {
   client: supabaseClient,
-  async getUser(){ const {data,error}=await supabaseClient.auth.getUser(); if(error){ const msg=String(error.message||"").toLowerCase(); if(msg.includes("auth session missing")) return null; throw error; } return data.user||null; },
+  async getUser(){
+    const {data,error}=await supabaseClient.auth.getUser();
+    if(error){
+      const msg=String(error.message||"").toLowerCase();
+      if(msg.includes("auth session missing")) return null;
+      throw error;
+    }
+    return data.user||null;
+  },
+  async getSession(){
+    const {data,error}=await supabaseClient.auth.getSession();
+    if(error) throw error;
+    return data.session||null;
+  },
   async signIn(email,password){
     const result=await supabaseClient.auth.signInWithPassword({email,password});
     if(result?.error || !result?.data?.session) return result;
 
-    // Garante que a sessão retornada pelo login seja instalada
-    // no cliente antes de qualquer consulta ao perfil.
+    const session=result.data.session;
     const {data:sessionData,error:sessionError}=await supabaseClient.auth.setSession({
-      access_token:result.data.session.access_token,
-      refresh_token:result.data.session.refresh_token
+      access_token:session.access_token,
+      refresh_token:session.refresh_token
     });
     if(sessionError) return {data:sessionData,error:sessionError};
+
+    // Confirma que a sessão ficou instalada no armazenamento do cliente.
+    const storedSession=await this.getSession();
+    if(!storedSession){
+      return {
+        data:sessionData,
+        error:new Error("A sessão foi autenticada, mas não pôde ser armazenada no navegador.")
+      };
+    }
 
     return {
       data:{
         user:sessionData?.session?.user || result.data.user,
-        session:sessionData?.session || result.data.session
+        session:storedSession
       },
       error:null
     };
   },
-  async signOut(){ return await supabaseClient.auth.signOut(); },
-  async getProfile(){ const u=await this.getUser(); if(!u)return null; const {data,error}=await supabaseClient.from("profiles").select("*").eq("id",u.id).maybeSingle(); if(error)throw error; return data; },
+  async signOut(){
+    try{
+      return await supabaseClient.auth.signOut();
+    }finally{
+      // Remove também a sessão persistida pelo cliente atual.
+      try{ window.localStorage.removeItem(AUTH_STORAGE_KEY); }catch(_){}
+    }
+  },
+  async getProfile(user){
+    const u=user||await this.getUser();
+    if(!u)return null;
+    const {data,error}=await supabaseClient.from("profiles").select("*").eq("id",u.id).maybeSingle();
+    if(error)throw error;
+    return data;
+  },
   async getSettings(){ const {data,error}=await supabaseClient.from("silo_settings").select("*").order("created_at",{ascending:true}).limit(1).maybeSingle(); if(error)throw error; return data; },
   async saveSettings(name,capacity,minimumStock,criticalStock,nextDeliveryDate){
     const current=await this.getSettings(), payload={
