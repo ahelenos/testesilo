@@ -1,4 +1,4 @@
-const APP_VERSION = "2.7.3";
+const APP_VERSION = "2.7.4";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -140,8 +140,19 @@ function renderDeliveryHistory(){
  body.innerHTML=rows.map((d,i)=>{
    const raw=String(d.delivered_at||"").slice(0,10);
    const date=raw?new Date(`${raw}T00:00:00`).toLocaleDateString("pt-BR"):"—";
-   return `<div class="delivery-history-row"><span class="delivery-history-index">${i+1}</span><span>Entrega de cimento</span><strong>${date}</strong></div>`;
+   return `<div class="delivery-history-row"><span class="delivery-history-index">${i+1}</span><span>Entrega de cimento</span><strong>${date}</strong>${canEdit()?`<button class="btn-delete-delivery" data-delivery-id="${d.id}" title="Apagar registro">Apagar</button>`:""}</div>`;
  }).join("") || `<div class="delivery-history-empty">Nenhuma entrega registrada.</div>`;
+}
+async function deleteDeliveryRecord(id){
+ if(!canEdit()||!id)return;
+ if(!confirm("Tem certeza que deseja apagar este registro de entrega?"))return;
+ try{
+   await SiloSupabase.deleteCementDelivery(id);
+   await refresh();
+ }catch(x){
+   const el=$("settingsError");
+   if(el)el.textContent=x.message||"Erro ao apagar o registro da entrega.";
+ }
 }
 function render(){renderRole(); $("userRole").textContent=isMobile()?"VISUALIZAÇÃO • CELULAR":(isAdmin()?"ADMIN":"VISUALIZAÇÃO"); renderTop();renderHistory();renderDeliveryHistory();drawConsumptionChart();$("monthPicker").value=state.month;$("siloName").value=state.settings?.name||"";$("siloCapacity").value=state.settings?.capacity||"";
  $("siloMinimum").value=state.settings?.minimum_stock??"";
@@ -216,6 +227,10 @@ $("nextMonth").addEventListener("click",()=>{const [y,m]=state.month.split("-").
 $("movementForm").addEventListener("submit",async e=>{e.preventDefault();if(!canEdit())return;try{const m={type:$("movementType").value,quantity:Number($("movementQuantity").value),date:`${$("movementDate").value}T${$("movementTime").value}:00`,observation:$("movementObservation").value.trim()},id=$("movementId").value;if(!m.quantity||m.quantity<=0)throw Error("Informe uma quantidade válida.");id?await SiloSupabase.updateMovement(id,m):await SiloSupabase.insertMovement(m);resetForm();await refresh()}catch(x){$("movementError").textContent=x.message||"Erro ao salvar."}});
 $("cancelEdit").addEventListener("click",resetForm);
 if(isMobile())return; $("historyBody").addEventListener("click",async e=>{const edit=e.target.closest("[data-edit]"),del=e.target.closest("[data-delete]");if(edit){const m=state.movements.find(x=>String(x.id)===edit.dataset.edit);if(!m)return;const d=new Date(m.date);$("movementId").value=m.id;$("movementType").value=m.type;$("movementQuantity").value=m.quantity;$("movementDate").value=String(m.date).slice(0,10);$("movementTime").value=d.toTimeString().slice(0,5);$("movementObservation").value=m.observation||"";$("cancelEdit").classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"})}if(del&&confirm("Excluir esta movimentação?")){try{await SiloSupabase.deleteMovement(del.dataset.delete);await refresh()}catch(x){alert(x.message)}}});
+document.addEventListener("click",e=>{
+ const btn=e.target.closest(".btn-delete-delivery");
+ if(btn) deleteDeliveryRecord(btn.dataset.deliveryId);
+});
 $("cementDeliveredBtn").addEventListener("click",async()=>{
  if(!canEdit()||!state.settings?.next_delivery_date)return;
  if(!confirm("Confirmar que o cimento foi entregue? A entrega será registrada no histórico e a data prevista atual será apagada."))return;

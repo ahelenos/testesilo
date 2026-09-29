@@ -43,6 +43,10 @@ window.SiloSupabase = {
     if(error)throw error;
     return data;
   },
+  async deleteCementDelivery(id){
+    const {error}=await supabaseClient.from("cement_deliveries").delete().eq("id",id);
+    if(error)throw error;
+  },
   async getMovements(){const {data,error}=await supabaseClient.from("movements").select("*").order("date",{ascending:true});if(error)throw error;return data||[];},
   async insertMovement(m){const u=await this.getUser();if(!u)throw new Error("Usuário não autenticado.");const payload={type:m.type,quantity:Number(m.quantity),date:m.date,observation:m.observation||"",user_id:u.id};const {data,error}=await supabaseClient.from("movements").insert(payload).select().single();if(error)throw error;return data;},
   async updateMovement(id,m){const payload={type:m.type,quantity:Number(m.quantity),date:m.date,observation:m.observation||""};const {data,error}=await supabaseClient.from("movements").update(payload).eq("id",id).select().single();if(error)throw error;return data;},
