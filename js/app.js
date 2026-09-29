@@ -1,4 +1,4 @@
-const APP_VERSION = "2.8.2";
+const APP_VERSION = "2.8.3";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -16,6 +16,13 @@ const stock=()=>state.movements.reduce((s,m)=>s+(m.type==="entrada"?Number(m.qua
 function dailyConsumption(movs){const map=new Map();movs.filter(m=>m.type==="consumo").forEach(m=>{const d=String(m.date).slice(0,10);map.set(d,(map.get(d)||0)+Number(m.quantity||0));});return map}
 function monthlyAverage(movs){const vals=[...dailyConsumption(movs).values()];return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0}
 function historicalAverage(){return monthlyAverage(state.movements)}
+function recentTenDayAverage(movs){
+ const days=[...dailyConsumption(movs).entries()]
+   .sort((a,b)=>a[0].localeCompare(b[0]))
+   .slice(-10)
+   .map(([,value])=>value);
+ return days.length?days.reduce((a,b)=>a+b,0)/days.length:0;
+}
 function previousMonth(key){const [y,m]=key.split("-").map(Number);const d=new Date(y,m-2,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function percent(a,b){return b?((a-b)/b)*100:null}
 function renderRole(){document.querySelectorAll(".admin-only").forEach(e=>e.classList.toggle("hidden",!canEdit()));$("userRole").textContent=isAdmin()?"ADMIN":"VISUALIZAÇÃO"}
@@ -41,7 +48,7 @@ function renderStockAlert(allStock){
  }
 }
 function renderTop(){
- const allStock=stock(), cap=Number(state.settings?.capacity||0), occ=cap?allStock/cap*100:0, mm=monthMovements(), avg=monthlyAverage(mm), histAvg=historicalAverage();
+ const allStock=stock(), cap=Number(state.settings?.capacity||0), occ=cap?allStock/cap*100:0, mm=monthMovements(), avg=monthlyAverage(mm), histAvg=historicalAverage(), recentAvg=recentTenDayAverage(state.movements);
  renderStockAlert(allStock);
  const nextDelivery=state.settings?.next_delivery_date||"";
  $("nextDeliveryDate").textContent=nextDelivery?new Date(`${nextDelivery}T00:00:00`).toLocaleDateString("pt-BR"):"Sem data de proxima entrega";
@@ -50,10 +57,10 @@ function renderTop(){
    deliveryBtn.disabled=!nextDelivery||!canEdit();
    deliveryBtn.title=nextDelivery?"Marcar a entrega de cimento como realizada":"Não há uma data de entrega cadastrada";
  }
- const autonomy=histAvg>0?Math.max(0,allStock/histAvg):null;
+ const autonomy=recentAvg>0?Math.max(0,allStock/recentAvg):null;
  $("autonomyDays").textContent=autonomy===null?"—":autonomy.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1});
  $("autonomyStock").textContent=fmtKg(allStock);
- $("autonomyAverage").textContent=histAvg>0?`${fmtNum(histAvg)} kg/dia`:"—";
+ $("autonomyAverage").textContent=recentAvg>0?`${fmtNum(recentAvg)} kg/dia`:"—";
  const autonomyBar=autonomy===null?0:Math.min(autonomy/60*100,100);
  $("autonomyBar").style.width=`${autonomyBar}%`;
  $("autonomyMessage").textContent=autonomy===null?"Ainda não há consumo suficiente para estimar a autonomia":autonomy<7?"Estoque com autonomia inferior a 7 dias":autonomy<15?"Estoque com autonomia inferior a 15 dias":"Estoque com autonomia estimada acima de 15 dias";
