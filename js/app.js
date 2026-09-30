@@ -113,7 +113,7 @@ function renderTop(){
  const concrete=totalConcrete(mm), ratio=concreteRatio(mm);
  const days=dailyConsumption(mm).size;
  $("stockValue").textContent=fmtKg(allStock);$("capacityValue").textContent=fmtKg(cap);$("occupancyValue").textContent=`${fmtNum(occ)}% ocupado`;
- $("monthlyAverageValue").textContent=`${fmtNum(avg)} kg/dia`;$("movementCount").textContent=mm.length;
+ $("monthlyAverageValue").textContent=`${fmtNum(avg)} kg/dia`;if($("movementCount"))$("movementCount").textContent=mm.length;
  $("maxConsumptionValue").textContent=extremes.max?`${fmtNum(extremes.max[1])} kg`:"—";
  $("maxConsumptionDate").textContent=extremes.max?formatDayBr(extremes.max[0]):"Sem consumo registrado";
  $("minConsumptionValue").textContent=extremes.min?`${fmtNum(extremes.min[1])} kg`:"—";

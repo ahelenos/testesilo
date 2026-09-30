@@ -369,3 +369,9 @@
     flex:1;
   }
 }
+
+
+/* V3.0.4 — Carta de Traços */
+.trace-kpi { position: relative; }
+.trace-kpi .trace-btn { display: inline-flex; align-items: center; justify-content: center; margin-top: 12px; width: fit-content; text-decoration: none; }
+@media (max-width: 700px) { .trace-kpi .trace-btn { width: 100%; } }
