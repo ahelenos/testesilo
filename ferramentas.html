@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1220">
+<link rel="icon" type="image/x-icon" href="./favicon.ico?v=4.1.0">
+<title>Ferramentas — Gestão de Fábrica</title>
+<link rel="stylesheet" href="css/ferramentas.css?v=4.1.0">
+</head>
+<body>
+<header class="app-header">
+  <div class="brand">
+    <img src="assets/vigas-amarelo.png" alt="VIGAS Engenharia em Pré-Moldados">
+    <div><strong>Controle de Ferramentas</strong><span>FERRAMENTAS • <span id="roleLabel">—</span></span></div>
+  </div>
+  <div class="header-actions"><a class="btn ghost" href="index.html">← Gestão de Fábrica</a><button id="logoutBtn" class="btn ghost">Sair</button></div>
+</header>
+
+<main>
+<section class="hero">
+  <div><div class="eyebrow">CONTROLE DE FERRAMENTAS</div><h1>Ferramentas da fábrica</h1><p>Cadastro, assistência técnica e empréstimos para os canteiros.</p></div>
+  <div class="hero-actions admin-only"><button id="newToolBtn" class="btn primary">＋ Nova ferramenta</button></div>
+</section>
+
+<div id="pageError" class="alert error hidden"></div>
+<section class="stats">
+  <article><span>🔧</span><small>Total</small><strong id="statTotal">0</strong></article>
+  <article><span>🟢</span><small>Disponíveis</small><strong id="statAvailable">0</strong></article>
+  <article><span>🛠️</span><small>Em assistência</small><strong id="statRepair">0</strong></article>
+  <article><span>🚚</span><small>Emprestadas</small><strong id="statLoan">0</strong></article>
+</section>
+
+<section class="toolbar">
+  <div class="tabs"><button class="tab active" data-tab="tools">Ferramentas</button><button class="tab" data-tab="repairs">Assistências</button><button class="tab" data-tab="loans">Empréstimos</button></div>
+  <div class="filters"><select id="statusFilter"><option value="all">Todos os status</option><option value="disponivel">Disponíveis</option><option value="em_conserto">Em assistência</option><option value="emprestada">Emprestadas</option><option value="baixada">Baixadas</option></select><input id="search" type="search" placeholder="🔎 Buscar código, tipo, marca, modelo ou apelido"></div>
+</section>
+
+<section id="toolsPanel" class="panel"></section>
+<section id="repairsPanel" class="panel hidden"></section>
+<section id="loansPanel" class="panel hidden"></section>
+</main>
+
+<footer>Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V4.1.0</footer>
+
+<div id="modal" class="modal hidden"><div class="modal-card"><div class="modal-head"><div><span id="modalEyebrow" class="eyebrow">CADASTRO</span><h2 id="modalTitle">Nova ferramenta</h2></div><button id="closeModal" class="icon-btn">×</button></div><div id="modalBody"></div></div></div>
+<div id="assistModal" class="modal hidden" style="z-index:30"><div class="modal-card" style="max-width:560px">
+  <div class="modal-head"><div><span class="eyebrow">ASSISTÊNCIA TÉCNICA</span><h2>Cadastrar assistência</h2></div><button id="closeAssistModal" class="icon-btn" type="button">×</button></div>
+  <form id="assistQuickForm" class="form">
+    <div class="form-grid">
+      <div class="field full"><label>Nome da assistência *</label><input name="nome" required placeholder="Ex.: Oficina Bosch Lajeado"></div>
+      <div class="field"><label>Contato</label><input name="contato" placeholder="Nome do contato"></div>
+      <div class="field"><label>Telefone</label><input name="telefone" placeholder="(51) 99999-9999"></div>
+      <div class="field"><label>E-mail</label><input name="email" type="email"></div>
+      <div class="field full"><label>Observações</label><textarea name="observacoes"></textarea></div>
+    </div>
+    <div class="form-actions"><button type="button" class="btn secondary" id="cancelAssistForm">Cancelar</button><button class="btn primary">Cadastrar assistência</button></div>
+  </form>
+</div></div>
+<div id="typeModal" class="modal hidden" style="z-index:30"><div class="modal-card" style="max-width:520px">
+  <div class="modal-head"><div><span class="eyebrow">CADASTRO</span><h2>Cadastrar tipo de ferramenta</h2></div><button id="closeTypeModal" class="icon-btn" type="button">×</button></div>
+  <form id="typeQuickForm" class="form">
+    <div class="form-grid">
+      <div class="field full"><label>Tipo de ferramenta *</label><input name="nome" required placeholder="Ex.: Parafusadeira"></div>
+      <div class="field full"><label>Observações</label><textarea name="observacoes" placeholder="Opcional"></textarea></div>
+    </div>
+    <div class="form-actions"><button type="button" class="btn secondary" id="cancelTypeForm">Cancelar</button><button class="btn primary">Cadastrar tipo</button></div>
+  </form>
+</div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js?v=4.1.0"></script>
+<script src="js/ferramentas.js?v=4.1.0"></script>
+</body></html>
