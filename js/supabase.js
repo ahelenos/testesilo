@@ -42,6 +42,9 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
   }
 });
 
+// Disponibiliza o cliente autenticado para as páginas que fazem consultas diretas.
+window.supabaseClient = supabaseClient;
+
 const SiloSupabase = {
   async getUser(){
     const {data,error}=await supabaseClient.auth.getUser();
