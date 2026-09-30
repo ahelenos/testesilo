@@ -12,7 +12,7 @@
 <body>
   <header class="app-header">
     <div class="brand">
-      <img class="vigas-header-logo" src="assets/vigas-amarelo.png?v=3.1.5" alt="VIGAS Engenharia em Pré-Moldados">
+      <img class="vigas-header-logo" src="assets/vigas-amarelo.png?v=3.1.7" alt="VIGAS Engenharia em Pré-Moldados">
       <div class="brand-text">
         <strong>Diário de Manutenções SILO/USINA</strong>
         <span id="maintRoleHeader">MANUTENÇÃO</span>
@@ -41,6 +41,7 @@
         </div>
       </div>
       <div id="commitmentsList" class="commitments-list"></div>
+      <div id="undefinedCommitments" class="undefined-commitments hidden"></div>
     </section>
 
     <section class="panel filter-panel">
@@ -97,7 +98,7 @@
       </div>
       <div id="maintenanceList" class="maintenance-list"></div>
     </section>
-  </main>  <footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V3.1.6</footer>
+  </main>  <footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V3.1.7</footer>
 
 
   <div class="modal-backdrop hidden" id="maintenanceModal">
@@ -128,9 +129,15 @@
           <label>Data da solicitação
             <input id="mRequestDate" type="date">
           </label>
-          <label>Data prevista para execução
-            <input id="mPlannedDate" type="date">
-          </label>
+          <div>
+            <label>Data prevista para execução
+              <input id="mPlannedDate" type="date">
+            </label>
+            <label class="check-inline">
+              <input id="plannedDateUndefined" type="checkbox">
+              Ainda não definida
+            </label>
+          </div>
         </div>
 
         <div id="correctiveDate" class="form-grid hidden">
@@ -145,6 +152,33 @@
               <option value="concluida">Concluída</option>
               <option value="cancelada">Cancelada</option>
             </select>
+          </label>
+        </div>
+
+        <div id="executionDateSection" class="subpanel">
+          <div class="subpanel-title"><strong>Previsão de execução</strong><span class="field-hint">Opcional</span></div>
+          <p class="form-help">Se ainda não houver data, deixe como <strong>Ainda não definida</strong>. A manutenção não será considerada atrasada.</p>
+          <label>Data prevista para execução
+            <input id="mPlannedDateCorrective" type="date">
+          </label>
+          <label class="check-inline">
+            <input id="plannedDateUndefinedCorrective" type="checkbox">
+            Ainda não definida
+          </label>
+        </div>
+
+        <div id="pendingReasonSection" class="subpanel hidden">
+          <div class="subpanel-title"><strong>Motivo da pendência</strong><span class="field-hint">Quando uma previsão ainda não existe</span></div>
+          <select id="mPendingReason">
+            <option value="">Selecione o motivo</option>
+            <option value="Aguardando peça">Aguardando peça</option>
+            <option value="Aguardando previsão do fornecedor">Aguardando previsão do fornecedor</option>
+            <option value="Aguardando agenda do terceirizado">Aguardando agenda do terceirizado</option>
+            <option value="Aguardando definição interna">Aguardando definição interna</option>
+            <option value="Outro">Outro</option>
+          </select>
+          <label id="pendingReasonOtherWrap" class="hidden">Detalhe
+            <input id="mPendingReasonOther" placeholder="Informe o motivo">
           </label>
         </div>
 
@@ -184,9 +218,15 @@
             <label>Solicitado ao setor de compras em
               <input id="purchaseRequestDate" type="date">
             </label>
-            <label>Previsão de entrega
-              <input id="purchaseDueDate" type="date">
-            </label>
+            <div>
+              <label>Previsão de entrega
+                <input id="purchaseDueDate" type="date">
+              </label>
+              <label class="check-inline">
+                <input id="purchaseDueUndefined" type="checkbox">
+                Sem previsão do fornecedor
+              </label>
+            </div>
           </div>
           <div class="check-row">
             <label><input type="checkbox" id="partReceived"> Peça recebida</label>
@@ -207,9 +247,15 @@
             <label>Executante / empresa
               <input id="thirdPartyName" placeholder="Nome da empresa ou profissional">
             </label>
-            <label>Serviço agendado para
-              <input id="thirdPartyDate" type="date">
-            </label>
+            <div>
+              <label>Serviço agendado para
+                <input id="thirdPartyDate" type="date">
+              </label>
+              <label class="check-inline">
+                <input id="thirdPartyDateUndefined" type="checkbox">
+                Ainda não definido
+              </label>
+            </div>
             <label class="full">Serviço realizado
               <select id="thirdPartyDone">
                 <option value="nao">Não</option>
@@ -239,7 +285,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase.js?v=3.1.5"></script>
-  <script src="js/manutencao.js?v=3.1.5"></script>
+  <script src="js/supabase.js?v=3.1.7"></script>
+  <script src="js/manutencao.js?v=3.1.7"></script>
 </body>
 </html>

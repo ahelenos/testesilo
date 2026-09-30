@@ -45,13 +45,28 @@ async function load(){
   records=(data||[]).map(normalize);
   render();
 }
+function parseObservationNotes(raw){
+  const text=String(raw||"");
+  const match=text.match(/(?:^|\n)Motivo da pendência:\s*([^\n]+)(?:\n|$)/i);
+  const pendingReason=match?match[1].trim():"";
+  const notes=text.replace(/(?:^|\n)Motivo da pendência:\s*[^\n]+\n?/i,"").trim();
+  return {pendingReason,notes};
+}
+function composeObservationNotes(reason,other,notes){
+  const cleanNotes=String(notes||"").trim();
+  const cleanReason=String(other||reason||"").trim();
+  return cleanReason ? `Motivo da pendência: ${cleanReason}${cleanNotes?`\n${cleanNotes}`:""}` : (cleanNotes||null);
+}
+
 function normalize(r){
   const third=(r.manutencao_terceirizados||[])[0]||{};
   return {
     ...r,id:r.id,type:r.tipo,equipment:r.equipamento,description:r.descricao,
     requestDate:r.data_solicitacao,plannedDate:r.data_prevista,occurrenceDate:r.data_ocorrencia,
     status:r.status,responsible:r.responsavel,labor:r.mao_de_obra,
-    done:r.servico_realizado,notes:r.observacoes,
+    done:r.servico_realizado,
+    notes:parseObservationNotes(r.observacoes).notes,
+    pendingReason:parseObservationNotes(r.observacoes).pendingReason,
     parts:{enabled:r.troca_peca,items:(r.manutencao_pecas||[]),purchaseRequestDate:(r.manutencao_pecas||[])[0]?.solicitado_em||"",purchaseDueDate:(r.manutencao_pecas||[])[0]?.previsao_entrega||"",received:(r.manutencao_pecas||[]).length>0&&(r.manutencao_pecas||[]).every(x=>x.recebido),receivedDate:(r.manutencao_pecas||[]).find(x=>x.data_recebimento)?.data_recebimento||""},
     thirdParty:{enabled:!!third.id,name:third.empresa_responsavel||"",date:third.data_agendada||"",done:!!third.realizado,doneDate:third.data_execucao||""},
     history:(r.manutencao_historico||[]).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))
@@ -71,20 +86,36 @@ function recordStartDate(r){
 function commitmentItems(r){
   const out=[];
   if(r.parts?.purchaseDueDate&&!r.parts.received){
-    out.push({kind:"🧩",label:r.parts.items?.map(x=>x.nome).filter(Boolean).join(", ")||"Peça",date:r.parts.purchaseDueDate,extra:"Previsão de entrega"});
+    out.push({kind:"🧩",label:r.parts.items?.map(x=>x.nome||x.name).filter(Boolean).join(", ")||"Peça",date:r.parts.purchaseDueDate,extra:"Previsão de entrega",recordId:r.id});
   }
   if(r.thirdParty?.enabled&&r.thirdParty.date&&!r.thirdParty.done){
-    out.push({kind:"👷",label:r.thirdParty.name||"Terceirizado",date:r.thirdParty.date,extra:"Execução prevista"});
+    out.push({kind:"👷",label:r.thirdParty.name||"Terceirizado",date:r.thirdParty.date,extra:"Execução prevista",recordId:r.id});
   }
   if(r.plannedDate&&!["concluida","cancelada"].includes(r.status)){
-    out.push({kind:"🔧",label:r.description,date:r.plannedDate,extra:"Execução prevista"});
+    out.push({kind:"🔧",label:r.description,date:r.plannedDate,extra:"Execução prevista",recordId:r.id});
   }
+  return out;
+}
+
+function undefinedCommitments(){
+  const out=[];
+  records.filter(r=>!isFinished(r)).forEach(r=>{
+    if(r.parts?.enabled&&!r.parts.received&&!r.parts.purchaseDueDate){
+      out.push({kind:"🧩",label:r.parts.items?.map(x=>x.nome||x.name).filter(Boolean).join(", ")||"Peça",reason:r.pendingReason||"Sem previsão do fornecedor",extra:"Entrega ainda sem previsão",recordId:r.id});
+    }
+    if(r.thirdParty?.enabled&&!r.thirdParty.done&&!r.thirdParty.date){
+      out.push({kind:"👷",label:r.thirdParty.name||"Terceirizado",reason:r.pendingReason||"Agenda ainda não definida",extra:"Execução ainda sem data",recordId:r.id});
+    }
+    if(!r.plannedDate){
+      out.push({kind:"🔧",label:r.description,reason:r.pendingReason||"Data ainda não definida",extra:"Execução sem previsão",recordId:r.id});
+    }
+  });
   return out;
 }
 
 function nextCommitments(){
   const out=[];
-  records.forEach(r=>commitmentItems(r).forEach(x=>out.push({...x,recordId:r.id})));
+  records.forEach(r=>commitmentItems(r).forEach(x=>out.push({...x})));
   return out.sort((a,b)=>a.date.localeCompare(b.date));
 }
 
@@ -145,8 +176,8 @@ async function render(){
   const role=await getRole();
   const now=todayISO();
   const open=records.filter(r=>!isFinished(r)).length;
-  const parts=records.filter(r=>r.parts?.purchaseDueDate&&!r.parts.received).length;
-  const sched=records.filter(r=>r.thirdParty?.enabled&&r.thirdParty.date&&!r.thirdParty.done).length;
+  const parts=records.filter(r=>r.parts?.enabled&&!r.parts.received).length;
+  const sched=records.filter(r=>r.thirdParty?.enabled&&!r.thirdParty.done).length;
   const overdue=records.filter(r=>isOverdue(r,now)).length;
 
   $("openCount").textContent=open;
@@ -164,7 +195,14 @@ async function render(){
     const cls=x.date<now?"overdue":x.date===now?"today":"";
     const st=x.date<now?"Atrasado":x.date===now?"Hoje":`Em ${Math.ceil((new Date(`${x.date}T12:00:00`)-new Date(`${now}T12:00:00`))/86400000)} dia(s)`;
     return `<div class="commitment ${cls}"><div class="date">${x.kind} ${fmt(x.date)} · ${st}</div><strong>${esc(x.label)}</strong><div>${esc(x.extra)}</div></div>`;
-  }).join(""):`<div class="empty">Nenhuma pendência encontrada.</div>`;
+  }).join(""):`<div class="empty">Nenhuma pendência com data definida.</div>`;
+
+  const undefinedItems=undefinedCommitments().slice(0,8);
+  const undefinedEl=$("undefinedCommitments");
+  if(undefinedEl){
+    undefinedEl.classList.toggle("hidden",!undefinedItems.length);
+    undefinedEl.innerHTML=undefinedItems.length?`<div class="undefined-title">Pendências sem data definida</div><div class="undefined-list">${undefinedItems.map(x=>`<div class="undefined-item"><span class="undefined-icon">${x.kind}</span><div><strong>${esc(x.label)}</strong><small>${esc(x.extra)} · ${esc(x.reason)}</small></div></div>`).join("")}</div>`:"";
+  }
 
   const filter=$("typeFilter").value;
   const q=$("searchInput").value.trim().toLowerCase();
@@ -214,11 +252,15 @@ function card(r,role){
   const intervention=[r.labor?"Mão de obra":"",r.parts?.enabled?"Troca de peça":""].filter(Boolean).join(" + ")||"Não informado";
   const events=[];
   if(r.type==="preventiva"&&r.requestDate)events.push(`Solicitação em ${fmt(r.requestDate)}`);
-  if(r.type==="preventiva"&&r.plannedDate)events.push(`Execução prevista: ${fmt(r.plannedDate)}`);
   if(r.type==="corretiva"&&r.occurrenceDate)events.push(`Ocorrência em ${fmt(r.occurrenceDate)}`);
   if(r.parts?.purchaseRequestDate)events.push(`Compra solicitada em ${fmt(r.parts.purchaseRequestDate)}`);
   if(r.parts?.purchaseDueDate)events.push(`Peça: ${r.parts.received?`recebida em ${fmt(r.parts.receivedDate)}`:`entrega prevista ${fmt(r.parts.purchaseDueDate)}`}`);
+  else if(r.parts?.enabled&&!r.parts.received)events.push(`Peça: sem previsão do fornecedor`);
   if(r.thirdParty?.enabled&&r.thirdParty.date)events.push(`Terceirizado: ${r.thirdParty.done?`realizado em ${fmt(r.thirdParty.doneDate)}`:`agendado para ${fmt(r.thirdParty.date)}`}`);
+  else if(r.thirdParty?.enabled&&!r.thirdParty.done)events.push(`Terceirizado: agenda ainda não definida`);
+  if(r.plannedDate&&!["concluida","cancelada"].includes(r.status))events.push(`Execução prevista: ${fmt(r.plannedDate)}`);
+  else if(!["concluida","cancelada"].includes(r.status))events.push(`Execução: ainda sem data definida`);
+  if(r.pendingReason&&!["concluida","cancelada"].includes(r.status))events.push(`Pendência: ${r.pendingReason}`);
   if(r.done)events.push(`Execução registrada: ${r.done}`);
   const actions=admin?`<div class="card-actions"><button class="secondary-btn small-btn" data-edit="${esc(r.id)}">✏️ Editar</button><button class="danger-btn small-btn" data-delete="${esc(r.id)}">🗑️ Excluir</button></div>`:`<div class="viewer-note">Somente visualização</div>`;
   return `<article class="maintenance-card"><div class="maintenance-top"><div><span class="badge ${r.type}">${r.type}</span><h3>${esc(r.description)}</h3><div class="status status-${esc(r.status)}">${statusLabel(r.status)}</div></div><div class="date-side"><strong>${fmt(date)}</strong>${actions}</div></div>
@@ -232,29 +274,67 @@ function toggleConditional(){
   const p=$("mType").value==="preventiva";
   $("preventiveDates").classList.toggle("hidden",!p);$("preventiveStatus").classList.toggle("hidden",!p);
   $("correctiveDate").classList.toggle("hidden",p);$("correctiveResponsible").classList.toggle("hidden",p);
+  $("executionDateSection").classList.toggle("hidden",p);
+  syncDateUndefinedUI();
 }
 function addPart(name="",qty=1){
   const row=document.createElement("div");row.className="part-row";
   row.innerHTML=`<input class="part-name" placeholder="Nome da peça" value="${esc(name)}"><input class="part-qty" type="number" min="1" value="${qty}"><button type="button" class="remove-part">×</button>`;
   row.querySelector(".remove-part").onclick=()=>row.remove();$("partsRows").appendChild(row);
 }
+function syncDateUndefinedUI(){
+  const p=$("mType").value==="preventiva";
+  const plannedId=p?"plannedDateUndefined":"plannedDateUndefinedCorrective";
+  const plannedInput=p?"mPlannedDate":"mPlannedDateCorrective";
+  const plannedCheck=$(plannedId), plannedField=$(plannedInput);
+  if(plannedCheck&&plannedField){
+    plannedField.disabled=plannedCheck.checked;
+    if(plannedCheck.checked)plannedField.value="";
+  }
+  const purchaseCheck=$("purchaseDueUndefined"),purchaseInput=$("purchaseDueDate");
+  if(purchaseCheck&&purchaseInput){
+    purchaseInput.disabled=purchaseCheck.checked;
+    if(purchaseCheck.checked)purchaseInput.value="";
+  }
+  const thirdCheck=$("thirdPartyDateUndefined"),thirdInput=$("thirdPartyDate");
+  if(thirdCheck&&thirdInput){
+    thirdInput.disabled=thirdCheck.checked;
+    if(thirdCheck.checked)thirdInput.value="";
+  }
+  const anyUndefined=Boolean(
+    (plannedCheck&&plannedCheck.checked) ||
+    (purchaseCheck&&purchaseCheck.checked&&$("mParts").checked) ||
+    (thirdCheck&&thirdCheck.checked&&$("isThirdParty").checked)
+  );
+  $("pendingReasonSection").classList.toggle("hidden",!anyUndefined);
+  $("pendingReasonOtherWrap").classList.toggle("hidden",$("mPendingReason").value!=="Outro");
+}
 function resetForm(){
   $("maintenanceForm").reset();$("partsRows").innerHTML="";addPart();$("mRequestDate").value=todayISO();$("mOccurrenceDate").value=todayISO();
-  $("mType").value="preventiva";$("mStatusPreventive").value="planejada";$("mStatus").value="aberta";toggleConditional();
+  $("mType").value="preventiva";$("mStatusPreventive").value="planejada";$("mStatus").value="aberta";
+  $("mPlannedDateCorrective").value="";
   $("partsSection").classList.add("hidden");$("thirdPartySection").classList.add("hidden");$("partReceivedDateWrap").classList.add("hidden");$("thirdPartyDoneDateWrap").classList.add("hidden");
+  $("pendingReasonSection").classList.add("hidden");$("pendingReasonOtherWrap").classList.add("hidden");
+  toggleConditional();syncDateUndefinedUI();
 }
 function fillForm(r){
   resetForm();$("mType").value=r.type;$("mEquipment").value=r.equipment||"";$("mDescription").value=r.description||"";
-  $("mRequestDate").value=r.requestDate||todayISO();$("mPlannedDate").value=r.plannedDate||"";$("mOccurrenceDate").value=r.occurrenceDate||todayISO();
+  $("mRequestDate").value=r.requestDate||todayISO();$("mPlannedDate").value=r.type==="preventiva"?(r.plannedDate||""):"";$("mPlannedDateCorrective").value=r.type==="corretiva"?(r.plannedDate||""):"";$("mOccurrenceDate").value=r.occurrenceDate||todayISO();
   $("mStatusPreventive").value=r.status;$("mStatus").value=r.status;$("mResponsible").value=r.type==="preventiva"?r.responsible||"":"";$("mResponsible2").value=r.type==="corretiva"?r.responsible||"":"";
   $("mLabor").checked=!!r.labor;$("mParts").checked=!!r.parts?.enabled;$("partsRows").innerHTML="";
-  (r.parts?.items?.length?r.parts.items:[{}]).forEach(x=>addPart(x.nome||"",x.quantidade||1));
+  (r.parts?.items?.length?r.parts.items:[{}]).forEach(x=>addPart(x.nome||x.name||"",x.quantidade||x.qty||1));
   $("purchaseRequestDate").value=r.parts?.purchaseRequestDate||"";$("purchaseDueDate").value=r.parts?.purchaseDueDate||"";
   $("partReceived").checked=!!r.parts?.received;$("partReceivedDate").value=r.parts?.receivedDate||"";
   $("isThirdParty").checked=!!r.thirdParty?.enabled;$("thirdPartyName").value=r.thirdParty?.name||"";$("thirdPartyDate").value=r.thirdParty?.date||"";
   $("thirdPartyDone").value=r.thirdParty?.done?"sim":"nao";$("thirdPartyDoneDate").value=r.thirdParty?.doneDate||"";$("mDone").value=r.done||"";$("mNotes").value=r.notes||"";
+  $("plannedDateUndefined").checked=r.type==="preventiva"&&!r.plannedDate;$("plannedDateUndefinedCorrective").checked=r.type==="corretiva"&&!r.plannedDate;
+  $("purchaseDueUndefined").checked=!!r.parts?.enabled&&!r.parts?.received&&!r.parts?.purchaseDueDate;
+  $("thirdPartyDateUndefined").checked=!!r.thirdParty?.enabled&&!r.thirdParty?.done&&!r.thirdParty?.date;
+  $("mPendingReason").value=["Aguardando peça","Aguardando previsão do fornecedor","Aguardando agenda do terceirizado","Aguardando definição interna","Outro"].includes(r.pendingReason)?r.pendingReason:"";
+  $("mPendingReasonOther").value=$("mPendingReason").value==="Outro"?"":(r.pendingReason||"");
+  if(r.pendingReason&&!["Aguardando peça","Aguardando previsão do fornecedor","Aguardando agenda do terceirizado","Aguardando definição interna"].includes(r.pendingReason)){$("mPendingReason").value="Outro";$("mPendingReasonOther").value=r.pendingReason;}
   toggleConditional();$("partsSection").classList.toggle("hidden",!$("mParts").checked);$("thirdPartySection").classList.toggle("hidden",!$("isThirdParty").checked);
-  $("partReceivedDateWrap").classList.toggle("hidden",!$("partReceived").checked);$("thirdPartyDoneDateWrap").classList.toggle("hidden",$("thirdPartyDone").value!=="sim");
+  $("partReceivedDateWrap").classList.toggle("hidden",!$("partReceived").checked);$("thirdPartyDoneDateWrap").classList.toggle("hidden",$("thirdPartyDone").value!=="sim");syncDateUndefinedUI();
 }
 async function openNew(){if(!isAdmin(await getRole()))return;editingId=null;resetForm();$("modalTitle").textContent="Nova manutenção";$("saveBtn").textContent="Salvar manutenção";$("maintenanceModal").classList.remove("hidden")}
 async function openEdit(id){if(!isAdmin(await getRole()))return;const r=records.find(x=>x.id===id);if(!r)return;editingId=id;fillForm(r);$("modalTitle").textContent="Editar manutenção";$("saveBtn").textContent="Salvar alterações";$("maintenanceModal").classList.remove("hidden")}
@@ -262,10 +342,15 @@ function closeModal(){$("maintenanceModal").classList.add("hidden");editingId=nu
 
 $("newMaintenanceBtn").onclick=openNew;
 $("closeModal").onclick=$("cancelModal").onclick=closeModal;
-$("mType").onchange=toggleConditional;
-$("mParts").onchange=()=> $("partsSection").classList.toggle("hidden",!$("mParts").checked);
-$("isThirdParty").onchange=()=> $("thirdPartySection").classList.toggle("hidden",!$("isThirdParty").checked);
-$("partReceived").onchange=()=> $("partReceivedDateWrap").classList.toggle("hidden",!$("partReceived").checked);
+$("mType").onchange=()=>{toggleConditional();syncDateUndefinedUI();};
+$("mParts").onchange=()=>{ $("partsSection").classList.toggle("hidden",!$("mParts").checked); syncDateUndefinedUI(); };
+$("isThirdParty").onchange=()=>{ $("thirdPartySection").classList.toggle("hidden",!$("isThirdParty").checked); syncDateUndefinedUI(); };
+$("partReceived").onchange=()=>{ $("partReceivedDateWrap").classList.toggle("hidden",!$("partReceived").checked); syncDateUndefinedUI(); };
+$("plannedDateUndefined").onchange=syncDateUndefinedUI;
+$("plannedDateUndefinedCorrective").onchange=syncDateUndefinedUI;
+$("purchaseDueUndefined").onchange=syncDateUndefinedUI;
+$("thirdPartyDateUndefined").onchange=syncDateUndefinedUI;
+$("mPendingReason").onchange=syncDateUndefinedUI;
 $("thirdPartyDone").onchange=()=> $("thirdPartyDoneDateWrap").classList.toggle("hidden",$("thirdPartyDone").value!=="sim");
 $("addPartBtn").onclick=()=>addPart();
 
@@ -310,7 +395,20 @@ $("maintenanceForm").onsubmit=async e=>{
   e.preventDefault();if(!isAdmin(await getRole()))return;
   const sb=getSupabase();if(!sb){alert("Supabase não está disponível.");return}
   const p=$("mType").value==="preventiva", items=[...document.querySelectorAll(".part-row")].map(r=>({name:r.querySelector(".part-name").value.trim(),qty:Number(r.querySelector(".part-qty").value||1)})).filter(x=>x.name);
-  const payload={tipo:$("mType").value,equipamento:$("mEquipment").value.trim(),descricao:$("mDescription").value.trim(),data_solicitacao:p?$("mRequestDate").value||null:null,data_prevista:p?$("mPlannedDate").value||null:null,data_ocorrencia:p?null:$("mOccurrenceDate").value||null,status:p?$("mStatusPreventive").value:$("mStatus").value,responsavel:(p?$("mResponsible").value:$("mResponsible2").value).trim()||null,mao_de_obra:$("mLabor").checked,troca_peca:$("mParts").checked,servico_realizado:$("mDone").value.trim()||null,observacoes:$("mNotes").value.trim()||null};
+  const pendingReason=$("mPendingReason").value==="Outro"?$("mPendingReasonOther").value.trim():$("mPendingReason").value;
+  const plannedDate=p?($("plannedDateUndefined").checked?null:$("mPlannedDate").value||null):($("plannedDateUndefinedCorrective").checked?null:$("mPlannedDateCorrective").value||null);
+  const anyUndefined=Boolean(
+    (p?$("plannedDateUndefined").checked:$("plannedDateUndefinedCorrective").checked) ||
+    ($("mParts").checked&&$("purchaseDueUndefined").checked) ||
+    ($("isThirdParty").checked&&$("thirdPartyDateUndefined").checked)
+  );
+  const currentStatus=p?$("mStatusPreventive").value:$("mStatus").value;
+  if(anyUndefined&&!["concluida","cancelada"].includes(currentStatus)&&!pendingReason){
+    alert("Informe o motivo da pendência quando uma previsão ainda não estiver definida.");
+    return;
+  }
+  const observations=composeObservationNotes(pendingReason,"",$("mNotes").value);
+  const payload={tipo:$("mType").value,equipamento:$("mEquipment").value.trim(),descricao:$("mDescription").value.trim(),data_solicitacao:p?$("mRequestDate").value||null:null,data_prevista:plannedDate,data_ocorrencia:p?null:$("mOccurrenceDate").value||null,status:p?$("mStatusPreventive").value:$("mStatus").value,responsavel:(p?$("mResponsible").value:$("mResponsible2").value).trim()||null,mao_de_obra:$("mLabor").checked,troca_peca:$("mParts").checked,servico_realizado:$("mDone").value.trim()||null,observacoes:observations};
   let id=editingId;
   if(id){
     const old=records.find(x=>x.id===id);
