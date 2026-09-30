@@ -1,7 +1,7 @@
 
 let records = [];
-let viewDate = new Date(); viewDate.setDate(1);
 let editingId = null;
+let statusFilter = "all";
 
 const $ = id => document.getElementById(id);
 const todayISO = () => {
@@ -60,29 +60,103 @@ function normalize(r){
 function showError(msg){
   const el=$("pageError");if(el){el.textContent=msg;el.classList.remove("hidden")}
 }
-function dateForRecord(r){return r.type==="preventiva"?(r.requestDate||r.plannedDate):r.occurrenceDate}
+function dateForRecord(r){
+  return r.type==="preventiva"?(r.requestDate||r.plannedDate):r.occurrenceDate;
+}
+
+function recordStartDate(r){
+  return dateForRecord(r) || r.requestDate || r.occurrenceDate || r.created_at?.slice(0,10) || "";
+}
+
+function commitmentItems(r){
+  const out=[];
+  if(r.parts?.purchaseDueDate&&!r.parts.received){
+    out.push({kind:"🧩",label:r.parts.items?.map(x=>x.nome).filter(Boolean).join(", ")||"Peça",date:r.parts.purchaseDueDate,extra:"Previsão de entrega"});
+  }
+  if(r.thirdParty?.enabled&&r.thirdParty.date&&!r.thirdParty.done){
+    out.push({kind:"👷",label:r.thirdParty.name||"Terceirizado",date:r.thirdParty.date,extra:"Execução prevista"});
+  }
+  if(r.plannedDate&&!["concluida","cancelada"].includes(r.status)){
+    out.push({kind:"🔧",label:r.description,date:r.plannedDate,extra:"Execução prevista"});
+  }
+  return out;
+}
+
 function nextCommitments(){
   const out=[];
-  records.forEach(r=>{
-    if(r.parts?.purchaseDueDate&&!r.parts.received)out.push({kind:"🧩",label:r.parts.items?.map(x=>x.nome).filter(Boolean).join(", ")||"Peça",date:r.parts.purchaseDueDate,extra:"Previsão de entrega"});
-    if(r.thirdParty?.enabled&&r.thirdParty.date&&!r.thirdParty.done)out.push({kind:"👷",label:r.thirdParty.name||"Terceirizado",date:r.thirdParty.date,extra:"Execução prevista"});
-    if(r.plannedDate&&!["concluida","cancelada"].includes(r.status))out.push({kind:"🔧",label:r.description,date:r.plannedDate,extra:"Execução prevista"});
-  });
+  records.forEach(r=>commitmentItems(r).forEach(x=>out.push({...x,recordId:r.id})));
   return out.sort((a,b)=>a.date.localeCompare(b.date));
 }
+
+function isOverdue(r, now=todayISO()){
+  if(["concluida","cancelada"].includes(r.status)) return false;
+  return commitmentItems(r).some(x=>x.date && x.date<now);
+}
+
+function isFinished(r){
+  return ["concluida","cancelada"].includes(r.status);
+}
+
+function activeInPeriod(r, start, end){
+  if(!start && !end) return true;
+  const s = recordStartDate(r);
+  if(!s) return true;
+
+  const periodStart = start || "0000-01-01";
+  const periodEnd = end || "9999-12-31";
+
+  if(s > periodEnd) return false;
+
+  // Para demandas em aberto, consideramos que continuam ativas até hoje.
+  if(!isFinished(r)){
+    return todayISO() >= periodStart;
+  }
+
+  // Para finalizadas/canceladas, usamos updated_at como último marco disponível.
+  // O banco atual não possui data de conclusão/cancelamento separada.
+  const last = r.updated_at ? String(r.updated_at).slice(0,10) : s;
+  return last >= periodStart;
+}
+
+function updateFilterCounts(now=todayISO()){
+  const counts = {
+    all: records.length,
+    open: records.filter(r=>!isFinished(r)).length,
+    overdue: records.filter(r=>isOverdue(r,now)).length,
+    em_execucao: records.filter(r=>r.status==="em_execucao").length,
+    finished: records.filter(r=>isFinished(r)).length
+  };
+  Object.entries(counts).forEach(([k,v])=>{
+    const el=$(`filterCount${k==="all"?"All":k==="open"?"Open":k==="overdue"?"Overdue":k==="em_execucao"?"Running":"Finished"}`);
+    if(el)el.textContent=v;
+  });
+}
+
+function matchesStatusFilter(r, now=todayISO()){
+  if(statusFilter==="all") return true;
+  if(statusFilter==="open") return !isFinished(r);
+  if(statusFilter==="overdue") return isOverdue(r,now);
+  if(statusFilter==="em_execucao") return r.status==="em_execucao";
+  if(statusFilter==="finished") return isFinished(r);
+  return true;
+}
+
 async function render(){
   const role=await getRole();
-  const now=todayISO(),open=records.filter(r=>!["concluida","cancelada"].includes(r.status)).length;
+  const now=todayISO();
+  const open=records.filter(r=>!isFinished(r)).length;
   const parts=records.filter(r=>r.parts?.purchaseDueDate&&!r.parts.received).length;
   const sched=records.filter(r=>r.thirdParty?.enabled&&r.thirdParty.date&&!r.thirdParty.done).length;
-  const overdue=nextCommitments().filter(x=>x.date<now).length;
+  const overdue=records.filter(r=>isOverdue(r,now)).length;
+
   $("openCount").textContent=open;
   $("partsCount").textContent=parts;
   $("scheduledCount").textContent=sched;
   $("overdueCount").textContent=overdue;
-  $("monthLabel").textContent=monthName(viewDate);
   $("roleIndicator").textContent=isAdmin(role)?"ADMIN":"VISUALIZAÇÃO";
   $("newMaintenanceBtn").classList.toggle("hidden",!isAdmin(role));
+
+  updateFilterCounts(now);
 
   const cs=nextCommitments().slice(0,8);
   $("commitmentsList").innerHTML=cs.length?cs.map(x=>{
@@ -91,19 +165,24 @@ async function render(){
     return `<div class="commitment ${cls}"><div class="date">${x.kind} ${fmt(x.date)} · ${st}</div><strong>${esc(x.label)}</strong><div>${esc(x.extra)}</div></div>`;
   }).join(""):`<div class="empty">Nenhuma pendência encontrada.</div>`;
 
-  const filter=$("typeFilter").value,q=$("searchInput").value.trim().toLowerCase(),y=viewDate.getFullYear(),m=viewDate.getMonth();
+  const filter=$("typeFilter").value;
+  const q=$("searchInput").value.trim().toLowerCase();
+  const periodStart=$("periodStart")?.value||"";
+  const periodEnd=$("periodEnd")?.value||"";
+  const usePeriod=Boolean(periodStart||periodEnd);
   const list=records.filter(r=>{
-    const d=dateForRecord(r);if(!d)return false;
-    const dt=new Date(`${d}T12:00:00`);
-    if(dt.getFullYear()!==y||dt.getMonth()!==m)return false;
-    if(["preventiva","corretiva"].includes(filter)&&r.type!==filter)return false;
-    if(filter==="open"&&["concluida","cancelada"].includes(r.status))return false;
-    if(filter==="completed"&&r.status!=="concluida")return false;
+    if(!matchesStatusFilter(r,now)) return false;
+    if(["preventiva","corretiva"].includes(filter)&&r.type!==filter) return false;
+    if(usePeriod && !activeInPeriod(r,periodStart,periodEnd)) return false;
     return !q||JSON.stringify(r).toLowerCase().includes(q);
-  }).sort((a,b)=>dateForRecord(b).localeCompare(dateForRecord(a)));
+  }).sort((a,b)=>{
+    const da=dateForRecord(a)||"";
+    const db=dateForRecord(b)||"";
+    return db.localeCompare(da);
+  });
 
-  const openList=list.filter(r=>!["concluida","cancelada"].includes(r.status));
-  const finalList=list.filter(r=>["concluida","cancelada"].includes(r.status));
+  const openList=list.filter(r=>!isFinished(r));
+  const finalList=list.filter(r=>isFinished(r));
 
   const renderColumn=(title,subtitle,items,kind)=>{
     const count=items.length;
@@ -115,15 +194,20 @@ async function render(){
         </div>
       </div>
       <div class="column-list">
-        ${items.length?items.map(r=>card(r,role)).join(""):`<div class="empty column-empty">${kind==="open"?"Nenhuma manutenção em aberto neste mês.":"Nenhuma manutenção finalizada neste mês."}</div>`}
+        ${items.length?items.map(r=>card(r,role)).join(""):`<div class="empty column-empty">${kind==="open"?"Nenhuma manutenção em aberto com estes filtros.":"Nenhuma manutenção finalizada com estes filtros."}</div>`}
       </div>
     </section>`;
   };
 
   $("maintenanceList").innerHTML=
-    renderColumn("Em aberto","Planejadas, agendadas ou em execução.",openList,"open")+
-    renderColumn("Finalizadas","Concluídas ou canceladas.",finalList,"finished");
+    renderColumn("Em aberto","Tudo que ainda exige acompanhamento, independentemente do mês.",openList,"open")+
+    renderColumn("Finalizadas","Concluídas ou canceladas, preservando o histórico.",finalList,"finished");
+
+  document.querySelectorAll(".filter-chip").forEach(btn=>{
+    btn.classList.toggle("active",btn.dataset.statusFilter===statusFilter);
+  });
 }
+
 function card(r,role){
   const admin=isAdmin(role),date=dateForRecord(r);
   const intervention=[r.labor?"Mão de obra":"",r.parts?.enabled?"Troca de peça":""].filter(Boolean).join(" + ")||"Não informado";
@@ -175,13 +259,38 @@ async function openNew(){if(!isAdmin(await getRole()))return;editingId=null;rese
 async function openEdit(id){if(!isAdmin(await getRole()))return;const r=records.find(x=>x.id===id);if(!r)return;editingId=id;fillForm(r);$("modalTitle").textContent="Editar manutenção";$("saveBtn").textContent="Salvar alterações";$("maintenanceModal").classList.remove("hidden")}
 function closeModal(){$("maintenanceModal").classList.add("hidden");editingId=null}
 
-$("newMaintenanceBtn").onclick=openNew;$("closeModal").onclick=$("cancelModal").onclick=closeModal;$("mType").onchange=toggleConditional;
+$("newMaintenanceBtn").onclick=openNew;
+$("closeModal").onclick=$("cancelModal").onclick=closeModal;
+$("mType").onchange=toggleConditional;
 $("mParts").onchange=()=> $("partsSection").classList.toggle("hidden",!$("mParts").checked);
 $("isThirdParty").onchange=()=> $("thirdPartySection").classList.toggle("hidden",!$("isThirdParty").checked);
 $("partReceived").onchange=()=> $("partReceivedDateWrap").classList.toggle("hidden",!$("partReceived").checked);
 $("thirdPartyDone").onchange=()=> $("thirdPartyDoneDateWrap").classList.toggle("hidden",$("thirdPartyDone").value!=="sim");
-$("addPartBtn").onclick=()=>addPart();$("prevMonth").onclick=()=>{viewDate.setMonth(viewDate.getMonth()-1);render()};$("nextMonth").onclick=()=>{viewDate.setMonth(viewDate.getMonth()+1);render()};
-$("typeFilter").onchange=$("searchInput").oninput=render;
+$("addPartBtn").onclick=()=>addPart();
+
+document.querySelectorAll(".filter-chip").forEach(btn=>{
+  btn.onclick=()=>{
+    statusFilter=btn.dataset.statusFilter||"all";
+    render();
+  };
+});
+
+$("typeFilter").onchange=render;
+$("searchInput").oninput=render;
+
+$("advancedToggle").onclick=()=>{
+  $("advancedFilters").classList.toggle("hidden");
+};
+
+$("periodStart").onchange=render;
+$("periodEnd").onchange=render;
+$("periodActiveOnly").onchange=render;
+
+$("clearPeriod").onclick=()=>{
+  $("periodStart").value="";
+  $("periodEnd").value="";
+  render();
+};
 
 $("maintenanceList").addEventListener("click",async e=>{
   const edit=e.target.closest("[data-edit]"),del=e.target.closest("[data-delete]");
