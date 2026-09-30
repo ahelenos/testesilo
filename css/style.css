@@ -375,3 +375,6 @@
 .trace-kpi { position: relative; }
 .trace-kpi .trace-btn { display: inline-flex; align-items: center; justify-content: center; margin-top: 12px; width: fit-content; text-decoration: none; }
 @media (max-width: 700px) { .trace-kpi .trace-btn { width: 100%; } }
+
+
+.maintenance-nav-btn{display:flex;align-items:center;gap:12px;text-decoration:none;background:#fff;border:1px solid #e4e7ec;border-radius:12px;padding:12px 15px;margin:16px 0;color:inherit;box-shadow:0 4px 14px rgba(16,24,40,.05);transition:.15s ease}.maintenance-nav-btn:hover{transform:translateY(-1px);box-shadow:0 7px 20px rgba(16,24,40,.09)}.maintenance-nav-icon{font-size:22px}.maintenance-nav-btn strong{display:block;font-size:13px}.maintenance-nav-btn small{display:block;color:#667085;font-size:11px;margin-top:2px}.maintenance-nav-arrow{margin-left:auto;font-size:18px;color:#667085}

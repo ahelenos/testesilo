@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manutenção da Usina — Controle de Silo</title>
+  <link rel="stylesheet" href="css/manutencao.css">
+</head>
+<body>
+  <header class="maint-header">
+    <div>
+      <div class="eyebrow">CONTROLE DE SILO</div>
+      <h1>Manutenção da Usina</h1><span class="role-pill" id="roleIndicator">ADMIN</span>
+      <p>Diário de serviços, ocorrências, pendências e acompanhamento.</p>
+    </div>
+    <div class="header-actions">
+      <a class="back-btn" href="index.html">← Voltar ao Dashboard</a>
+      <button class="primary-btn" id="newMaintenanceBtn">+ Nova manutenção</button>
+    </div>
+  </header>
+
+  <main class="maint-main"><div id="pageError" class="page-error hidden"></div>
+    <section class="stats-grid">
+      <article class="stat-card"><span>🔧</span><div><small>Manutenções abertas</small><strong id="openCount">0</strong></div></article>
+      <article class="stat-card"><span>🧩</span><div><small>Peças aguardando</small><strong id="partsCount">0</strong></div></article>
+      <article class="stat-card"><span>📅</span><div><small>Serviços agendados</small><strong id="scheduledCount">0</strong></div></article>
+      <article class="stat-card danger-stat"><span>⚠️</span><div><small>Pendências atrasadas</small><strong id="overdueCount">0</strong></div></article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title-row">
+        <div>
+          <h2>Próximos compromissos</h2>
+          <p>Peças e serviços que precisam de acompanhamento.</p>
+        </div>
+      </div>
+      <div id="commitmentsList" class="commitments-list"></div>
+    </section>
+
+    <section class="panel">
+      <div class="filters">
+        <div class="month-control">
+          <button id="prevMonth" class="icon-btn" aria-label="Mês anterior">‹</button>
+          <strong id="monthLabel">Setembro 2026</strong>
+          <button id="nextMonth" class="icon-btn" aria-label="Próximo mês">›</button>
+        </div>
+        <select id="typeFilter">
+          <option value="all">Todas</option>
+          <option value="preventiva">Preventivas</option>
+          <option value="corretiva">Corretivas</option>
+          <option value="open">Em aberto</option>
+          <option value="completed">Concluídas</option>
+        </select>
+        <input id="searchInput" type="search" placeholder="🔎 Buscar serviço, problema, peça ou responsável...">
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title-row">
+        <div>
+          <h2>Diário de manutenções</h2>
+          <p>Histórico organizado por data.</p>
+        </div>
+      </div>
+      <div id="maintenanceList" class="maintenance-list"></div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop hidden" id="maintenanceModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div><span class="eyebrow">REGISTRO</span><h2 id="modalTitle">Nova manutenção</h2></div>
+        <button class="close-btn" id="closeModal" aria-label="Fechar">×</button>
+      </div>
+
+      <form id="maintenanceForm">
+        <div class="form-grid">
+          <label>Tipo de manutenção
+            <select id="mType" required>
+              <option value="preventiva">Preventiva</option>
+              <option value="corretiva">Corretiva</option>
+            </select>
+          </label>
+          <label>Equipamento / local
+            <input id="mEquipment" placeholder="Ex.: Transportador de cimento" required>
+          </label>
+        </div>
+
+        <label>Descrição do serviço / problema
+          <textarea id="mDescription" rows="3" required></textarea>
+        </label>
+
+        <div id="preventiveDates" class="form-grid">
+          <label>Data da solicitação
+            <input id="mRequestDate" type="date">
+          </label>
+          <label>Data prevista para execução
+            <input id="mPlannedDate" type="date">
+          </label>
+        </div>
+
+        <div id="correctiveDate" class="form-grid hidden">
+          <label>Data da ocorrência
+            <input id="mOccurrenceDate" type="date">
+          </label>
+          <label>Status
+            <select id="mStatus">
+              <option value="aberta">Em aberto</option>
+              <option value="agendada">Agendada</option>
+              <option value="em_execucao">Em execução</option>
+              <option value="concluida">Concluída</option>
+              <option value="cancelada">Cancelada</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="preventiveStatus" class="form-grid">
+          <label>Status
+            <select id="mStatusPreventive">
+              <option value="planejada">Planejada</option>
+              <option value="agendada">Agendada</option>
+              <option value="em_execucao">Em execução</option>
+              <option value="concluida">Concluída</option>
+              <option value="cancelada">Cancelada</option>
+            </select>
+          </label>
+          <label>Responsável pelo serviço
+            <input id="mResponsible" placeholder="Digite o responsável">
+          </label>
+        </div>
+
+        <div id="correctiveResponsible" class="hidden">
+          <label>Responsável pelo serviço
+            <input id="mResponsible2" placeholder="Digite o responsável">
+          </label>
+        </div>
+
+        <fieldset>
+          <legend>Intervenção</legend>
+          <div class="check-row">
+            <label><input type="checkbox" id="mLabor"> Mão de obra</label>
+            <label><input type="checkbox" id="mParts"> Troca de peça</label>
+          </div>
+        </fieldset>
+
+        <div id="partsSection" class="subpanel hidden">
+          <div class="subpanel-title"><strong>Peças / materiais</strong><button type="button" class="secondary-btn" id="addPartBtn">+ Adicionar peça</button></div>
+          <div id="partsRows"></div>
+          <div class="form-grid compact">
+            <label>Solicitado ao setor de compras em
+              <input id="purchaseRequestDate" type="date">
+            </label>
+            <label>Previsão de entrega
+              <input id="purchaseDueDate" type="date">
+            </label>
+          </div>
+          <div class="check-row">
+            <label><input type="checkbox" id="partReceived"> Peça recebida</label>
+          </div>
+          <div id="partReceivedDateWrap" class="hidden">
+            <label>Data do recebimento
+              <input id="partReceivedDate" type="date">
+            </label>
+          </div>
+        </div>
+
+        <fieldset>
+          <legend>Execução / terceirizado</legend>
+          <div class="check-row">
+            <label><input type="checkbox" id="isThirdParty"> Serviço terceirizado</label>
+          </div>
+          <div id="thirdPartySection" class="form-grid hidden">
+            <label>Executante / empresa
+              <input id="thirdPartyName" placeholder="Nome da empresa ou profissional">
+            </label>
+            <label>Serviço agendado para
+              <input id="thirdPartyDate" type="date">
+            </label>
+            <label class="full">Serviço realizado
+              <select id="thirdPartyDone">
+                <option value="nao">Não</option>
+                <option value="sim">Sim</option>
+              </select>
+            </label>
+            <label id="thirdPartyDoneDateWrap" class="hidden">Data da execução
+              <input id="thirdPartyDoneDate" type="date">
+            </label>
+          </div>
+        </fieldset>
+
+        <label>Serviço realizado / descrição da execução
+          <textarea id="mDone" rows="3" placeholder="Descreva o que foi feito..."></textarea>
+        </label>
+
+        <label>Observações
+          <textarea id="mNotes" rows="2"></textarea>
+        </label>
+
+        <div class="modal-footer">
+          <button type="button" class="secondary-btn" id="cancelModal">Cancelar</button>
+          <button type="submit" class="primary-btn" id="saveBtn">Salvar manutenção</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/supabase.js"></script>
+  <script src="js/manutencao.js"></script>
+</body>
+</html>
