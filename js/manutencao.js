@@ -76,8 +76,12 @@ async function render(){
   const parts=records.filter(r=>r.parts?.purchaseDueDate&&!r.parts.received).length;
   const sched=records.filter(r=>r.thirdParty?.enabled&&r.thirdParty.date&&!r.thirdParty.done).length;
   const overdue=nextCommitments().filter(x=>x.date<now).length;
-  $("openCount").textContent=open;$("partsCount").textContent=parts;$("scheduledCount").textContent=sched;$("overdueCount").textContent=overdue;
-  $("monthLabel").textContent=monthName(viewDate);$("roleIndicator").textContent=isAdmin(role)?"ADMIN":"VISUALIZAÇÃO";
+  $("openCount").textContent=open;
+  $("partsCount").textContent=parts;
+  $("scheduledCount").textContent=sched;
+  $("overdueCount").textContent=overdue;
+  $("monthLabel").textContent=monthName(viewDate);
+  $("roleIndicator").textContent=isAdmin(role)?"ADMIN":"VISUALIZAÇÃO";
   $("newMaintenanceBtn").classList.toggle("hidden",!isAdmin(role));
 
   const cs=nextCommitments().slice(0,8);
@@ -89,14 +93,36 @@ async function render(){
 
   const filter=$("typeFilter").value,q=$("searchInput").value.trim().toLowerCase(),y=viewDate.getFullYear(),m=viewDate.getMonth();
   const list=records.filter(r=>{
-    const d=dateForRecord(r);if(!d)return false;const dt=new Date(`${d}T12:00:00`);
+    const d=dateForRecord(r);if(!d)return false;
+    const dt=new Date(`${d}T12:00:00`);
     if(dt.getFullYear()!==y||dt.getMonth()!==m)return false;
     if(["preventiva","corretiva"].includes(filter)&&r.type!==filter)return false;
     if(filter==="open"&&["concluida","cancelada"].includes(r.status))return false;
     if(filter==="completed"&&r.status!=="concluida")return false;
     return !q||JSON.stringify(r).toLowerCase().includes(q);
   }).sort((a,b)=>dateForRecord(b).localeCompare(dateForRecord(a)));
-  $("maintenanceList").innerHTML=list.length?list.map(r=>card(r,role)).join(""):`<div class="empty">Nenhuma manutenção registrada neste mês com os filtros atuais.</div>`;
+
+  const openList=list.filter(r=>!["concluida","cancelada"].includes(r.status));
+  const finalList=list.filter(r=>["concluida","cancelada"].includes(r.status));
+
+  const renderColumn=(title,subtitle,items,kind)=>{
+    const count=items.length;
+    return `<section class="maintenance-column ${kind}">
+      <div class="column-header">
+        <div>
+          <h3>${esc(title)} <span class="column-count">${count}</span></h3>
+          <p>${esc(subtitle)}</p>
+        </div>
+      </div>
+      <div class="column-list">
+        ${items.length?items.map(r=>card(r,role)).join(""):`<div class="empty column-empty">${kind==="open"?"Nenhuma manutenção em aberto neste mês.":"Nenhuma manutenção finalizada neste mês."}</div>`}
+      </div>
+    </section>`;
+  };
+
+  $("maintenanceList").innerHTML=
+    renderColumn("Em aberto","Planejadas, agendadas ou em execução.",openList,"open")+
+    renderColumn("Finalizadas","Concluídas ou canceladas.",finalList,"finished");
 }
 function card(r,role){
   const admin=isAdmin(role),date=dateForRecord(r);
@@ -110,7 +136,7 @@ function card(r,role){
   if(r.thirdParty?.enabled&&r.thirdParty.date)events.push(`Terceirizado: ${r.thirdParty.done?`realizado em ${fmt(r.thirdParty.doneDate)}`:`agendado para ${fmt(r.thirdParty.date)}`}`);
   if(r.done)events.push(`Execução registrada: ${r.done}`);
   const actions=admin?`<div class="card-actions"><button class="secondary-btn small-btn" data-edit="${esc(r.id)}">✏️ Editar</button><button class="danger-btn small-btn" data-delete="${esc(r.id)}">🗑️ Excluir</button></div>`:`<div class="viewer-note">Somente visualização</div>`;
-  return `<article class="maintenance-card"><div class="maintenance-top"><div><span class="badge ${r.type}">${r.type}</span><h3>${esc(r.description)}</h3><div class="status">${statusLabel(r.status)}</div></div><div class="date-side"><strong>${fmt(date)}</strong>${actions}</div></div>
+  return `<article class="maintenance-card"><div class="maintenance-top"><div><span class="badge ${r.type}">${r.type}</span><h3>${esc(r.description)}</h3><div class="status status-${esc(r.status)}">${statusLabel(r.status)}</div></div><div class="date-side"><strong>${fmt(date)}</strong>${actions}</div></div>
   <div class="meta"><span>⚙ ${esc(r.equipment)}</span><span>🔧 ${esc(intervention)}</span><span>👤 ${esc(r.responsible||"—")}</span></div>
   <div class="timeline">${events.map(e=>`<div class="event"><i class="event-dot"></i><div>${esc(e)}</div></div>`).join("")}</div>
   ${r.notes?`<p style="margin-top:10px"><strong>Observações:</strong> ${esc(r.notes)}</p>`:""}
