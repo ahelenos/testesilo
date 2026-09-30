@@ -3,19 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
   <title>Manutenção da Usina — Controle de Silo</title>
   <link rel="stylesheet" href="css/manutencao.css">
 </head>
 <body>
-  <header class="maint-header">
-    <div>
-      <div class="eyebrow">CONTROLE DE SILO</div>
-      <h1>Manutenção da Usina</h1><span class="role-pill" id="roleIndicator">ADMIN</span>
-      <p>Diário de serviços, ocorrências, pendências e acompanhamento.</p>
+  <header class="app-header">
+    <div class="brand">
+      <img class="vigas-header-logo" src="assets/vigas-amarelo.png?v=3.1.5" alt="VIGAS Engenharia em Pré-Moldados">
+      <div class="brand-text">
+        <strong>Silo Cimento Vigas</strong>
+        <span id="maintRoleHeader">MANUTENÇÃO</span>
+      </div>
     </div>
     <div class="header-actions">
       <a class="back-btn" href="index.html">← Voltar ao Dashboard</a>
       <button class="primary-btn" id="newMaintenanceBtn">+ Nova manutenção</button>
+      <button class="logout-btn" id="logoutBtn" type="button">Sair</button>
     </div>
   </header>
 
@@ -91,7 +97,8 @@
       </div>
       <div id="maintenanceList" class="maintenance-list"></div>
     </section>
-  </main>
+  </main>  <footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V3.1.5</footer>
+
 
   <div class="modal-backdrop hidden" id="maintenanceModal">
     <div class="modal">
@@ -232,7 +239,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase.js?v=3.1.4"></script>
-  <script src="js/manutencao.js?v=3.1.4"></script>
+  <script src="js/supabase.js?v=3.1.5"></script>
+  <script src="js/manutencao.js?v=3.1.5"></script>
 </body>
 </html>

@@ -153,7 +153,8 @@ async function render(){
   $("partsCount").textContent=parts;
   $("scheduledCount").textContent=sched;
   $("overdueCount").textContent=overdue;
-  $("roleIndicator").textContent=isAdmin(role)?"ADMIN":"VISUALIZAÇÃO";
+  const headerRole=$("maintRoleHeader");
+  if(headerRole) headerRole.textContent=isAdmin(role)?"MANUTENÇÃO • ADMIN":"MANUTENÇÃO • VISUALIZAÇÃO";
   $("newMaintenanceBtn").classList.toggle("hidden",!isAdmin(role));
 
   updateFilterCounts(now);
@@ -341,6 +342,17 @@ async function writeHistory(sb,id,action,desc,oldData,newData){
   const user=(await sb.auth.getUser()).data.user;
   const {error}=await sb.from("manutencao_historico").insert({manutencao_id:id,acao:action,descricao:desc,dados_anteriores:oldData?JSON.parse(JSON.stringify(oldData)):null,dados_novos:newData?JSON.parse(JSON.stringify(newData)):null,usuario_id:user?.id||null});
   if(error)console.warn("Histórico não registrado:",error);
+}
+
+const logoutButton=$("logoutBtn");
+if(logoutButton){
+  logoutButton.onclick=async()=>{
+    try{
+      const sb=getSupabase();
+      if(sb?.auth) await sb.auth.signOut();
+    }catch(err){ console.warn("Não foi possível encerrar a sessão:",err); }
+    window.location.href="index.html";
+  };
 }
 
 resetForm();

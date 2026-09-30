@@ -202,3 +202,72 @@
   .advanced-grid{grid-template-columns:1fr}
   .period-check{padding-bottom:0}
 }
+
+
+/* V3.1.5 — cabeçalho e rodapé padronizados com o Dashboard */
+.app-header{
+  height:70px;
+  background:#0b1220;
+  color:#fff;
+  padding:0 30px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  position:sticky;
+  top:0;
+  z-index:20;
+  box-shadow:0 5px 25px #0002;
+}
+.brand{display:flex;gap:12px;align-items:center;min-width:0}
+.brand-text{padding-left:2px;min-width:0}
+.brand-text strong{display:block;white-space:nowrap}
+.brand-text span{display:block;font-size:10px;color:#cbd5e1;letter-spacing:.08em}
+.vigas-header-logo{
+  display:block;
+  width:132px;
+  height:auto;
+  max-height:58px;
+  object-fit:contain;
+  object-position:left center;
+  flex:0 0 auto;
+}
+.app-header .header-actions{display:flex;gap:8px;align-items:center;flex-wrap:nowrap}
+.app-header .back-btn{background:#172033;color:#e5e7eb;border:1px solid #344054}
+.app-header .primary-btn{background:#1f6feb;color:#fff}
+.logout-btn{
+  border:1px solid #344054;
+  border-radius:10px;
+  padding:10px 14px;
+  cursor:pointer;
+  background:#172033;
+  color:#fff;
+  font-weight:700;
+}
+.app-footer{
+  width:min(1180px,calc(100% - 40px));
+  margin:0 auto 30px;
+  padding-top:4px;
+  text-align:center;
+  color:#98a2b3;
+  font-size:10px;
+}
+.app-footer span{margin:0 6px}
+@media(max-width:760px){
+  .app-header{
+    height:auto;
+    min-height:70px;
+    padding:10px 14px;
+    align-items:flex-start;
+  }
+  .vigas-header-logo{width:108px;max-height:48px}
+  .brand-text strong{font-size:13px}
+  .app-header .header-actions{margin-left:auto}
+  .app-header .back-btn{font-size:0;padding:10px;width:40px;height:40px}
+  .app-header .back-btn::after{content:"←";font-size:18px}
+  .app-header .primary-btn{font-size:0;padding:10px;width:40px;height:40px}
+  .app-header .primary-btn::after{content:"+";font-size:20px}
+  .logout-btn{font-size:0;padding:10px;width:40px;height:40px}
+  .logout-btn::after{content:"↪";font-size:18px}
+  .app-footer{width:calc(100% - 30px)}
+}
