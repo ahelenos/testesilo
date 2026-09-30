@@ -25,9 +25,9 @@ async function getRole(){
     if(!sb)return "admin";
     const {data:{user}}=await sb.auth.getUser();
     if(!user)return "viewer";
-    const {data,error}=await sb.from("profiles").select("role,perfil,user_role").eq("id",user.id).maybeSingle();
+    const {data,error}=await sb.from("profiles").select("role").eq("id",user.id).maybeSingle();
     if(error||!data)return "viewer";
-    return String(data.role||data.perfil||data.user_role||"viewer").toLowerCase();
+    return String(data.role||"viewer").toLowerCase();
   }catch{return "viewer"}
 }
 function isAdmin(role){return ["admin","administrador","administrator"].includes(String(role).toLowerCase())}
