@@ -5,10 +5,11 @@ if (!window.supabase || typeof window.supabase.createClient !== "function") {
   throw new Error("Biblioteca Supabase não foi carregada.");
 }
 
-const AUTH_STORAGE_KEY = "controle-silo-v2.7.9-auth";
+const AUTH_STORAGE_KEY = "controle-fabrica-v4.1.3-auth";
 
-// Armazenamento resiliente: usa localStorage normalmente, mas cai para
-// sessionStorage/memoria se o armazenamento persistente estiver bloqueado.
+// Sessão de autenticação restrita à aba/sessão do navegador.
+// Assim o sistema não reutiliza automaticamente um login salvo de sessões
+// anteriores, mas mantém a autenticação durante a navegação entre módulos.
 const memoryStorage = (() => {
   const data = Object.create(null);
   return {
@@ -28,9 +29,9 @@ function storageWorks(storage){
   }catch(_){ return false; }
 }
 
-const authStorage = storageWorks(window.localStorage)
-  ? window.localStorage
-  : (storageWorks(window.sessionStorage) ? window.sessionStorage : memoryStorage);
+const authStorage = storageWorks(window.sessionStorage)
+  ? window.sessionStorage
+  : memoryStorage;
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
@@ -46,6 +47,21 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 window.supabaseClient = supabaseClient;
 
 const SiloSupabase = {
+  async getModulePermissions(user){
+    const u=user||await this.getUser();
+    if(!u) return {};
+    const {data,error}=await supabaseClient.from("module_permissions")
+      .select("module,permission").eq("user_id",u.id);
+    if(error) throw error;
+    return Object.fromEntries((data||[]).map(r=>[String(r.module).toLowerCase(),String(r.permission).toLowerCase()]));
+  },
+  async getModulePermission(module,user){
+    const permissions=await this.getModulePermissions(user);
+    const value=permissions[String(module).toLowerCase()];
+    if(value) return value;
+    const profile=await this.getProfile(user);
+    return profile?.role==="admin" ? "admin" : "viewer";
+  },
   async getUser(){
     const {data,error}=await supabaseClient.auth.getUser();
     if(error){

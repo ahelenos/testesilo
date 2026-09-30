@@ -206,7 +206,7 @@
 
 /* V3.1.6 — cabeçalho e rodapé padronizados com o Dashboard */
 .app-header{
-  height:70px;
+  height:78px;
   background:#0b1220;
   color:#fff;
   padding:0 30px;
@@ -219,9 +219,9 @@
   z-index:20;
   box-shadow:0 5px 25px #0002;
 }
-.brand{display:flex;gap:12px;align-items:center;min-width:0}
-.brand-text{padding-left:2px;min-width:0}
-.brand-text strong{display:block;white-space:nowrap}
+.brand{display:flex;gap:12px;align-items:center;min-width:0;flex:1}
+.brand-text{padding-left:2px;min-width:0;overflow:hidden}
+.brand-text strong{display:block;white-space:nowrap;line-height:1.15}
 .brand-text span{display:block;font-size:10px;color:#cbd5e1;letter-spacing:.08em}
 .vigas-header-logo{
   display:block;
@@ -357,3 +357,6 @@ input:disabled{
 @media(max-width:600px){
   .undefined-list{grid-template-columns:1fr}
 }
+
+.user-email{display:block!important;font-size:10px!important;line-height:1.2!important;letter-spacing:.02em!important;color:#9fb0c6!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px;margin-top:3px!important}
+@media(max-width:760px){.user-email{max-width:170px!important}}

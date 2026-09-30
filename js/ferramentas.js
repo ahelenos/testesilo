@@ -1,13 +1,14 @@
 (() => {
 "use strict";
+const APP_VERSION = "4.1.3";
 const $=id=>document.getElementById(id);
 const sb=window.supabaseClient || window.supabase;
-let role="viewer", tools=[], repairs=[], loans=[], assists=[], toolTypes=[];
+let role="viewer", modulePermission="viewer", tools=[], repairs=[], loans=[], assists=[], toolTypes=[];
 let currentTab="tools", editing=null;
 
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const dateBR=v=>v?new Date(`${v}T12:00:00`).toLocaleDateString("pt-BR"):"—";
-const isAdmin=()=>role==="admin";
+const isAdmin=()=>role==="admin" || modulePermission==="admin";
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
 const statusMap={disponivel:["Disponível","green"],em_conserto:["Em assistência","orange"],emprestada:["Emprestada","blue"],baixada:["Inservível","red"]};
 const repairStatus={enviado:"Enviado",aguardando_orcamento:"Aguardando orçamento",orcamento_aprovado:"Orçamento aprovado",em_conserto:"Em conserto",pronto:"Pronto",retornado:"Retornado",cancelado:"Cancelado"};
@@ -20,7 +21,15 @@ async function boot(){
   const {data:p,error}=await sb.from("profiles").select("role").eq("id",session.user.id).maybeSingle();
   if(error){showError(error.message);return}
   role=String(p?.role||"viewer").toLowerCase();
-  $("roleLabel").textContent=role.toUpperCase();
+  try{
+    if(window.SiloSupabase?.getModulePermission) modulePermission=await window.SiloSupabase.getModulePermission("ferramentas",session.user);
+    else {
+      const {data:mp}=await sb.from("module_permissions").select("permission").eq("user_id",session.user.id).eq("module","ferramentas").maybeSingle();
+      modulePermission=String(mp?.permission||"viewer").toLowerCase();
+    }
+  }catch(e){ modulePermission="viewer"; console.warn("Permissão por módulo:",e); }
+  $("roleLabel").textContent=isAdmin()?"ADMIN":"VISUALIZAÇÃO";
+  $("userEmail").textContent=session.user.email||"";
   if(!isAdmin()) document.querySelectorAll(".admin-only").forEach(e=>e.remove());
   $("logoutBtn").onclick=async()=>{await sb.auth.signOut();location.href="index.html"};
   bind();

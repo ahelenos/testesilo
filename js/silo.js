@@ -1,9 +1,9 @@
-const APP_VERSION = "4.1.0";
+const APP_VERSION = "4.1.3";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
-const state={user:null,profile:null,settings:null,movements:[],deliveryHistory:[],month:""};
-const isAdmin=()=>state.profile?.role==="admin";
+const state={user:null,profile:null,permissions:{},settings:null,movements:[],deliveryHistory:[],month:""};
+const isAdmin=()=>state.profile?.role==="admin" || state.permissions?.silo==="admin";
 const isMobile=()=>window.matchMedia("(max-width: 650px)").matches;
 const canEdit=()=>isAdmin()&&!isMobile();
 const escapeHtml=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
@@ -311,9 +311,6 @@ function toggleConcreteField(){
 }
 function resetForm(){$("movementId").value="";$("movementType").value="entrada";$("movementQuantity").value="";$("movementConcrete").value="";$("movementObservation").value="";setDateTime();$("cancelEdit").classList.add("hidden");toggleConcreteField()}
 async function refresh(){state.settings=await SiloSupabase.getSettings();state.movements=await SiloSupabase.getMovements();state.deliveryHistory=await SiloSupabase.getDeliveryHistory();render()}
-const DEFAULT_VIEWER_EMAIL="viewer@teste.com";
-const DEFAULT_VIEWER_PASSWORD="123456";
-const AUTO_LOGIN_BLOCKED_KEY="controleSiloManualLogout";
 function translateAuthError(message){
   const m=String(message||"");
   const l=m.toLowerCase();
@@ -328,51 +325,20 @@ async function boot(){
   try{
     state.user=await SiloSupabase.getUser();
 
-    // Depois de clicar em "Sair", não fazemos o login automático novamente.
-    const manualLogout=sessionStorage.getItem(AUTO_LOGIN_BLOCKED_KEY)==="1";
-
-    if(!state.user && !manualLogout){
-      $("loginEmail").value=DEFAULT_VIEWER_EMAIL;
-      $("loginPassword").value=DEFAULT_VIEWER_PASSWORD;
-
-      const result=await SiloSupabase.signIn(DEFAULT_VIEWER_EMAIL,DEFAULT_VIEWER_PASSWORD);
-      if(result?.error) throw result.error;
-
-      // Usa o usuário retornado pelo próprio login. Não depende de uma
-      // segunda leitura imediata da sessão para continuar o boot.
-      state.user=result?.data?.user||null;
-      if(!state.user) throw new Error("O login automático não retornou um usuário.");
-    }
-
+    // Login automático desativado: o usuário deve informar suas próprias credenciais.
     if(!state.user){
-      $("loginEmail").value=DEFAULT_VIEWER_EMAIL;
-      $("loginPassword").value=DEFAULT_VIEWER_PASSWORD;
       $("loginScreen").classList.remove("hidden");
       $("appScreen").classList.add("hidden");
       return;
     }
 
-    // Uma autenticação manual/automática bem-sucedida libera o fluxo normal.
-    sessionStorage.removeItem(AUTO_LOGIN_BLOCKED_KEY);
-
-    // O getProfile recebe o usuário já autenticado, evitando uma segunda
-    // chamada auth.getUser() durante o primeiro carregamento.
     state.profile=await SiloSupabase.getProfile(state.user);
-    if(!state.profile){
-      // Se a sessão persistida estava velha, tenta uma vez limpar e
-      // refazer o login padrão do Viewer.
-      if(state.user.email===DEFAULT_VIEWER_EMAIL){
-        await SiloSupabase.signOut();
-        const retry=await SiloSupabase.signIn(DEFAULT_VIEWER_EMAIL,DEFAULT_VIEWER_PASSWORD);
-        if(retry?.error) throw retry.error;
-        state.user=retry?.data?.user||null;
-        state.profile=state.user?await SiloSupabase.getProfile(state.user):null;
-      }
-    }
+    state.permissions=await SiloSupabase.getModulePermissions(state.user);
     if(!state.profile) throw new Error("Perfil do usuário não foi encontrado para a sessão autenticada.");
 
     $("loginScreen").classList.add("hidden");
     $("appScreen").classList.remove("hidden");
+    $("userEmail").textContent=state.user.email||"";
     await refresh();
   }catch(x){
     $("loginScreen").classList.remove("hidden");
@@ -382,16 +348,7 @@ async function boot(){
   }
 }
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginError").textContent="";try{await SiloSupabase.signIn($("loginEmail").value.trim(),$("loginPassword").value);await boot()}catch(x){$("loginError").textContent=translateAuthError(x?.message||"Falha no login.")}});
-$("logoutBtn").addEventListener("click",async()=>{
-  try{
-    await SiloSupabase.signOut();
-  }finally{
-    // Impede que o login automático do Viewer aconteça novamente
-    // imediatamente após o logout.
-    sessionStorage.setItem(AUTO_LOGIN_BLOCKED_KEY,"1");
-    location.reload();
-  }
-});
+$("logoutBtn").addEventListener("click",async()=>{try{await SiloSupabase.signOut()}finally{location.reload()}});
 $("monthPicker").addEventListener("change",e=>{state.month=e.target.value;render()});
 $("exportCsvBtn").addEventListener("click",exportMovementsCsv);
 $("prevMonth").addEventListener("click",()=>{state.month=previousMonth(state.month);render()});

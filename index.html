@@ -4,42 +4,42 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0b1220">
-  <link rel="icon" type="image/x-icon" href="./favicon.ico?v=4.1.0">
-  <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico?v=4.1.0">
+  <link rel="icon" type="image/x-icon" href="./favicon.ico?v=4.1.3">
+  <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico?v=4.1.3">
   <title>Gestão de Fábrica</title>
-  <link rel="stylesheet" href="css/style.css?v=4.1.0">
+  <link rel="stylesheet" href="css/style.css?v=4.1.3">
 </head>
 <body class="factory-home">
 <div id="loginScreen" class="login-screen">
   <div class="login-box">
-    <img class="vigas-login-logo" src="assets/vigas-preto.png?v=4.1.0" alt="VIGAS Engenharia em Pré-Moldados">
+    <img class="vigas-login-logo" src="assets/vigas-preto.png?v=4.1.3" alt="VIGAS Engenharia em Pré-Moldados">
     <div class="login-divider"></div>
     <span class="eyebrow">GESTÃO DE FÁBRICA</span>
     <h1>Gestão de Fábrica</h1>
     <p>Gerenciamento do dia a dia da fábrica em um só lugar (Silo, Manutenções, ferramentas e outros)</p>
     <form id="loginForm">
       <label>E-mail</label>
-      <input id="loginEmail" type="email" value="viewer@teste.com" autocomplete="username" required>
+      <input id="loginEmail" type="email" autocomplete="username" placeholder="seu e-mail" required>
       <label>Senha</label>
-      <input id="loginPassword" type="password" value="123456" autocomplete="current-password" required>
+      <input id="loginPassword" type="password" autocomplete="current-password" placeholder="sua senha" required>
       <button class="btn primary">Entrar</button>
       <div id="loginError" class="error"></div>
     </form>
-    <div class="system-meta"><span>V4.1.0</span><span>Desenvolvido por Eng. Adilson Heleno da Silva</span></div>
+    <div class="system-meta"><span>V4.1.3</span><span>Desenvolvido por Eng. Adilson Heleno da Silva</span></div>
   </div>
 </div>
 
 <div id="appScreen" class="hidden">
   <header>
     <div class="brand">
-      <img class="vigas-header-logo" src="assets/vigas-amarelo.png?v=4.1.0" alt="VIGAS Engenharia em Pré-Moldados">
+      <img class="vigas-header-logo" src="assets/vigas-amarelo.png?v=4.1.3" alt="VIGAS Engenharia em Pré-Moldados">
       <div class="brand-text">
         <strong>Gestão de Fábrica</strong>
-        <span id="userRole"></span>
+        <span id="userRole"></span><span id="userEmail" class="user-email"></span>
       </div>
     </div>
     <div class="header-actions">
-      <span class="home-version">V4.1.0</span>
+      <span class="home-version">V4.1.3</span>
       <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
     </div>
   </header>
@@ -49,7 +49,7 @@
       <div>
         <div class="dashboard-heading">
           <span class="eyebrow">GESTÃO DE FÁBRICA</span>
-          <span class="version-badge">V4.1.0</span>
+          <span class="version-badge">V4.1.3</span>
         </div>
         <h1>Central da fábrica</h1>
         <p>Acesse os módulos para acompanhar e administrar as rotinas da fábrica.</p>
@@ -97,11 +97,11 @@
     </section>
   </main>
 
-  <footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V4.1.0</footer>
+  <footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V4.1.3</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js?v=4.1.0"></script>
-<script src="js/home.js?v=4.1.0"></script>
+<script src="js/supabase.js?v=4.1.3"></script>
+<script src="js/home.js?v=4.1.3"></script>
 </body>
 </html>

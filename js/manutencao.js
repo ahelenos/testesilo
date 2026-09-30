@@ -2,6 +2,7 @@
 let records = [];
 let editingId = null;
 let statusFilter = "all";
+let modulePermission = "viewer";
 
 const $ = id => document.getElementById(id);
 const todayISO = () => {
@@ -30,8 +31,27 @@ async function getRole(){
     return String(data.role||"viewer").toLowerCase();
   }catch{return "viewer"}
 }
-function isAdmin(role){return ["admin","administrador","administrator"].includes(String(role).toLowerCase())}
+async function getModulePermission(){
+  try{
+    const sb=getSupabase();
+    if(!sb)return "viewer";
+    const {data:{user}}=await sb.auth.getUser();
+    if(!user)return "viewer";
+    if(window.SiloSupabase?.getModulePermission) return await window.SiloSupabase.getModulePermission("manutencao",user);
+    const {data:p}=await sb.from("module_permissions").select("permission").eq("user_id",user.id).eq("module","manutencao").maybeSingle();
+    return String(p?.permission||"viewer").toLowerCase();
+  }catch{return "viewer"}
+}
+function isAdmin(role){return ["admin","administrador","administrator"].includes(String(role).toLowerCase()) || modulePermission==="admin"}
 
+
+async function setLoggedUserHeader(){
+  try{
+    const sb=getSupabase();
+    const {data:{user}}=await sb.auth.getUser();
+    if(user && $("maintUserEmail")) $("maintUserEmail").textContent=user.email||"";
+  }catch(e){ console.warn("Não foi possível identificar o usuário logado:",e); }
+}
 async function load(){
   const sb=getSupabase();
   if(!sb){records=[];showError("Supabase não foi inicializado nesta página.");return;}
@@ -174,6 +194,7 @@ function matchesStatusFilter(r, now=todayISO()){
 
 async function render(){
   const role=await getRole();
+  modulePermission=await getModulePermission();
   const now=todayISO();
   const open=records.filter(r=>!isFinished(r)).length;
   const parts=records.filter(r=>r.parts?.enabled&&!r.parts.received).length;
@@ -454,4 +475,5 @@ if(logoutButton){
 }
 
 resetForm();
+setLoggedUserHeader();
 load();

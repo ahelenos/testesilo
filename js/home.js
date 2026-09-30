@@ -1,10 +1,7 @@
-const APP_VERSION = "4.1.0";
+const APP_VERSION = "4.1.3";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
-const DEFAULT_VIEWER_EMAIL="viewer@teste.com";
-const DEFAULT_VIEWER_PASSWORD="123456";
-const AUTO_LOGIN_BLOCKED_KEY="controleSiloManualLogout";
 
 function translateAuthError(message){
   const m=String(message||"");
@@ -18,31 +15,23 @@ function translateAuthError(message){
 
 async function boot(){
   try{
-    let user=await SiloSupabase.getUser();
-    const manualLogout=sessionStorage.getItem(AUTO_LOGIN_BLOCKED_KEY)==="1";
+    const user=await SiloSupabase.getUser();
 
-    if(!user && !manualLogout){
-      $("loginEmail").value=DEFAULT_VIEWER_EMAIL;
-      $("loginPassword").value=DEFAULT_VIEWER_PASSWORD;
-      const result=await SiloSupabase.signIn(DEFAULT_VIEWER_EMAIL,DEFAULT_VIEWER_PASSWORD);
-      if(result?.error) throw result.error;
-      user=result?.data?.user||null;
-      if(!user) throw new Error("O login automático não retornou um usuário.");
-    }
-
+    // Login automático desativado: sem credenciais padrão e sem
+    // preenchimento automático de usuário de teste.
     if(!user){
       $("loginScreen").classList.remove("hidden");
       $("appScreen").classList.add("hidden");
       return;
     }
 
-    sessionStorage.removeItem(AUTO_LOGIN_BLOCKED_KEY);
     const profile=await SiloSupabase.getProfile(user);
     if(!profile) throw new Error("Perfil do usuário não foi encontrado para a sessão autenticada.");
 
     $("loginScreen").classList.add("hidden");
     $("appScreen").classList.remove("hidden");
     $("userRole").textContent=profile.role==="admin"?"ADMIN":"VISUALIZAÇÃO";
+    $("userEmail").textContent=user.email||"";
   }catch(err){
     console.error("Inicialização da Gestão de Fábrica:",err);
     $("loginScreen").classList.remove("hidden");
@@ -65,10 +54,7 @@ $("loginForm").addEventListener("submit",async e=>{
 
 $("logoutBtn").addEventListener("click",async()=>{
   try{ await SiloSupabase.signOut(); }
-  finally{
-    sessionStorage.setItem(AUTO_LOGIN_BLOCKED_KEY,"1");
-    location.reload();
-  }
+  finally{ location.reload(); }
 });
 
 boot().catch(err=>{
