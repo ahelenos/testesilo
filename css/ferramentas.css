@@ -38,3 +38,69 @@
 .section-caption{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 2px 10px;color:#61708a;font-size:13px}.section-caption strong{color:#17315b;font-size:14px}.section-caption span{font-size:12px}
 
 .user-email{display:block!important;font-size:10px!important;line-height:1.2!important;letter-spacing:.02em!important;color:#94a3b8!important;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+
+/* Correção de layout da listagem de ferramentas
+   Mantém a lógica da V4.2.1 e impede que cards com textos longos
+   ultrapassem a largura do painel. */
+.tool-grid,
+.record-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  min-width:0;
+}
+
+.tool-grid > .card,
+.record-grid > .card,
+.card{
+  min-width:0;
+  max-width:100%;
+}
+
+.card-head{
+  min-width:0;
+}
+
+.code,
+.title,
+.muted{
+  min-width:0;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
+.title{
+  line-height:1.25;
+}
+
+.chips{
+  min-width:0;
+}
+
+.card-actions{
+  flex-wrap:wrap;
+  min-width:0;
+}
+
+.card-actions .btn{
+  flex:0 1 auto;
+  min-width:0;
+  white-space:normal;
+}
+
+.panel{
+  min-width:0;
+  overflow:hidden;
+}
+
+@media(max-width:1100px){
+  .tool-grid,
+  .record-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@media(max-width:700px){
+  .tool-grid,
+  .record-grid{
+    grid-template-columns:minmax(0,1fr);
+  }
+}

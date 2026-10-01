@@ -1,0 +1,23 @@
+{
+  "version": "4.2.1",
+  "base_version": "4.2.0",
+  "added": [
+    "Gerenciamento de usuários com criação de usuários",
+    "Alteração de senha por administrador global",
+    "Atualização de perfil global, status e permissões por módulo",
+    "Edge Function admin-user-management para operações administrativas seguras"
+  ],
+  "preserved": [
+    "Controle de Silo",
+    "Manutenção",
+    "Ferramentas",
+    "Login sem preenchimento automático",
+    "Sessão restrita à aba do navegador",
+    "Histórico de alterações de permissões"
+  ],
+  "database_functions_used": [
+    "is_global_admin",
+    "user_permissions_history"
+  ],
+  "edge_function": "supabase/functions/admin-user-management/index.ts"
+}
