@@ -72,3 +72,49 @@
 
 .history-actor{margin-top:9px;font-size:11px;color:#667085}
 .history-details{margin-top:8px;font-size:12px;color:#475467;line-height:1.45}
+
+/* Indicador global de processamento */
+.global-loading{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:grid;
+  place-items:center;
+  padding:20px;
+  background:rgba(11,18,32,.34);
+  backdrop-filter:blur(2px);
+}
+.global-loading.hidden{display:none}
+.global-loading-card{
+  min-width:260px;
+  max-width:calc(100vw - 40px);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  padding:22px 26px;
+  border:1px solid #e5e7eb;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 18px 55px rgba(15,23,42,.20);
+  text-align:center;
+}
+.global-loading-card strong{
+  color:#172033;
+  font-size:14px;
+}
+.global-loading-card span:last-child{
+  color:#667085;
+  font-size:11px;
+}
+.loading-spinner{
+  width:28px;
+  height:28px;
+  border:3px solid #dbe5f5;
+  border-top-color:#2563eb;
+  border-radius:50%;
+  animation:users-loading-spin .8s linear infinite;
+}
+@keyframes users-loading-spin{
+  to{transform:rotate(360deg)}
+}

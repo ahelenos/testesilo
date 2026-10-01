@@ -6,8 +6,17 @@
 <link rel="icon" type="image/x-icon" href="./favicon.ico?v=4.2.1">
 <title>Ferramentas — Gestão de Fábrica</title>
 <link rel="stylesheet" href="css/ferramentas.css?v=4.2.1">
+  <link rel="stylesheet" href="css/loading.css?v=4.2.1">
 </head>
 <body>
+<div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
+  <div class="global-loading-card" role="status">
+    <span class="loading-spinner" aria-hidden="true"></span>
+    <strong id="globalLoadingText">Carregando...</strong>
+    <span>Aguarde, estamos processando a solicitação.</span>
+  </div>
+</div>
+
 <header class="app-header">
   <div class="brand">
     <img src="assets/vigas-amarelo.png" alt="VIGAS Engenharia em Pré-Moldados">
@@ -68,5 +77,6 @@
 </div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=4.2.1"></script>
+<script src="js/loading.js?v=4.2.1"></script>
 <script src="js/ferramentas.js?v=4.2.1"></script>
 </body></html>

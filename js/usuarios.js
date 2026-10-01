@@ -22,6 +22,21 @@ function pill(value, type){
   return `<span class="access-pill ${type}">${escapeHtml(value)}</span>`;
 }
 
+
+
+function showGlobalLoading(text="Carregando..."){
+  const overlay=$("globalLoading");
+  if(!overlay) return;
+  $("globalLoadingText").textContent=text;
+  overlay.classList.remove("hidden");
+}
+
+function hideGlobalLoading(){
+  const overlay=$("globalLoading");
+  if(!overlay) return;
+  overlay.classList.add("hidden");
+}
+
 function setMessage(text="", type=""){
   const el=$("usersMessage");
   el.textContent=text;
@@ -146,6 +161,7 @@ async function saveEditor(){
 
   $("saveEdit").disabled=true;
   $("editError").textContent="";
+  showGlobalLoading("Salvando alterações...");
 
   const payload={
     target_user_id:selectedUser.id,
@@ -160,12 +176,14 @@ async function saveEditor(){
     await SiloSupabase.adminUserManagement("update_user",payload);
     $("editUserDialog").close();
     setMessage("Permissões, perfil e status atualizados com sucesso.","success");
+    showGlobalLoading("Atualizando usuários...");
     await loadUsers();
   }catch(error){
     console.error(error);
     $("editError").textContent=error.message || "Não foi possível salvar as alterações.";
   }finally{
     $("saveEdit").disabled=false;
+    hideGlobalLoading();
   }
 }
 
@@ -195,6 +213,7 @@ async function createUser(){
 
   $("createUser").disabled=true;
   $("newUserError").textContent="";
+  showGlobalLoading("Criando usuário...");
 
   try{
     await SiloSupabase.adminUserManagement("create_user",{
@@ -209,12 +228,14 @@ async function createUser(){
 
     $("newUserDialog").close();
     setMessage("Usuário criado com sucesso.","success");
+    showGlobalLoading("Atualizando usuários...");
     await loadUsers();
   }catch(error){
     console.error(error);
     $("newUserError").textContent=error.message || "Não foi possível criar o usuário.";
   }finally{
     $("createUser").disabled=false;
+    hideGlobalLoading();
   }
 }
 
@@ -247,6 +268,7 @@ async function changePassword(){
 
   $("savePassword").disabled=true;
   $("passwordError").textContent="";
+  showGlobalLoading("Alterando senha...");
 
   try{
     await SiloSupabase.adminUserManagement("change_password",{
@@ -261,6 +283,7 @@ async function changePassword(){
     $("passwordError").textContent=error.message || "Não foi possível alterar a senha.";
   }finally{
     $("savePassword").disabled=false;
+    hideGlobalLoading();
   }
 }
 
@@ -387,7 +410,14 @@ $("cancelPassword").addEventListener("click",()=>$("passwordDialog").close());
 
 $("closeHistory").addEventListener("click",()=>$("historyDialog").close());
 
-$("refreshUsers").addEventListener("click",loadUsers);
+$("refreshUsers").addEventListener("click",async()=>{
+  showGlobalLoading("Atualizando usuários...");
+  try{
+    await loadUsers();
+  }finally{
+    hideGlobalLoading();
+  }
+});
 $("userSearch").addEventListener("input",renderUsers);
 $("showInactive").addEventListener("change",renderUsers);
 
