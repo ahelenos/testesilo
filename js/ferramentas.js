@@ -4,7 +4,7 @@ const APP_VERSION = "4.2.1";
 const $=id=>document.getElementById(id);
 const sb=window.supabaseClient || window.supabase;
 let role="viewer", modulePermission="viewer", tools=[], repairs=[], loans=[], assists=[], toolTypes=[];
-let currentTab="tools", editing=null;
+let currentTab="tools", editing=null, editingType=null;
 
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const dateBR=v=>v?new Date(`${v}T12:00:00`).toLocaleDateString("pt-BR"):"—";
@@ -306,6 +306,10 @@ function openTool(t=null){
   }
   $("toolForm").onsubmit=saveTool;
   $("newTypeInlineBtn").onclick=openQuickType;
+  $("manageTypesBtn")?.addEventListener("click",openTypeManager);
+  $("closeTypeManager")?.addEventListener("click",closeTypeManager);
+  $("newTypeFromManager")?.addEventListener("click",()=>{closeTypeManager();openQuickType()});
+  $("typeManagerModal")?.addEventListener("click",e=>{if(e.target.id==="typeManagerModal")closeTypeManager()});
   $("deleteToolBtn")?.addEventListener("click",()=>deactivateTool(t));
 }
 async function saveTool(e){
@@ -323,20 +327,152 @@ async function saveTool(e){
   if(editing){res=await sb.from("ferramentas").update(payload).eq("id",editing.id)} else {payload.created_by=user?.id||null;res=await sb.from("ferramentas").insert(payload)}
   if(res.error){alert(res.error.message);return} closeModal();await loadAll();
 }
-function closeTypeModal(){ $("typeModal")?.classList.add("hidden"); }
+function closeTypeModal(){
+  $("typeModal")?.classList.add("hidden");
+  editingType=null;
+  const form=$("typeQuickForm");
+  if(form) form.reset();
+  const title=$("typeModalTitle");
+  const button=$("typeSubmitBtn");
+  if(title) title.textContent="Cadastrar tipo de ferramenta";
+  if(button) button.textContent="Cadastrar tipo";
+}
 function openQuickType(){
   if(!isAdmin()) return;
+  editingType=null;
   $("typeQuickForm").reset();
+  $("typeModalTitle").textContent="Cadastrar tipo de ferramenta";
+  $("typeSubmitBtn").textContent="Cadastrar tipo";
+  $("typeModal").classList.remove("hidden");
+  setTimeout(()=>$("typeQuickForm")?.querySelector("[name=nome]")?.focus(),50);
+}
+function openTypeManager(){
+  if(!isAdmin()) return;
+  renderTypeManager();
+  $("typeManagerModal")?.classList.remove("hidden");
+}
+function closeTypeManager(){
+  $("typeManagerModal")?.classList.add("hidden");
+}
+function renderTypeManager(){
+  const panel=$("typeManagerList");
+  if(!panel) return;
+  if(!toolTypes.length){
+    panel.innerHTML='<div class="empty">Nenhum tipo de ferramenta cadastrado.</div>';
+    return;
+  }
+  panel.innerHTML=toolTypes.map(t=>`
+    <div class="record">
+      <div>
+        <span class="eyebrow">TIPO DE FERRAMENTA</span>
+        <h3>${esc(t.nome)}</h3>
+        ${t.observacoes?`<div class="muted">${esc(t.observacoes)}</div>`:""}
+      </div>
+      <div class="record-right" style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+        <button type="button" class="btn secondary" data-edit-type="${esc(t.id)}">Editar</button>
+        <button type="button" class="btn danger" data-delete-type="${esc(t.id)}">Excluir</button>
+      </div>
+    </div>
+  `).join("");
+  panel.querySelectorAll("[data-edit-type]").forEach(b=>{
+    b.onclick=()=>editToolType(toolTypes.find(t=>String(t.id)===String(b.dataset.editType)));
+  });
+  panel.querySelectorAll("[data-delete-type]").forEach(b=>{
+    b.onclick=()=>deleteToolType(toolTypes.find(t=>String(t.id)===String(b.dataset.deleteType)));
+  });
+}
+function editToolType(t){
+  if(!isAdmin()||!t)return;
+  editingType=t;
+  $("typeQuickForm").reset();
+  $("typeQuickForm").querySelector('[name="nome"]').value=t.nome||"";
+  $("typeQuickForm").querySelector('[name="observacoes"]').value=t.observacoes||"";
+  $("typeModalTitle").textContent="Editar tipo de ferramenta";
+  $("typeSubmitBtn").textContent="Salvar alterações";
+  closeTypeManager();
   $("typeModal").classList.remove("hidden");
   setTimeout(()=>$("typeQuickForm")?.querySelector("[name=nome]")?.focus(),50);
 }
 async function saveQuickType(e){
   e.preventDefault();
+  if(!isAdmin()) return;
   const p=Object.fromEntries(new FormData(e.target).entries());
+  p.nome=String(p.nome||"").trim();
+  p.observacoes=String(p.observacoes||"").trim()||null;
+  if(!p.nome){ alert("Informe o tipo de ferramenta."); return; }
+
   const {data:{user}}=await sb.auth.getUser();
-  p.created_by=user?.id||null; p.updated_by=user?.id||null; p.ativo=true;
+
+  if(editingType){
+    const oldName=editingType.nome;
+    if(p.nome===oldName && p.observacoes===(editingType.observacoes||null)){
+      closeTypeModal();
+      return;
+    }
+
+    // Evita duplicidade antes de alterar o tipo.
+    const duplicate=toolTypes.find(t=>String(t.id)!==String(editingType.id) &&
+      String(t.nome||"").trim().toLocaleLowerCase("pt-BR")===p.nome.toLocaleLowerCase("pt-BR"));
+    if(duplicate){
+      alert("TIPO DE FERRAMENTA JÁ CADASTRADA");
+      return;
+    }
+
+    // Se o nome mudou, atualiza também as ferramentas que usam esse tipo.
+    // Assim nenhuma ferramenta fica apontando para um nome antigo.
+    if(p.nome!==oldName){
+      const {error:toolsError}=await sb.from("ferramentas")
+        .update({tipo:p.nome,updated_by:user?.id||null})
+        .eq("tipo",oldName);
+      if(toolsError){
+        alert(toolsError.message);
+        return;
+      }
+    }
+
+    const {data,error}=await sb.from("tipos_ferramentas")
+      .update({nome:p.nome,observacoes:p.observacoes,updated_by:user?.id||null})
+      .eq("id",editingType.id)
+      .select("*")
+      .single();
+
+    if(error){
+      // Tenta restaurar as ferramentas caso a alteração do cadastro do tipo falhe.
+      if(p.nome!==oldName){
+        await sb.from("ferramentas")
+          .update({tipo:oldName,updated_by:user?.id||null})
+          .eq("tipo",p.nome);
+      }
+      if(error.code==="23505" || String(error.message||"").includes("tipos_ferramentas_nome_key")){
+        alert("TIPO DE FERRAMENTA JÁ CADASTRADA");
+      }else{
+        alert(error.message);
+      }
+      return;
+    }
+
+    toolTypes=toolTypes.map(t=>String(t.id)===String(data.id)?data:t)
+      .sort((a,b)=>String(a.nome).localeCompare(String(b.nome)));
+    closeTypeModal();
+    await loadAll();
+    return;
+  }
+
+  p.created_by=user?.id||null;
+  p.updated_by=user?.id||null;
+  p.ativo=true;
   const {data,error}=await sb.from("tipos_ferramentas").insert(p).select("*").single();
-  if(error){alert(error.message);return}
+  if(error){
+    if(
+      error.code === "23505" ||
+      String(error.message || "").includes("tipos_ferramentas_nome_key")
+    ){
+      alert("TIPO DE FERRAMENTA JÁ CADASTRADA");
+    }else{
+      alert(error.message);
+    }
+    return;
+  }
   toolTypes=[...toolTypes,data].sort((a,b)=>String(a.nome).localeCompare(String(b.nome)));
   closeTypeModal();
   const select=$("toolTypeSelect");
@@ -344,6 +480,30 @@ async function saveQuickType(e){
     select.innerHTML='<option value="">Selecione</option>'+typeOptions(data.nome);
     select.value=data.nome;
   }
+}
+async function deleteToolType(t){
+  if(!isAdmin()||!t)return;
+  const {data:usedTools,error:checkError}=await sb.from("ferramentas")
+    .select("id,codigo")
+    .eq("tipo",t.nome);
+  if(checkError){alert(checkError.message);return;}
+  if((usedTools||[]).length){
+    alert(`NÃO É POSSÍVEL EXCLUIR ESTE TIPO DE FERRAMENTA.\n\nExistem ${usedTools.length} ferramenta(s) usando o tipo "${t.nome}".\n\nAltere o tipo dessas ferramentas antes de excluir o cadastro.`);
+    return;
+  }
+  if(!confirm(`Excluir o tipo de ferramenta "${t.nome}"?\n\nEsta ação não pode ser desfeita.`)) return;
+  const {error}=await sb.from("tipos_ferramentas").delete().eq("id",t.id);
+  if(error){
+    if(error.code==="23503"){
+      alert("NÃO É POSSÍVEL EXCLUIR ESTE TIPO DE FERRAMENTA PORQUE ELE ESTÁ SENDO UTILIZADO.");
+    }else{
+      alert(error.message);
+    }
+    return;
+  }
+  toolTypes=toolTypes.filter(x=>String(x.id)!==String(t.id));
+  renderTypeManager();
+  await loadAll();
 }
 async function deactivateTool(t){
   if(!isAdmin()||!t?.id)return;

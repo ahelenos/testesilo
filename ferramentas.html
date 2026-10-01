@@ -28,7 +28,7 @@
 <main>
 <section class="hero">
   <div><div class="eyebrow">CONTROLE DE FERRAMENTAS</div><h1>Ferramentas da fábrica</h1><p>Cadastro, assistência técnica e empréstimos para os canteiros.</p></div>
-  <div class="hero-actions admin-only"><button id="newToolBtn" class="btn primary">＋ Nova ferramenta</button></div>
+  <div class="hero-actions admin-only"><button id="manageTypesBtn" class="btn secondary">⚙ Tipos de ferramenta</button><button id="newToolBtn" class="btn primary">＋ Nova ferramenta</button></div>
 </section>
 
 <div id="pageError" class="alert error hidden"></div>
@@ -66,14 +66,22 @@
   </form>
 </div></div>
 <div id="typeModal" class="modal hidden" style="z-index:30"><div class="modal-card" style="max-width:520px">
-  <div class="modal-head"><div><span class="eyebrow">CADASTRO</span><h2>Cadastrar tipo de ferramenta</h2></div><button id="closeTypeModal" class="icon-btn" type="button">×</button></div>
+  <div class="modal-head"><div><span class="eyebrow">CADASTRO</span><h2 id="typeModalTitle">Cadastrar tipo de ferramenta</h2></div><button id="closeTypeModal" class="icon-btn" type="button">×</button></div>
   <form id="typeQuickForm" class="form">
     <div class="form-grid">
       <div class="field full"><label>Tipo de ferramenta *</label><input name="nome" required placeholder="Ex.: Parafusadeira"></div>
       <div class="field full"><label>Observações</label><textarea name="observacoes" placeholder="Opcional"></textarea></div>
     </div>
-    <div class="form-actions"><button type="button" class="btn secondary" id="cancelTypeForm">Cancelar</button><button class="btn primary">Cadastrar tipo</button></div>
+    <div class="form-actions"><button type="button" class="btn secondary" id="cancelTypeForm">Cancelar</button><button id="typeSubmitBtn" class="btn primary">Cadastrar tipo</button></div>
   </form>
+</div></div>
+<div id="typeManagerModal" class="modal hidden" style="z-index:29"><div class="modal-card" style="max-width:720px">
+  <div class="modal-head"><div><span class="eyebrow">ADMINISTRAÇÃO</span><h2>Tipos de ferramenta</h2></div><button id="closeTypeManager" class="icon-btn" type="button">×</button></div>
+  <div class="form">
+    <div class="notice">Você pode editar um tipo já cadastrado. A alteração do nome também atualiza as ferramentas que utilizam esse tipo. A exclusão só é permitida quando nenhuma ferramenta estiver usando o cadastro.</div>
+    <div id="typeManagerList" class="record-list"></div>
+    <div class="form-actions"><button type="button" class="btn secondary" id="newTypeFromManager">＋ Novo tipo</button></div>
+  </div>
 </div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=4.2.1"></script>
