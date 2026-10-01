@@ -19,5 +19,8 @@
     "is_global_admin",
     "user_permissions_history"
   ],
-  "edge_function": "supabase/functions/admin-user-management/index.ts"
+  "edge_function": "supabase/functions/admin-user-management/index.ts",
+  "changes": [
+    "Indicador visual do card Estoque atual conforme estoque mínimo e crítico"
+  ]
 }
