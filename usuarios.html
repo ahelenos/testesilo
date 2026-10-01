@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <link rel="icon" type="image/x-icon" href="./favicon.ico?v=4.2.1">
+  <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico?v=4.2.1">
+  <title>Usuários · Gestão de Fábrica</title>
+  <link rel="stylesheet" href="css/style.css?v=4.2.1">
+  <link rel="stylesheet" href="css/usuarios.css?v=4.2.1">
+</head>
+<body class="users-page">
+<header>
+  <div class="brand">
+    <a href="index.html" class="users-back" aria-label="Voltar">←</a>
+    <img class="vigas-header-logo" src="assets/vigas-amarelo.png?v=4.2.1" alt="VIGAS Engenharia em Pré-Moldados">
+    <div class="brand-text">
+      <strong>Gestão de Fábrica</strong>
+      <span>GERENCIAMENTO DE USUÁRIOS</span>
+      <span id="userEmail" class="user-email"></span>
+    </div>
+  </div>
+  <div class="header-actions">
+    <span class="home-version">V4.2.1</span>
+    <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
+  </div>
+</header>
+
+<main class="users-main">
+  <section class="users-hero">
+    <div>
+      <span class="eyebrow">ADMINISTRAÇÃO DO SISTEMA</span>
+      <h1>Gerenciamento de Usuários</h1>
+      <p>Controle de perfis, status, senhas e permissões de acesso aos módulos da Gestão de Fábrica.</p>
+    </div>
+    <div class="users-hero-actions">
+      <a class="btn secondary" href="index.html">← Voltar ao painel</a>
+      <button id="newUserBtn" class="btn primary" type="button">+ Novo usuário</button>
+    </div>
+  </section>
+
+  <section class="users-toolbar panel">
+    <div class="users-search">
+      <label for="userSearch">Pesquisar</label>
+      <input id="userSearch" type="search" placeholder="Pesquisar por e-mail..." autocomplete="off">
+    </div>
+    <label class="users-check">
+      <input id="showInactive" type="checkbox">
+      Mostrar usuários inativos
+    </label>
+    <button id="refreshUsers" class="btn secondary" type="button">Atualizar</button>
+  </section>
+
+  <div id="usersMessage" class="users-message" role="status"></div>
+
+  <section class="panel users-panel">
+    <div class="panel-head">
+      <div>
+        <span class="eyebrow">USUÁRIOS CADASTRADOS</span>
+        <h2>Acessos do sistema</h2>
+      </div>
+      <span id="usersCount" class="users-count"></span>
+    </div>
+    <div class="table-scroll">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Usuário</th>
+            <th>Perfil</th>
+            <th>Status</th>
+            <th>Controle de Silo</th>
+            <th>Manutenção</th>
+            <th>Ferramentas</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="usersBody"></tbody>
+      </table>
+    </div>
+    <div id="emptyUsers" class="empty-state hidden">Nenhum usuário encontrado.</div>
+  </section>
+
+  <section class="users-info">
+    <div>ⓘ</div>
+    <p><strong>Sobre as permissões:</strong> Visualizar permite consultar o módulo. Administrar permite também executar as operações administrativas previstas pelo módulo. O perfil global Administrador é utilizado para o gerenciamento do sistema. Senhas nunca são exibidas nem armazenadas pelo painel.</p>
+  </section>
+</main>
+
+<!-- Criar usuário -->
+<dialog id="newUserDialog" class="user-dialog">
+  <form id="newUserForm" class="user-dialog-card">
+    <div class="dialog-title">
+      <div>
+        <span class="eyebrow">NOVO ACESSO</span>
+        <h2>Criar usuário</h2>
+        <p>Cadastre um novo acesso para a Gestão de Fábrica.</p>
+      </div>
+      <button id="closeNewUser" class="dialog-close" type="button" aria-label="Fechar">×</button>
+    </div>
+
+    <div class="user-form-grid">
+      <div>
+        <label for="newEmail">E-mail</label>
+        <input id="newEmail" type="email" autocomplete="off" placeholder="usuario@empresa.com.br" required>
+      </div>
+      <div>
+        <label for="newPassword">Senha inicial</label>
+        <input id="newPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Mínimo de 6 caracteres" required>
+      </div>
+    </div>
+
+    <div class="user-form-grid">
+      <div>
+        <label for="newRole">Perfil global</label>
+        <select id="newRole">
+          <option value="viewer">Usuário</option>
+          <option value="admin">Administrador global</option>
+        </select>
+      </div>
+      <div>
+        <label for="newActive">Status</label>
+        <select id="newActive">
+          <option value="true">Ativo</option>
+          <option value="false">Inativo</option>
+        </select>
+      </div>
+    </div>
+
+    <fieldset>
+      <legend>Permissões por módulo</legend>
+      <div class="permission-grid">
+        <div>
+          <label for="newSilo">Controle de Silo</label>
+          <select id="newSilo">
+            <option value="viewer">Visualizar</option>
+            <option value="admin">Administrar</option>
+          </select>
+        </div>
+        <div>
+          <label for="newManutencao">Manutenção</label>
+          <select id="newManutencao">
+            <option value="viewer">Visualizar</option>
+            <option value="admin">Administrar</option>
+          </select>
+        </div>
+        <div>
+          <label for="newFerramentas">Ferramentas</label>
+          <select id="newFerramentas">
+            <option value="viewer">Visualizar</option>
+            <option value="admin">Administrar</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="user-dialog-note">O usuário será criado no Supabase Auth com a senha informada e poderá entrar imediatamente se estiver ativo.</div>
+    <div id="newUserError" class="edit-error"></div>
+
+    <div class="dialog-actions">
+      <button id="cancelNewUser" class="btn secondary" type="button">Cancelar</button>
+      <button id="createUser" class="btn primary" type="submit">Criar usuário</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Editar usuário -->
+<dialog id="editUserDialog" class="user-dialog">
+  <form id="editUserForm" class="user-dialog-card">
+    <div class="dialog-title">
+      <div>
+        <span class="eyebrow">ALTERAR ACESSO</span>
+        <h2>Editar usuário</h2>
+        <p id="editEmail"></p>
+      </div>
+      <button id="closeEdit" class="dialog-close" type="button" aria-label="Fechar">×</button>
+    </div>
+
+    <input id="editUserId" type="hidden">
+
+    <div class="user-form-grid">
+      <div>
+        <label for="editRole">Perfil global</label>
+        <select id="editRole">
+          <option value="viewer">Usuário</option>
+          <option value="admin">Administrador global</option>
+        </select>
+      </div>
+      <div>
+        <label for="editActive">Status</label>
+        <select id="editActive">
+          <option value="true">Ativo</option>
+          <option value="false">Inativo</option>
+        </select>
+      </div>
+    </div>
+
+    <fieldset>
+      <legend>Permissões por módulo</legend>
+      <div class="permission-grid">
+        <div>
+          <label for="editSilo">Controle de Silo</label>
+          <select id="editSilo">
+            <option value="viewer">Visualizar</option>
+            <option value="admin">Administrar</option>
+          </select>
+        </div>
+        <div>
+          <label for="editManutencao">Manutenção</label>
+          <select id="editManutencao">
+            <option value="viewer">Visualizar</option>
+            <option value="admin">Administrar</option>
+          </select>
+        </div>
+        <div>
+          <label for="editFerramentas">Ferramentas</label>
+          <select id="editFerramentas">
+            <option value="viewer">Visualizar</option>
+            <option value="admin">Administrar</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="user-dialog-note">Alterações de permissões ficam registradas no histórico. Você não pode remover o próprio acesso de administrador global.</div>
+    <div id="editError" class="edit-error"></div>
+
+    <div class="dialog-actions">
+      <button id="cancelEdit" class="btn secondary" type="button">Cancelar</button>
+      <button id="saveEdit" class="btn primary" type="submit">Salvar alterações</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Alterar senha -->
+<dialog id="passwordDialog" class="user-dialog">
+  <form id="passwordForm" class="user-dialog-card">
+    <div class="dialog-title">
+      <div>
+        <span class="eyebrow">SEGURANÇA</span>
+        <h2>Alterar senha</h2>
+        <p id="passwordEmail"></p>
+      </div>
+      <button id="closePassword" class="dialog-close" type="button" aria-label="Fechar">×</button>
+    </div>
+
+    <input id="passwordUserId" type="hidden">
+    <label for="newUserPassword">Nova senha</label>
+    <input id="newUserPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Mínimo de 6 caracteres" required>
+
+    <label for="confirmUserPassword" class="password-confirm-label">Confirmar nova senha</label>
+    <input id="confirmUserPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Digite novamente" required>
+
+    <div class="user-dialog-note">A senha é enviada diretamente ao Supabase Auth pela função administrativa. Ela não fica registrada no histórico nem no banco de dados da aplicação.</div>
+    <div id="passwordError" class="edit-error"></div>
+
+    <div class="dialog-actions">
+      <button id="cancelPassword" class="btn secondary" type="button">Cancelar</button>
+      <button id="savePassword" class="btn primary" type="submit">Alterar senha</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Histórico -->
+<dialog id="historyDialog" class="user-dialog">
+  <div class="user-dialog-card history-card">
+    <div class="dialog-title">
+      <div>
+        <span class="eyebrow">AUDITORIA</span>
+        <h2>Histórico de auditoria</h2>
+        <p id="historyEmail"></p>
+      </div>
+      <button id="closeHistory" class="dialog-close" type="button" aria-label="Fechar">×</button>
+    </div>
+    <div id="historyContent" class="history-content"></div>
+  </div>
+</dialog>
+
+<footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V4.2.1</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js?v=4.2.1"></script>
+<script src="js/usuarios.js?v=4.2.1"></script>
+</body>
+</html>

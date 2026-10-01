@@ -409,3 +409,9 @@
 @media(max-width:650px){.factory-home-main{width:calc(100% - 20px);margin-top:22px}.factory-hero{align-items:flex-start}.factory-hero h1{font-size:27px}.module-grid{grid-template-columns:1fr}.module-card{min-height:220px}.home-version{display:none}}
 
 .user-email{display:block;font-size:10px!important;line-height:1.2!important;color:#9fb0c6!important;letter-spacing:.02em!important;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+
+/* V4.2.1 — módulo de Gerenciamento de Usuários */
+.module-users:before{background:#7c3aed}
+.module-users .module-icon{background:#f5f3ff}
+.module-users .module-arrow{color:#6d28d9}
+.admin-module.hidden{display:none!important}

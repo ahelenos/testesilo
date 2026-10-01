@@ -5,7 +5,7 @@ if (!window.supabase || typeof window.supabase.createClient !== "function") {
   throw new Error("Biblioteca Supabase não foi carregada.");
 }
 
-const AUTH_STORAGE_KEY = "controle-fabrica-v4.1.3-auth";
+const AUTH_STORAGE_KEY = "controle-fabrica-v4.2.1-auth";
 
 // Sessão de autenticação restrita à aba/sessão do navegador.
 // Assim o sistema não reutiliza automaticamente um login salvo de sessões
@@ -47,6 +47,25 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 window.supabaseClient = supabaseClient;
 
 const SiloSupabase = {
+  async adminUserManagement(action, payload = {}){
+    const session = await this.getSession();
+    if(!session?.access_token) throw new Error("Sessão de autenticação não encontrada.");
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-user-management`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${session.access_token}`,
+        "apikey": SUPABASE_ANON_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ action, ...payload })
+    });
+    let body = null;
+    try{ body = await response.json(); }catch(_){ body = null; }
+    if(!response.ok){
+      throw new Error(body?.error || `Erro na operação administrativa (${response.status}).`);
+    }
+    return body;
+  },
   async getModulePermissions(user){
     const u=user||await this.getUser();
     if(!u) return {};

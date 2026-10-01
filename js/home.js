@@ -1,4 +1,4 @@
-const APP_VERSION = "4.1.3";
+const APP_VERSION = "4.2.1";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -28,10 +28,32 @@ async function boot(){
     const profile=await SiloSupabase.getProfile(user);
     if(!profile) throw new Error("Perfil do usuário não foi encontrado para a sessão autenticada.");
 
+    // Segunda camada de proteção: uma sessão antiga também não pode abrir
+    // a aplicação quando o perfil foi marcado como inativo.
+    if(profile.active === false){
+      await SiloSupabase.signOut();
+      $("loginScreen").classList.remove("hidden");
+      $("appScreen").classList.add("hidden");
+      $("loginError").textContent="Este usuário está inativo. Procure um administrador.";
+      return;
+    }
+
     $("loginScreen").classList.add("hidden");
     $("appScreen").classList.remove("hidden");
     $("userRole").textContent=profile.role==="admin"?"ADMIN":"VISUALIZAÇÃO";
     $("userEmail").textContent=user.email||"";
+
+    // O módulo de Usuários é exclusivo do administrador global.
+    // A decisão é feita no banco pela função is_global_admin().
+    try{
+      const { data: isAdmin, error: adminError } =
+        await supabaseClient.rpc("is_global_admin");
+      if(!adminError && isAdmin === true){
+        $("usersModuleCard")?.classList.remove("hidden");
+      }
+    }catch(adminCheckError){
+      console.warn("Não foi possível verificar o acesso ao módulo Usuários.",adminCheckError);
+    }
   }catch(err){
     console.error("Inicialização da Gestão de Fábrica:",err);
     $("loginScreen").classList.remove("hidden");
