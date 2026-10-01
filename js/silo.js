@@ -47,18 +47,6 @@ function formatDayBr(iso){
 function previousMonth(key){const [y,m]=key.split("-").map(Number);const d=new Date(y,m-2,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function percent(a,b){return b?((a-b)/b)*100:null}
 function renderRole(){document.querySelectorAll(".admin-only").forEach(e=>e.classList.toggle("hidden",!canEdit()));$("userRole").textContent=isAdmin()?"ADMIN":"VISUALIZAÇÃO"}
-function renderStockLevelCard(allStock){
- const card=$("stockValue")?.closest(".kpi");
- if(!card)return;
- const minimum=Number(state.settings?.minimum_stock||0);
- const critical=Number(state.settings?.critical_stock||0);
- card.classList.remove("stock-warning","stock-critical");
- if(critical>0 && allStock<critical){
-   card.classList.add("stock-critical");
- }else if(minimum>0 && allStock<minimum){
-   card.classList.add("stock-warning");
- }
-}
 function renderStockAlert(allStock){
  const minimum=Number(state.settings?.minimum_stock||0);
  const critical=Number(state.settings?.critical_stock||0);
@@ -91,7 +79,7 @@ function getDeliveryStatus(dateValue){
 }
 function renderTop(){
  const allStock=stock(), cap=Number(state.settings?.capacity||0), occ=cap?allStock/cap*100:0, mm=monthMovements(), avg=monthlyAverage(mm), histAvg=historicalAverage(), recentAvg=recentTenDayAverage(state.movements), extremes=monthlyConsumptionExtremes(mm);
- renderStockAlert(allStock); renderStockLevelCard(allStock);
+ renderStockAlert(allStock);
  const nextDelivery=state.settings?.next_delivery_date||"";
  const deliveryStatus=getDeliveryStatus(nextDelivery);
  const deliveryKpi=$("deliveryKpi");

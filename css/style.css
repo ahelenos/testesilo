@@ -415,30 +415,3 @@
 .module-users .module-icon{background:#f5f3ff}
 .module-users .module-arrow{color:#6d28d9}
 .admin-module.hidden{display:none!important}
-
-
-/* V4.2.1 - Indicador visual do estoque mínimo/crítico */
-.kpi.stock-warning{
-  background:linear-gradient(135deg,#fffdf5,#fff7d6);
-  border-color:#f4d28a;
-}
-.kpi.stock-warning .kpi-icon{
-  background:#fef3c7;
-  color:#b45309;
-}
-.kpi.stock-warning b,
-.kpi.stock-warning strong{
-  color:#92400e;
-}
-.kpi.stock-critical{
-  background:linear-gradient(135deg,#fff7f7,#ffe4e6);
-  border-color:#f3a6ad;
-}
-.kpi.stock-critical .kpi-icon{
-  background:#fee2e2;
-  color:#b91c1c;
-}
-.kpi.stock-critical b,
-.kpi.stock-critical strong{
-  color:#991b1b;
-}

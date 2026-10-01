@@ -46,6 +46,18 @@ function bind(){
   $("closeTypeModal").onclick=closeTypeModal;
   $("cancelTypeForm").onclick=closeTypeModal;
   $("typeQuickForm").onsubmit=saveQuickType;
+
+  // Gerenciamento de tipos de ferramenta
+  $("manageTypesBtn")?.addEventListener("click",openTypeManager);
+  $("closeTypeManager")?.addEventListener("click",closeTypeManager);
+  $("newTypeFromManager")?.addEventListener("click",()=>{
+    closeTypeManager();
+    openQuickType();
+  });
+  $("typeManagerModal")?.addEventListener("click",e=>{
+    if(e.target.id==="typeManagerModal")closeTypeManager();
+  });
+
   $("typeModal").addEventListener("click",e=>{if(e.target.id==="typeModal")closeTypeModal()});
   $("search").addEventListener("input",render);
   $("statusFilter").addEventListener("change",render);

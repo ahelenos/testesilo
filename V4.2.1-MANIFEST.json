@@ -20,7 +20,7 @@
     "user_permissions_history"
   ],
   "edge_function": "supabase/functions/admin-user-management/index.ts",
-  "changes": [
-    "Indicador visual do card Estoque atual conforme estoque mínimo e crítico"
+  "patches": [
+    "Correção do botão Tipos de ferramenta e fechamento/abertura do gerenciador de tipos."
   ]
 }
