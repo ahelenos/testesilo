@@ -1,4 +1,4 @@
-const APP_VERSION = "5.0.5";
+const APP_VERSION = "5.0.6";
 (() => {
 "use strict";
 const $ = id => document.getElementById(id);
@@ -67,13 +67,6 @@ async function loadDay(){
       .from("presenca_colaboradores")
       .select("id,nome,ativo")
       .order("nome",{ascending:true});
-    console.groupCollapsed("[V5 Presença] SELECT colaboradores");
-    console.log("Usuário autenticado:", user?.id || null, user?.email || null);
-    console.log("Permissão:", modulePermission || null);
-    console.log("Erro:", cError || null);
-    console.log("Dados:", collaborators);
-    console.log("Quantidade:", Array.isArray(collaborators) ? collaborators.length : null);
-    console.groupEnd();
 
     if(cError) throw cError;
 
@@ -144,24 +137,23 @@ function render(){
         <td><label class="presence-switch"><input type="checkbox" data-shift="tarde" ${r.tarde?"checked":""} ${disabled}><span>✓</span></label></td>
         <td><label class="presence-switch"><input type="checkbox" data-shift="extra" ${r.extra?"checked":""} ${disabled}><span>✓</span></label></td>
         <td><input class="presence-observation" data-observation type="text" maxlength="500" value="${esc(r.observacao)}" placeholder="Observação..." ${disabled}></td>
-        <td><button class="tiny presence-save" data-save type="button" ${disabled}>Salvar</button></td>
       </tr>`;
   }).join("");
 
   document.querySelectorAll("#presenceBody tr").forEach(tr=>{
-    const id=tr.dataset.id;
     tr.querySelectorAll("input[data-shift]").forEach(input=>{
       input.addEventListener("change",()=>setDirty(tr,true));
     });
     tr.querySelector("[data-observation]")?.addEventListener("input",()=>setDirty(tr,true));
-    tr.querySelector("[data-save]")?.addEventListener("click",()=>saveRow(id,tr));
   });
+
+  updateColumnToggles();
+  updateSaveAllButton();
 }
 
 function setDirty(tr,dirty){
   tr.classList.toggle("row-dirty",dirty);
-  const btn=tr.querySelector("[data-save]");
-  if(btn) btn.textContent=dirty?"Salvar":"Salvo";
+  updateSaveAllButton();
 }
 
 function getRowValues(tr){
@@ -173,30 +165,97 @@ function getRowValues(tr){
   };
 }
 
-async function saveRow(id,tr){
+function updateSaveAllButton(){
+  const btn=$("saveAllBtn");
+  if(!btn) return;
+  const dirtyCount=document.querySelectorAll("#presenceBody tr.row-dirty").length;
+  btn.disabled=!canEdit() || dirtyCount===0;
+  btn.textContent=dirtyCount ? `Salvar alterações (${dirtyCount})` : "Salvar alterações";
+}
+
+function updateColumnToggles(){
+  document.querySelectorAll("[data-toggle-column]").forEach(btn=>{
+    const shift=btn.dataset.toggleColumn;
+    const inputs=[...document.querySelectorAll(`#presenceBody input[data-shift="${shift}"]`)];
+    const enabled=inputs.filter(input=>!input.disabled);
+    const allChecked=enabled.length>0 && enabled.every(input=>input.checked);
+    btn.textContent=allChecked ? "Desmarcar todos" : "Marcar todos";
+    btn.disabled=!canEdit() || enabled.length===0;
+  });
+}
+
+function toggleColumn(shift){
   if(!canEdit()) return;
-  const values=getRowValues(tr);
-  const btn=tr.querySelector("[data-save]");
-  if(btn)btn.disabled=true;
-  setLoading("Salvando presença...");
+  const inputs=[...document.querySelectorAll(`#presenceBody input[data-shift="${shift}"]`)]
+    .filter(input=>!input.disabled);
+  if(!inputs.length) return;
+
+  const allChecked=inputs.every(input=>input.checked);
+  const nextValue=!allChecked;
+
+  inputs.forEach(input=>{
+    if(input.checked!==nextValue){
+      input.checked=nextValue;
+      const tr=input.closest("tr");
+      if(tr) setDirty(tr,true);
+    }
+  });
+
+  updateColumnToggles();
+  updateSaveAllButton();
+}
+
+async function saveAll(){
+  if(!canEdit()) return;
+
+  const dirtyRows=[...document.querySelectorAll("#presenceBody tr.row-dirty")];
+  if(!dirtyRows.length){
+    setMessage("Nenhuma alteração para salvar.","");
+    return;
+  }
+
+  const btn=$("saveAllBtn");
+  if(btn) btn.disabled=true;
+  setLoading(`Salvando ${dirtyRows.length} ${dirtyRows.length===1?"alteração":"alterações"}...`);
+
   try{
-    const {error}=await sb.rpc("salvar_presenca",{
-      p_colaborador_id:id,
-      p_data:selectedDate,
-      p_manha:values.manha,
-      p_tarde:values.tarde,
-      p_extra:values.extra,
-      p_observacao:values.observacao
+    const results=await Promise.allSettled(
+      dirtyRows.map(async tr=>{
+        const id=tr.dataset.id;
+        const values=getRowValues(tr);
+        const {error}=await sb.rpc("salvar_presenca",{
+          p_colaborador_id:id,
+          p_data:selectedDate,
+          p_manha:values.manha,
+          p_tarde:values.tarde,
+          p_extra:values.extra,
+          p_observacao:values.observacao
+        });
+        if(error) throw error;
+        return tr;
+      })
+    );
+
+    const failed=results.filter(r=>r.status==="rejected");
+    const succeeded=results.length-failed.length;
+
+    results.forEach(result=>{
+      if(result.status==="fulfilled") setDirty(result.value,false);
     });
-    if(error) throw error;
-    setDirty(tr,false);
-    setMessage("Presença salva com sucesso.","success");
+
     await loadCounters();
+
+    if(failed.length){
+      setMessage(`${succeeded} salvo(s). ${failed.length} não foi(ram) salvo(s). Verifique as alterações e tente novamente.`,"error");
+    }else{
+      setMessage(`${succeeded} ${succeeded===1?"alteração salva":"alterações salvas"} com sucesso.`,"success");
+    }
   }catch(error){
     console.error(error);
-    setMessage(error.message||"Não foi possível salvar a presença.","error");
+    setMessage(error.message||"Não foi possível salvar as alterações.","error");
   }finally{
-    if(btn)btn.disabled=false;
+    updateSaveAllButton();
+    updateColumnToggles();
     clearLoading();
   }
 }
@@ -457,6 +516,10 @@ async function boot(){
     $("presenceDate").addEventListener("change",loadDay);
     $("todayBtn").addEventListener("click",()=>{$("presenceDate").value=isoToday();loadDay();});
     $("pdfBtn").addEventListener("click",printPdf);
+    $("saveAllBtn")?.addEventListener("click",saveAll);
+    document.querySelectorAll("[data-toggle-column]").forEach(btn=>{
+      btn.addEventListener("click",()=>toggleColumn(btn.dataset.toggleColumn));
+    });
     $("periodReportBtn")?.addEventListener("click",openPeriodReport);
     $("periodReportForm")?.addEventListener("submit",(event)=>{
       if(event.submitter?.value==="cancel") return;

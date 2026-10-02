@@ -87,7 +87,10 @@
         <span class="eyebrow">CHAMADA DO DIA</span>
         <h2 id="dateHeading">Carregando...</h2>
       </div>
-      <span id="rowsCount" class="presence-count"></span>
+      <div class="presence-head-actions">
+        <span id="rowsCount" class="presence-count"></span>
+        <button id="saveAllBtn" class="btn primary admin-only" type="button" disabled>Salvar alterações</button>
+      </div>
     </div>
 
     <div class="presence-table-wrap">
@@ -95,11 +98,25 @@
         <thead>
           <tr>
             <th>Colaborador</th>
-            <th>Manhã</th>
-            <th>Tarde</th>
-            <th>Extra</th>
+            <th>
+              <div class="presence-column-head">
+                <span>Manhã</span>
+                <button class="presence-column-toggle admin-only" type="button" data-toggle-column="manha">Marcar todos</button>
+              </div>
+            </th>
+            <th>
+              <div class="presence-column-head">
+                <span>Tarde</span>
+                <button class="presence-column-toggle admin-only" type="button" data-toggle-column="tarde">Marcar todos</button>
+              </div>
+            </th>
+            <th>
+              <div class="presence-column-head">
+                <span>Extra</span>
+                <button class="presence-column-toggle admin-only" type="button" data-toggle-column="extra">Marcar todos</button>
+              </div>
+            </th>
             <th>Observação</th>
-            <th></th>
           </tr>
         </thead>
         <tbody id="presenceBody"></tbody>
@@ -158,6 +175,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=5.0.5"></script>
 <script src="js/loading.js?v=5"></script>
-<script src="js/presenca.js?v=5.0.5"></script>
+<script src="js/presenca.js?v=5.0.6"></script>
 </body>
 </html>
