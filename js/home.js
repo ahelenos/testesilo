@@ -54,6 +54,17 @@ async function boot(){
     }catch(adminCheckError){
       console.warn("Não foi possível verificar o acesso ao módulo Usuários.",adminCheckError);
     }
+
+    // V5 — Controle de Presença.
+    // O card só aparece para quem possui viewer/admin no módulo.
+    try{
+      const presencePermission = await SiloSupabase.getModulePermission("presenca",user);
+      if(["viewer","admin"].includes(String(presencePermission).toLowerCase())){
+        $("presenceModuleCard")?.classList.remove("hidden");
+      }
+    }catch(presenceError){
+      console.warn("Não foi possível verificar o acesso ao módulo Controle de Presença.",presenceError);
+    }
   }catch(err){
     console.error("Inicialização da Gestão de Fábrica:",err);
     $("loginScreen").classList.remove("hidden");

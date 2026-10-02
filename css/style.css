@@ -415,3 +415,8 @@
 .module-users .module-icon{background:#f5f3ff}
 .module-users .module-arrow{color:#6d28d9}
 .admin-module.hidden{display:none!important}
+
+/* V5 — Controle de Presença */
+.module-presence:before{background:#0ea5e9}
+.module-presence .module-icon{background:#ecfeff}
+.module-presence .module-arrow{color:#0284c7}

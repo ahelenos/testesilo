@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <link rel="icon" type="image/x-icon" href="./favicon.ico?v=5">
+  <title>Colaboradores · Controle de Presença V5</title>
+  <link rel="stylesheet" href="css/style.css?v=5">
+  <link rel="stylesheet" href="css/loading.css?v=5">
+  <link rel="stylesheet" href="css/presenca.css?v=5">
+</head>
+<body class="presence-page">
+<div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
+  <div class="global-loading-card">
+    <span class="loading-spinner" aria-hidden="true"></span>
+    <strong id="globalLoadingText">Carregando...</strong>
+    <span>Aguarde, estamos processando a solicitação.</span>
+  </div>
+</div>
+
+<header>
+  <div class="brand">
+    <a href="presenca.html" class="presence-back" aria-label="Voltar">←</a>
+    <img class="vigas-header-logo" src="assets/vigas-amarelo.png?v=5" alt="VIGAS Engenharia em Pré-Moldados">
+    <div class="brand-text">
+      <strong>Gestão de Fábrica</strong>
+      <span>COLABORADORES · PRESENÇA V5</span>
+      <span id="userEmail" class="user-email"></span>
+    </div>
+  </div>
+  <div class="header-actions">
+    <span id="roleLabel" class="home-version"></span>
+    <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
+  </div>
+</header>
+
+<main class="presence-main">
+  <section class="presence-hero">
+    <div>
+      <span class="eyebrow">V5 · CADASTRO</span>
+      <h1>Colaboradores</h1>
+      <p>Cadastre e mantenha o status dos colaboradores. Cadastros não são excluídos para preservar o histórico.</p>
+    </div>
+    <div class="presence-hero-actions">
+      <a class="btn secondary" href="presenca.html">← Ficha de chamada</a>
+      <button id="newCollaboratorBtn" class="btn primary" type="button">+ Novo colaborador</button>
+    </div>
+  </section>
+
+  <section class="presence-toolbar panel">
+    <div class="date-control collaborator-search">
+      <label for="collaboratorSearch">Pesquisar</label>
+      <input id="collaboratorSearch" type="search" placeholder="Nome do colaborador..." autocomplete="off">
+    </div>
+    <label class="presence-check">
+      <input id="showInactive" type="checkbox">
+      Mostrar inativos
+    </label>
+    <button id="refreshCollaborators" class="btn secondary" type="button">Atualizar</button>
+  </section>
+
+  <div id="collaboratorMessage" class="presence-message standalone" role="status"></div>
+
+  <section class="panel presence-panel">
+    <div class="panel-head">
+      <div>
+        <span class="eyebrow">CADASTRO DE COLABORADORES</span>
+        <h2>Equipe</h2>
+      </div>
+      <span id="collaboratorsCount" class="presence-count"></span>
+    </div>
+    <div class="presence-table-wrap">
+      <table class="presence-table collaborators-table">
+        <thead>
+          <tr>
+            <th>Colaborador</th>
+            <th>Status</th>
+            <th>Cadastrado em</th>
+            <th>Atualizado em</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="collaboratorsBody"></tbody>
+      </table>
+    </div>
+    <div id="emptyCollaborators" class="presence-empty hidden">Nenhum colaborador encontrado.</div>
+  </section>
+</main>
+
+<dialog id="collaboratorDialog" class="presence-dialog">
+  <form id="collaboratorForm" class="presence-dialog-card">
+    <div class="dialog-title">
+      <div>
+        <span class="eyebrow">CADASTRO</span>
+        <h2 id="dialogTitle">Novo colaborador</h2>
+        <p>O cadastro não poderá ser excluído.</p>
+      </div>
+      <button id="closeDialog" class="dialog-close" type="button" aria-label="Fechar">×</button>
+    </div>
+
+    <label for="collaboratorName">Nome do colaborador</label>
+    <input id="collaboratorName" type="text" maxlength="160" required placeholder="Nome completo">
+
+    <label for="collaboratorActive">Status</label>
+    <select id="collaboratorActive">
+      <option value="true">Ativo</option>
+      <option value="false">Inativo</option>
+    </select>
+
+    <div id="collaboratorError" class="presence-error"></div>
+
+    <div class="dialog-actions">
+      <button id="cancelDialog" class="btn secondary" type="button">Cancelar</button>
+      <button id="saveCollaborator" class="btn primary" type="submit">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js?v=5"></script>
+<script src="js/loading.js?v=5"></script>
+<script src="js/presenca-colaboradores.js?v=5"></script>
+</body>
+</html>

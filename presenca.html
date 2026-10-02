@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <link rel="icon" type="image/x-icon" href="./favicon.ico?v=5">
+  <title>Controle de Presença · Gestão de Fábrica</title>
+  <link rel="stylesheet" href="css/style.css?v=5">
+  <link rel="stylesheet" href="css/loading.css?v=5">
+  <link rel="stylesheet" href="css/presenca.css?v=5">
+</head>
+<body class="presence-page">
+<div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
+  <div class="global-loading-card">
+    <span class="loading-spinner" aria-hidden="true"></span>
+    <strong id="globalLoadingText">Carregando...</strong>
+    <span>Aguarde, estamos processando a solicitação.</span>
+  </div>
+</div>
+
+<header>
+  <div class="brand">
+    <a href="index.html" class="presence-back" aria-label="Voltar">←</a>
+    <img class="vigas-header-logo" src="assets/vigas-amarelo.png?v=5" alt="VIGAS Engenharia em Pré-Moldados">
+    <div class="brand-text">
+      <strong>Gestão de Fábrica</strong>
+      <span>CONTROLE DE PRESENÇA · V5</span>
+      <span id="userEmail" class="user-email"></span>
+    </div>
+  </div>
+  <div class="header-actions">
+    <span id="roleLabel" class="home-version"></span>
+    <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
+  </div>
+</header>
+
+<main class="presence-main">
+  <section class="presence-hero">
+    <div>
+      <span class="eyebrow">V5 · CONTROLE DE PRESENÇA</span>
+      <h1>Ficha de chamada</h1>
+      <p>Registre a presença por dia e turno, sem controle de horários.</p>
+    </div>
+    <div class="presence-hero-actions">
+      <a class="btn secondary" href="index.html">← Voltar ao painel</a>
+      <a class="btn secondary admin-only" href="presenca-colaboradores.html">Colaboradores</a>
+      <button id="pdfBtn" class="btn primary" type="button">Exportar PDF</button>
+    </div>
+  </section>
+
+  <section class="presence-toolbar panel">
+    <div class="date-control">
+      <label for="presenceDate">Data da chamada</label>
+      <input id="presenceDate" type="date">
+    </div>
+    <button id="todayBtn" class="btn secondary" type="button">Hoje</button>
+    <div id="presenceMessage" class="presence-message" role="status"></div>
+  </section>
+
+  <section class="presence-kpis">
+    <article class="presence-kpi morning">
+      <span>MANHÃ</span>
+      <strong id="countMorning">0</strong>
+      <small>presentes</small>
+    </article>
+    <article class="presence-kpi afternoon">
+      <span>TARDE</span>
+      <strong id="countAfternoon">0</strong>
+      <small>presentes</small>
+    </article>
+    <article class="presence-kpi extra">
+      <span>TURNO EXTRA</span>
+      <strong id="countExtra">0</strong>
+      <small>presentes</small>
+    </article>
+    <article class="presence-kpi day">
+      <span>PRESENÇA NO DIA</span>
+      <strong id="countDay">0</strong>
+      <small>manhã + tarde</small>
+    </article>
+  </section>
+
+  <section class="panel presence-panel">
+    <div class="panel-head">
+      <div>
+        <span class="eyebrow">CHAMADA DO DIA</span>
+        <h2 id="dateHeading">Carregando...</h2>
+      </div>
+      <span id="rowsCount" class="presence-count"></span>
+    </div>
+
+    <div class="presence-table-wrap">
+      <table class="presence-table">
+        <thead>
+          <tr>
+            <th>Colaborador</th>
+            <th>Manhã</th>
+            <th>Tarde</th>
+            <th>Extra</th>
+            <th>Observação</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="presenceBody"></tbody>
+      </table>
+    </div>
+
+    <div id="emptyPresence" class="presence-empty hidden">
+      Nenhum colaborador disponível para esta data.
+    </div>
+  </section>
+
+  <section class="presence-note">
+    <div>ⓘ</div>
+    <p><strong>Regra:</strong> a presença do dia conta 1 somente quando o colaborador estiver presente pela manhã <strong>e</strong> à tarde. O turno extra é contado separadamente.</p>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js?v=5"></script>
+<script src="js/loading.js?v=5"></script>
+<script src="js/presenca.js?v=5"></script>
+</body>
+</html>
