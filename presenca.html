@@ -44,7 +44,8 @@
     </div>
     <div class="presence-hero-actions">
       <a class="btn secondary admin-only" href="presenca-colaboradores.html">Colaboradores</a>
-      <button id="pdfBtn" class="btn primary" type="button">Exportar PDF</button>
+      <button id="pdfBtn" class="btn secondary" type="button">PDF do dia</button>
+      <button id="periodReportBtn" class="btn primary" type="button">Relatório PDF</button>
     </div>
   </section>
 
@@ -110,7 +111,45 @@
     </div>
   </section>
 
-  <section class="presence-note">
+  <!-- Relatório de presença por período -->
+<dialog id="periodReportDialog" class="presence-dialog">
+  <form method="dialog" class="presence-dialog-card" id="periodReportForm">
+    <div class="dialog-title">
+      <div>
+        <span class="eyebrow">RELATÓRIO</span>
+        <h2>Relatório de presença</h2>
+        <p>Escolha o período para gerar a lista de colaboradores presentes.</p>
+      </div>
+      <button class="dialog-close" value="cancel" type="submit" aria-label="Fechar">×</button>
+    </div>
+
+    <div class="report-date-grid">
+      <label for="reportStartDate">
+        Data inicial *
+        <input id="reportStartDate" type="date" required>
+      </label>
+
+      <label for="reportEndDate">
+        Data final *
+        <input id="reportEndDate" type="date" required>
+      </label>
+    </div>
+
+    <div class="report-help">
+      O relatório mostrará, por dia, somente os colaboradores que tiveram presença em pelo menos um turno.
+      Manhã, tarde e turno extra serão identificados separadamente.
+    </div>
+
+    <div id="periodReportError" class="presence-error"></div>
+
+    <div class="dialog-actions">
+      <button class="btn secondary" value="cancel" type="submit">Cancelar</button>
+      <button id="generatePeriodReportBtn" class="btn primary" value="default" type="submit">Gerar PDF</button>
+    </div>
+  </form>
+</dialog>
+
+<section class="presence-note">
     <div>ⓘ</div>
     <p><strong>Regra:</strong> a presença do dia conta 1 somente quando o colaborador estiver presente pela manhã <strong>e</strong> à tarde. O turno extra é contado separadamente.</p>
   </section>

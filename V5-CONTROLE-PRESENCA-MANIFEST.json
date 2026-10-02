@@ -1,0 +1,33 @@
+{
+  "module": "V5 - Controle de Presença",
+  "base_version": "4.2.1",
+  "status": "desenvolvimento",
+  "added": [
+    "Ficha diária de chamada por manhã, tarde e turno extra",
+    "Cadastro, edição e ativação/inativação de colaboradores sem exclusão",
+    "Consulta de outras datas",
+    "Observação por colaborador e dia",
+    "Contadores de manhã, tarde, extra e presença do dia",
+    "Exportação da ficha para impressão/Salvar como PDF",
+    "Integração com permissões do módulo presenca",
+    "Relatório de presença por período com seleção de duas datas e exportação para impressão/Salvar como PDF"
+  ],
+  "frontend_files": [
+    "presenca.html",
+    "presenca-colaboradores.html",
+    "js/presenca.js",
+    "js/presenca-colaboradores.js",
+    "css/presenca.css"
+  ],
+  "database_prerequisites": [
+    "public.presenca_colaboradores",
+    "public.presenca_registros",
+    "public.salvar_presenca",
+    "public.obter_presenca_dia",
+    "public.obter_historico_presenca",
+    "public.obter_contadores_presenca",
+    "module_permissions module=presenca"
+  ],
+  "version": "5.0.2",
+  "description": "V5 Controle de Presença - cabeçalho padronizado com navegação no topo"
+}

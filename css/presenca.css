@@ -91,3 +91,15 @@
 @media(max-width:420px){
   .presence-kpis{grid-template-columns:1fr}
 }
+
+
+/* =========================================================
+   RELATÓRIO DE PRESENÇA POR PERÍODO
+========================================================= */
+.report-date-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.report-date-grid label{display:block;font-size:11px;margin-top:0}
+.report-date-grid input{width:100%;box-sizing:border-box;margin-top:5px}
+.report-help{margin-top:14px;padding:11px 12px;background:#f8fafc;border:1px solid #e7ebf1;border-radius:10px;color:#667085;font-size:11px;line-height:1.5}
+@media(max-width:560px){
+  .report-date-grid{grid-template-columns:1fr}
+}
