@@ -51,7 +51,8 @@ function normalizeUser(row){
     active: row.active !== false,
     silo: row.silo_permission || "viewer",
     manutencao: row.manutencao_permission || "viewer",
-    ferramentas: row.ferramentas_permission || "viewer"
+    ferramentas: row.ferramentas_permission || "viewer",
+    presenca: row.presenca_permission || "viewer"
   };
 }
 
@@ -79,6 +80,7 @@ function renderUsers(){
       <td>${pill(permissionText(u.silo),u.silo==="admin"?"access-admin":"access-viewer")}</td>
       <td>${pill(permissionText(u.manutencao),u.manutencao==="admin"?"access-admin":"access-viewer")}</td>
       <td>${pill(permissionText(u.ferramentas),u.ferramentas==="admin"?"access-admin":"access-viewer")}</td>
+      <td>${pill(permissionText(u.presenca),u.presenca==="admin"?"access-admin":"access-viewer")}</td>
       <td>
         <div class="row-actions">
           <button class="row-action edit-user" data-id="${u.id}" type="button">Editar</button>
@@ -152,6 +154,7 @@ function openEditor(id){
   $("editSilo").value=selectedUser.silo;
   $("editManutencao").value=selectedUser.manutencao;
   $("editFerramentas").value=selectedUser.ferramentas;
+  $("editPresenca").value=selectedUser.presenca;
   $("editError").textContent="";
   $("editUserDialog").showModal();
 }
@@ -169,7 +172,8 @@ async function saveEditor(){
     active:$("editActive").value==="true",
     silo_permission:$("editSilo").value,
     manutencao_permission:$("editManutencao").value,
-    ferramentas_permission:$("editFerramentas").value
+    ferramentas_permission:$("editFerramentas").value,
+    presenca_permission:$("editPresenca").value
   };
 
   try{
@@ -194,6 +198,7 @@ function openNewUser(){
   $("newSilo").value="viewer";
   $("newManutencao").value="viewer";
   $("newFerramentas").value="viewer";
+  $("newPresenca").value="viewer";
   $("newUserError").textContent="";
   $("newUserDialog").showModal();
 }
@@ -223,7 +228,8 @@ async function createUser(){
       active:$("newActive").value==="true",
       silo_permission:$("newSilo").value,
       manutencao_permission:$("newManutencao").value,
-      ferramentas_permission:$("newFerramentas").value
+      ferramentas_permission:$("newFerramentas").value,
+      presenca_permission:$("newPresenca").value
     });
 
     $("newUserDialog").close();
@@ -310,7 +316,8 @@ async function openHistory(id){
     const moduleNames={
       silo:"Controle de Silo",
       manutencao:"Manutenção",
-      ferramentas:"Ferramentas"
+      ferramentas:"Ferramentas",
+      presenca:"Controle de Presença"
     };
 
     const actionNames={

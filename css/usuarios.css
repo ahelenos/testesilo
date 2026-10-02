@@ -117,3 +117,8 @@
 @keyframes users-loading-spin{
   to{transform:rotate(360deg)}
 }
+
+/* V5 - permissao do modulo Controle de Presenca */
+.permission-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:900px){.permission-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.permission-grid{grid-template-columns:1fr}}
