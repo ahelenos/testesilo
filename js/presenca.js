@@ -1,4 +1,4 @@
-const APP_VERSION = "5.0.0";
+const APP_VERSION = "5.0.5";
 (() => {
 "use strict";
 const $ = id => document.getElementById(id);
@@ -67,6 +67,14 @@ async function loadDay(){
       .from("presenca_colaboradores")
       .select("id,nome,ativo")
       .order("nome",{ascending:true});
+    console.groupCollapsed("[V5 Presença] SELECT colaboradores");
+    console.log("Usuário autenticado:", user?.id || null, user?.email || null);
+    console.log("Permissão:", modulePermission || null);
+    console.log("Erro:", cError || null);
+    console.log("Dados:", collaborators);
+    console.log("Quantidade:", Array.isArray(collaborators) ? collaborators.length : null);
+    console.groupEnd();
+
     if(cError) throw cError;
 
     const {data: records, error:rError}=await sb
