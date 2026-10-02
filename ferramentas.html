@@ -72,7 +72,7 @@
       <div class="field full"><label>Tipo de ferramenta *</label><input name="nome" required placeholder="Ex.: Parafusadeira"></div>
       <div class="field full"><label>Observações</label><textarea name="observacoes" placeholder="Opcional"></textarea></div>
     </div>
-    <div class="form-actions"><button type="button" class="btn secondary" id="cancelTypeForm">Cancelar</button><button id="typeSubmitBtn" class="btn primary">Cadastrar tipo</button></div>
+    <div class="form-actions" style="justify-content:space-between"><button type="button" class="btn danger hidden" id="typeDeleteBtn">Excluir tipo</button><div style="display:flex;gap:8px;margin-left:auto"><button type="button" class="btn secondary" id="cancelTypeForm">Cancelar</button><button id="typeSubmitBtn" class="btn primary">Cadastrar tipo</button></div></div>
   </form>
 </div></div>
 <div id="typeManagerModal" class="modal hidden" style="z-index:29"><div class="modal-card" style="max-width:720px">
@@ -86,5 +86,5 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=4.2.1"></script>
 <script src="js/loading.js?v=4.2.1"></script>
-<script src="js/ferramentas.js?v=4.2.1-fix1"></script>
+<script src="js/ferramentas.js?v=4.2.1-fix2"></script>
 </body></html>

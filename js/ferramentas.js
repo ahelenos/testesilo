@@ -46,6 +46,12 @@ function bind(){
   $("closeTypeModal").onclick=closeTypeModal;
   $("cancelTypeForm").onclick=closeTypeModal;
   $("typeQuickForm").onsubmit=saveQuickType;
+  $("typeDeleteBtn")?.addEventListener("click",async()=>{
+    if(!editingType)return;
+    const target=editingType;
+    await deleteToolType(target);
+    if(!toolTypes.some(t=>String(t.id)===String(target.id))) closeTypeModal();
+  });
 
   // Gerenciamento de tipos de ferramenta
   $("manageTypesBtn")?.addEventListener("click",openTypeManager);
@@ -348,6 +354,7 @@ function closeTypeModal(){
   const button=$("typeSubmitBtn");
   if(title) title.textContent="Cadastrar tipo de ferramenta";
   if(button) button.textContent="Cadastrar tipo";
+  $("typeDeleteBtn")?.classList.add("hidden");
 }
 function openQuickType(){
   if(!isAdmin()) return;
@@ -355,6 +362,7 @@ function openQuickType(){
   $("typeQuickForm").reset();
   $("typeModalTitle").textContent="Cadastrar tipo de ferramenta";
   $("typeSubmitBtn").textContent="Cadastrar tipo";
+  $("typeDeleteBtn")?.classList.add("hidden");
   $("typeModal").classList.remove("hidden");
   setTimeout(()=>$("typeQuickForm")?.querySelector("[name=nome]")?.focus(),50);
 }
@@ -401,6 +409,8 @@ function editToolType(t){
   $("typeQuickForm").querySelector('[name="observacoes"]').value=t.observacoes||"";
   $("typeModalTitle").textContent="Editar tipo de ferramenta";
   $("typeSubmitBtn").textContent="Salvar alterações";
+  $("typeDeleteBtn")?.classList.remove("hidden");
+  $("typeDeleteBtn")?.focus();
   closeTypeManager();
   $("typeModal").classList.remove("hidden");
   setTimeout(()=>$("typeQuickForm")?.querySelector("[name=nome]")?.focus(),50);
