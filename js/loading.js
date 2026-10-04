@@ -1,5 +1,5 @@
 /* =========================================================
-   LOADING GLOBAL — V4.2.1
+   LOADING GLOBAL — V5.1.1
    Mostra um indicador enquanto operações de rede estão
    sendo processadas. Funciona em todas as telas.
 ========================================================= */
@@ -103,6 +103,12 @@
   document.addEventListener("submit", event => {
     const form = event.target;
     if(!form || form.dataset.loadingManaged === "true") return;
+
+    // Native <dialog method="dialog"> forms are handled by the dialog's
+    // own submit listener. Do not leave the global loading overlay visible
+    // when the user confirms/cancels/closes a dialog.
+    if(String(form.getAttribute("method") || "").toLowerCase() === "dialog") return;
+
     const submitter = event.submitter;
     const label = submitter?.dataset?.loadingText || "Salvando alterações...";
     show(label);
