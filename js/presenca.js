@@ -1,4 +1,4 @@
-const APP_VERSION = "5.0.6";
+const APP_VERSION = "5.1.0";
 (() => {
 "use strict";
 const $ = id => document.getElementById(id);
@@ -10,6 +10,8 @@ let rows = [];
 let selectedDate = "";
 let reportStartDate = "";
 let reportEndDate = "";
+let lunchOrder = null;
+let lunchDialogMode = "new";
 
 const esc = v => String(v ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const isoToday = () => {
@@ -91,6 +93,7 @@ async function loadDay(){
 
     render();
     await loadCounters();
+    await loadLunchOrder();
   }catch(error){
     console.error(error);
     setMessage(error.message||"Não foi possível carregar a ficha de presença.","error");
@@ -116,6 +119,140 @@ async function loadCounters(){
     $("countAfternoon").textContent="—";
     $("countExtra").textContent="—";
     $("countDay").textContent="—";
+  }
+}
+
+
+async function loadLunchOrder(){
+  const countEl=$("countLunch");
+  const statusEl=$("lunchStatus");
+  if(!countEl) return;
+
+  try{
+    const {data,error}=await sb.rpc("obter_pedido_almoco",{p_data:selectedDate});
+    if(error) throw error;
+
+    lunchOrder=Array.isArray(data) && data.length ? data[0] : null;
+    countEl.textContent=String(Number(lunchOrder?.quantidade||0));
+
+    if(lunchOrder){
+      statusEl.textContent=`solicitado em ${new Date(lunchOrder.solicitado_em).toLocaleString("pt-BR")}`;
+    }else{
+      statusEl.textContent="nenhum pedido";
+    }
+
+    updateLunchButton();
+  }catch(error){
+    console.error(error);
+    lunchOrder=null;
+    countEl.textContent="—";
+    statusEl.textContent="não disponível";
+    updateLunchButton();
+  }
+}
+
+function updateLunchButton(){
+  const btn=$("lunchBtn");
+  if(!btn) return;
+
+  const isToday=selectedDate===isoToday();
+  btn.classList.toggle("hidden",!isToday);
+  btn.disabled=!isToday;
+}
+
+function openLunchDialog(){
+  if(selectedDate!==isoToday()) return;
+
+  const dialog=$("lunchDialog");
+  const qty=$("lunchQuantity");
+  const text=$("lunchDialogText");
+  const title=$("lunchDialogTitle");
+  const error=$("lunchDialogError");
+  if(!dialog||!qty) return;
+
+  error.textContent="";
+
+  if(lunchOrder){
+    lunchDialogMode="edit";
+    title.textContent="Alterar pedido de almoço";
+    text.textContent=`Você já solicitou ${Number(lunchOrder.quantidade)} almoço${Number(lunchOrder.quantidade)===1?"":"s"} hoje. Deseja alterar a quantidade?`;
+    qty.value=String(Number(lunchOrder.quantidade));
+  }else{
+    lunchDialogMode="new";
+    const morning=Number($("countMorning")?.textContent||0);
+    title.textContent="Solicitar almoço";
+    text.textContent=`Foi calculado ${morning} almoço${morning===1?"":"s"}, deseja acrescentar almoços extras?`;
+    qty.value=String(morning);
+  }
+
+  if(typeof dialog.showModal==="function") dialog.showModal();
+  else dialog.setAttribute("open","");
+  setTimeout(()=>{qty.focus();qty.select();},50);
+}
+
+function buildLunchWhatsAppUrl(quantity){
+  const phone="555193767114";
+  const message=`*Pedido de Almoço*\n\nPara o dia de hoje favor solicitar ${quantity} almoço${quantity===1?"":"s"} para os colaboradores da Fábrica.`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}
+
+async function confirmLunchOrder(){
+  if(selectedDate!==isoToday()) return;
+
+  const qtyEl=$("lunchQuantity");
+  const errorEl=$("lunchDialogError");
+  const btn=$("confirmLunchBtn");
+  const dialog=$("lunchDialog");
+
+  const quantity=Number(qtyEl?.value);
+  errorEl.textContent="";
+
+  if(!Number.isInteger(quantity)||quantity<0){
+    errorEl.textContent="Informe uma quantidade inteira maior ou igual a zero.";
+    return;
+  }
+
+  // Abre a janela dentro do gesto do usuário para evitar bloqueio de pop-up
+  // depois da chamada assíncrona ao Supabase.
+  const whatsappWindow=window.open("about:blank","_blank");
+
+  if(btn) btn.disabled=true;
+  setLoading(lunchDialogMode==="edit" ? "Alterando pedido de almoço..." : "Salvando pedido de almoço...");
+
+  try{
+    const {data,error}=await sb.rpc("salvar_pedido_almoco",{p_quantidade:quantity});
+    if(error) throw error;
+
+    lunchOrder=Array.isArray(data) && data.length ? data[0] : {
+      data:isoToday(),
+      quantidade:quantity,
+      solicitado_em:new Date().toISOString()
+    };
+
+    await loadLunchOrder();
+
+    const whatsappUrl=buildLunchWhatsAppUrl(quantity);
+
+    if(whatsappWindow && !whatsappWindow.closed){
+      whatsappWindow.location.href=whatsappUrl;
+    }else{
+      window.open(whatsappUrl,"_blank");
+    }
+
+    if(dialog?.open) dialog.close();
+    setMessage(
+      lunchDialogMode==="edit"
+        ? `Pedido de almoço alterado para ${quantity} almoço${quantity===1?"":"s"}.`
+        : `Pedido de ${quantity} almoço${quantity===1?"":"s"} registrado com sucesso.`,
+      "success"
+    );
+  }catch(error){
+    console.error(error);
+    if(whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
+    errorEl.textContent=error.message||"Não foi possível registrar o pedido de almoço.";
+  }finally{
+    if(btn) btn.disabled=false;
+    clearLoading();
   }
 }
 
@@ -516,9 +653,18 @@ async function boot(){
     $("presenceDate").addEventListener("change",loadDay);
     $("todayBtn").addEventListener("click",()=>{$("presenceDate").value=isoToday();loadDay();});
     $("pdfBtn").addEventListener("click",printPdf);
+    $("lunchBtn")?.addEventListener("click",openLunchDialog);
     $("saveAllBtn")?.addEventListener("click",saveAll);
     document.querySelectorAll("[data-toggle-column]").forEach(btn=>{
       btn.addEventListener("click",()=>toggleColumn(btn.dataset.toggleColumn));
+    });
+    $("lunchForm")?.addEventListener("submit",(event)=>{
+      if(event.submitter?.value==="cancel") return;
+      event.preventDefault();
+      confirmLunchOrder();
+    });
+    $("lunchDialog")?.addEventListener("click",(event)=>{
+      if(event.target === $("lunchDialog")) $("lunchDialog").close();
     });
     $("periodReportBtn")?.addEventListener("click",openPeriodReport);
     $("periodReportForm")?.addEventListener("submit",(event)=>{

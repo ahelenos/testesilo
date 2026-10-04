@@ -8,7 +8,7 @@
   <title>Controle de Presença · Gestão de Fábrica</title>
   <link rel="stylesheet" href="css/style.css?v=5">
   <link rel="stylesheet" href="css/loading.css?v=5">
-  <link rel="stylesheet" href="css/presenca.css?v=5">
+  <link rel="stylesheet" href="css/presenca.css?v=5.1.0">
 </head>
 <body class="presence-page">
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -44,6 +44,7 @@
     </div>
     <div class="presence-hero-actions">
       <a class="btn secondary admin-only" href="presenca-colaboradores.html">Colaboradores</a>
+      <button id="lunchBtn" class="btn secondary" type="button">Solicitar Almoço</button>
       <button id="pdfBtn" class="btn secondary" type="button">PDF do dia</button>
       <button id="periodReportBtn" class="btn primary" type="button">Relatório PDF</button>
     </div>
@@ -78,6 +79,11 @@
       <span>PRESENÇA NO DIA</span>
       <strong id="countDay">0</strong>
       <small>manhã + tarde</small>
+    </article>
+    <article class="presence-kpi lunch">
+      <span>ALMOÇOS SOLICITADOS</span>
+      <strong id="countLunch">0</strong>
+      <small id="lunchStatus">nenhum pedido</small>
     </article>
   </section>
 
@@ -128,6 +134,30 @@
     </div>
   </section>
 
+  <!-- Pedido de almoço -->
+<dialog id="lunchDialog" class="presence-dialog">
+  <form method="dialog" class="presence-dialog-card" id="lunchForm">
+    <div class="dialog-title">
+      <div>
+        <span class="eyebrow">ALIMENTAÇÃO</span>
+        <h2 id="lunchDialogTitle">Solicitar almoço</h2>
+        <p id="lunchDialogText">Foi calculado 0 almoço, deseja acrescentar almoços extras?</p>
+      </div>
+      <button class="dialog-close" value="cancel" type="submit" aria-label="Fechar">×</button>
+    </div>
+
+    <label for="lunchQuantity">Quantidade de almoços</label>
+    <input id="lunchQuantity" type="number" min="0" step="1" inputmode="numeric" required>
+
+    <div id="lunchDialogError" class="presence-error"></div>
+
+    <div class="dialog-actions">
+      <button class="btn secondary" value="cancel" type="submit">Cancelar</button>
+      <button id="confirmLunchBtn" class="btn primary" value="default" type="submit">Confirmar pedido</button>
+    </div>
+  </form>
+</dialog>
+
   <!-- Relatório de presença por período -->
 <dialog id="periodReportDialog" class="presence-dialog">
   <form method="dialog" class="presence-dialog-card" id="periodReportForm">
@@ -175,6 +205,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=5.0.5"></script>
 <script src="js/loading.js?v=5"></script>
-<script src="js/presenca.js?v=5.0.6"></script>
+<script src="js/presenca.js?v=5.1.0"></script>
 </body>
 </html>
