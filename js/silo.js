@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.14";
+const APP_VERSION = "5.1.15";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -362,55 +362,134 @@ function translateAuthError(message){
   return m;
 }
 
-async function waitForSiloSession(){
-  // O Silo é aberto com frequência a partir da navegação mobile.
-  // Em alguns navegadores móveis a sessão persistida termina de ser
-  // hidratada depois do primeiro getUser(). Não mostramos o login
-  // antes de dar tempo para essa hidratação concluir.
-  for(let attempt=0; attempt<12; attempt++){
-    try{
-      const session = await SiloSupabase.getSession();
-      if(session?.user) return session.user;
+let siloBootPromise = null;
+let siloAuthReady = false;
 
-      const user = await SiloSupabase.getUser();
-      if(user) return user;
+function wait(ms){
+  return new Promise(resolve=>setTimeout(resolve,ms));
+}
+
+async function waitForSiloSession(){
+  // O problema observado é exclusivo desta página. Em vez de considerar
+  // um primeiro getSession() vazio como "deslogado", esperamos o evento
+  // INITIAL_SESSION do próprio cliente Supabase. Isso evita que a tela
+  // de login seja exibida durante a hidratação da sessão ao abrir o Silo.
+  if(siloAuthReady){
+    const session = await SiloSupabase.getSession();
+    return session?.user || null;
+  }
+
+  const client = window.supabaseClient;
+  if(!client?.auth) throw new Error("Cliente de autenticação do Supabase não está disponível.");
+
+  const immediate = await SiloSupabase.getSession();
+  if(immediate?.user){
+    siloAuthReady = true;
+    return immediate.user;
+  }
+
+  return await new Promise(async (resolve,reject)=>{
+    let finished=false;
+    let timer=null;
+    let subscription=null;
+
+    const finish=(user,error)=>{
+      if(finished)return;
+      finished=true;
+      if(timer)clearTimeout(timer);
+      try{subscription?.unsubscribe?.();}catch(_){}
+      if(error)reject(error);
+      else{
+        siloAuthReady=true;
+        resolve(user||null);
+      }
+    };
+
+    const {data} = client.auth.onAuthStateChange((event,session)=>{
+      if(event==="INITIAL_SESSION" || event==="SIGNED_IN" || event==="TOKEN_REFRESHED"){
+        if(session?.user) finish(session.user);
+        else if(event==="INITIAL_SESSION") finish(null);
+      }
+    });
+    subscription=data?.subscription;
+
+    // Segurança para navegadores que já emitiram INITIAL_SESSION antes
+    // de o listener ser registrado.
+    try{
+      const session=await SiloSupabase.getSession();
+      if(session?.user) return finish(session.user);
     }catch(error){
-      const message=String(error?.message||"").toLowerCase();
-      if(!message.includes("auth session missing")) throw error;
+      return finish(null,error);
     }
 
-    await new Promise(resolve=>setTimeout(resolve,250));
-  }
-  return null;
+    timer=setTimeout(async()=>{
+      try{
+        const session=await SiloSupabase.getSession();
+        finish(session?.user||null);
+      }catch(error){
+        finish(null,error);
+      }
+    },3000);
+  });
 }
 
 async function boot(){
-  try{
-    state.user=await waitForSiloSession();
+  // Evita que pageshow/visibilitychange disparem duas inicializações
+  // simultâneas do módulo.
+  if(siloBootPromise) return siloBootPromise;
 
-    // Login automático desativado: o usuário deve informar suas próprias credenciais.
-    // O login só aparece depois de a sessão persistida ter tido tempo para hidratar.
-    if(!state.user){
+  siloBootPromise=(async()=>{
+    try{
+      state.user=await waitForSiloSession();
+
+      if(!state.user){
+        $("loginScreen").classList.remove("hidden");
+        $("appScreen").classList.add("hidden");
+        return;
+      }
+
+      // A partir daqui a autenticação já foi confirmada. Qualquer erro
+      // posterior NÃO deve ser convertido silenciosamente em "faça login".
+      state.profile=await SiloSupabase.getProfile(state.user);
+      if(!state.profile){
+        throw new Error("Perfil do usuário não foi encontrado para a sessão autenticada.");
+      }
+
+      state.permissions=await SiloSupabase.getModulePermissions(state.user);
+
+      $("loginScreen").classList.add("hidden");
+      $("appScreen").classList.remove("hidden");
+      $("userEmail").textContent=state.user.email||"";
+      await refresh();
+    }catch(x){
+      console.error("Inicialização do Controle de Silo:",x);
+
+      // Se já temos um usuário autenticado, mantemos a aplicação visível
+      // e mostramos o erro no contexto correto, sem mandar o usuário
+      // indevidamente para a tela de login.
+      if(state.user){
+        $("loginScreen").classList.add("hidden");
+        $("appScreen").classList.remove("hidden");
+        const message=x?.message||"Não foi possível carregar o Controle de Silo.";
+        const target=$("settingsError")||$("pageError");
+        if(target){
+          target.textContent=message;
+          target.classList.remove("hidden");
+        }
+        return;
+      }
+
       $("loginScreen").classList.remove("hidden");
       $("appScreen").classList.add("hidden");
-      return;
+      $("loginError").textContent=translateAuthError(x?.message||"Não foi possível iniciar a sessão.");
+    }finally{
+      siloBootPromise=null;
     }
+  })();
 
-    state.profile=await SiloSupabase.getProfile(state.user);
-    state.permissions=await SiloSupabase.getModulePermissions(state.user);
-    if(!state.profile) throw new Error("Perfil do usuário não foi encontrado para a sessão autenticada.");
-
-    $("loginScreen").classList.add("hidden");
-    $("appScreen").classList.remove("hidden");
-    $("userEmail").textContent=state.user.email||"";
-    await refresh();
-  }catch(x){
-    $("loginScreen").classList.remove("hidden");
-    $("appScreen").classList.add("hidden");
-    $("loginError").textContent=translateAuthError(x?.message||"Não foi possível iniciar a sessão.");
-    console.error("Inicialização do Controle de Silo:",x);
-  }
+  return siloBootPromise;
 }
+
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginError").textContent="";try{await SiloSupabase.signIn($("loginEmail").value.trim(),$("loginPassword").value);await boot()}catch(x){$("loginError").textContent=translateAuthError(x?.message||"Falha no login.")}});
 $("logoutBtn").addEventListener("click",async()=>{try{await SiloSupabase.signOut()}finally{location.reload()}});
 $("monthPicker").addEventListener("change",e=>{state.month=normalizeMonth(e.target.value);render()});
