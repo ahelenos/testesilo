@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.5";
+const APP_VERSION = "5.1.6";
 (() => {
 "use strict";
 const $ = id => document.getElementById(id);
@@ -525,30 +525,183 @@ function printPdf(){
       <td>${esc(r.observacao||"")}</td>
     </tr>`).join("");
 
-  const win=window.open("","_blank","width=1000,height=800");
+  const lunchTotal=esc($("countLunch")?.textContent||"0");
+  const lunchFabrica=esc($("countLunchFabrica")?.textContent||"0");
+  const lunchObra=esc($("countLunchObra")?.textContent||"0");
+  const lunchMotoristas=esc($("countLunchMotoristas")?.textContent||"0");
+  const lunchOutros=esc($("countLunchOutros")?.textContent||"0");
+  const lunchStatus=esc($("lunchStatus")?.textContent||"nenhum pedido");
+
+  const win=window.open("","_blank","width=900,height=1000");
   if(!win){
     setMessage("O navegador bloqueou a janela de impressão. Permita pop-ups para exportar o PDF.","error");
     return;
   }
+
   win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Controle de Presença - ${esc(selectedDate)}</title>
   <style>
-    @page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;font-size:11px}
-    h1{font-size:20px;margin:0 0 4px}p{margin:0 0 14px;color:#667085}.summary{display:flex;gap:25px;margin-bottom:15px}
-    .summary div{padding:8px 12px;border:1px solid #ddd;border-radius:8px}.summary b{display:block;font-size:15px}
-    table{width:100%;border-collapse:collapse}th,td{padding:8px;border:1px solid #dfe3e8;text-align:left}th{background:#f5f7fa;font-size:9px;text-transform:uppercase}
-    td:nth-child(2),td:nth-child(3),td:nth-child(4){text-align:center;font-weight:bold;width:60px}.foot{margin-top:12px;color:#667085;font-size:9px}
+    @page{size:A4 portrait;margin:8mm}
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0}
+    body{
+      font-family:Arial,sans-serif;
+      color:#172033;
+      font-size:8.5px;
+      line-height:1.15;
+      width:100%;
+      max-width:194mm;
+      margin:0 auto;
+    }
+    .header{
+      border-bottom:1.5px solid #172033;
+      padding-bottom:6px;
+      margin-bottom:6px;
+    }
+    .eyebrow{
+      font-size:7px;
+      font-weight:800;
+      letter-spacing:.12em;
+      color:#667085;
+      text-transform:uppercase;
+    }
+    h1{font-size:15px;margin:2px 0 2px}
+    .date{font-size:8.5px;color:#667085}
+
+    .top-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:5px;
+      margin-bottom:6px;
+    }
+    .summary{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:4px;
+    }
+    .summary div{
+      padding:4px 5px;
+      border:1px solid #dfe3e8;
+      border-radius:4px;
+      text-align:center;
+    }
+    .summary span{
+      display:block;
+      color:#667085;
+      font-size:6.8px;
+      text-transform:uppercase;
+    }
+    .summary b{display:block;font-size:11px;margin-top:2px}
+
+    .lunch{
+      border:1.5px solid #008b7a;
+      border-radius:4px;
+      padding:4px 6px;
+    }
+    .lunch-title{
+      font-size:7px;
+      font-weight:800;
+      color:#007b6d;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+    }
+    .lunch-total{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      border-bottom:1px solid #dfe3e8;
+      padding:2px 0 3px;
+      margin-bottom:3px;
+    }
+    .lunch-total span{font-size:7px;font-weight:800}
+    .lunch-total b{font-size:15px}
+    .lunch-breakdown{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:2px 8px;
+      font-size:7px;
+    }
+    .lunch-breakdown div{
+      display:flex;
+      justify-content:space-between;
+      gap:4px;
+    }
+    .lunch-status{
+      margin-top:3px;
+      color:#667085;
+      font-size:6.5px;
+    }
+
+    table{width:100%;border-collapse:collapse;table-layout:fixed}
+    th,td{
+      padding:3px 4px;
+      border:1px solid #dfe3e8;
+      text-align:left;
+      vertical-align:middle;
+    }
+    th{
+      background:#f5f7fa;
+      font-size:7px;
+      text-transform:uppercase;
+    }
+    td{font-size:8px;height:5.4mm}
+    th:first-child,td:first-child{width:39%}
+    th:nth-child(2),th:nth-child(3),th:nth-child(4),
+    td:nth-child(2),td:nth-child(3),td:nth-child(4){
+      text-align:center;
+      width:10%;
+      font-weight:bold;
+    }
+    th:last-child,td:last-child{width:31%}
+    .foot{
+      margin-top:5px;
+      color:#667085;
+      font-size:6.5px;
+      border-top:1px solid #dfe3e8;
+      padding-top:4px;
+    }
+    @media print{
+      body{zoom:.92}
+      .header,.top-grid,table,.foot{break-inside:avoid}
+      tr{break-inside:avoid;page-break-inside:avoid}
+    }
   </style></head><body>
-  <h1>Controle de Presença</h1>
-  <p>Data: ${esc(dateLabel(selectedDate))}</p>
-  <div class="summary">
-    <div>Manhã <b>${esc($("countMorning").textContent)}</b></div>
-    <div>Tarde <b>${esc($("countAfternoon").textContent)}</b></div>
-    <div>Extra <b>${esc($("countExtra").textContent)}</b></div>
-    <div>Presença do dia <b>${esc($("countDay").textContent)}</b></div>
+  <div class="header">
+    <div class="eyebrow">V5 · CONTROLE DE PRESENÇA</div>
+    <h1>Controle de Presença</h1>
+    <div class="date">Data: ${esc(dateLabel(selectedDate))}</div>
   </div>
-  <table><thead><tr><th>Colaborador</th><th>Manhã</th><th>Tarde</th><th>Extra</th><th>Observação</th></tr></thead><tbody>${printable || '<tr><td colspan="5">Nenhum colaborador presente nesta data.</td></tr>'}</tbody></table>
+
+  <div class="top-grid">
+    <div class="summary">
+      <div>Manhã <b>${esc($("countMorning").textContent)}</b></div>
+      <div>Tarde <b>${esc($("countAfternoon").textContent)}</b></div>
+      <div>Extra <b>${esc($("countExtra").textContent)}</b></div>
+      <div>Presença do dia <b>${esc($("countDay").textContent)}</b></div>
+    </div>
+
+    <div class="lunch">
+      <div class="lunch-title">Almoços solicitados</div>
+      <div class="lunch-total">
+        <span>ALMOÇO TOTAL DO DIA</span>
+        <b>${lunchTotal}</b>
+      </div>
+      <div class="lunch-breakdown">
+        <div><span>Equipe Fábrica</span><b>${lunchFabrica}</b></div>
+        <div><span>Equipe Obra</span><b>${lunchObra}</b></div>
+        <div><span>Equipe Motoristas</span><b>${lunchMotoristas}</b></div>
+        <div><span>Outros</span><b>${lunchOutros}</b></div>
+      </div>
+      <div class="lunch-status">${lunchStatus}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Colaborador</th><th>Manhã</th><th>Tarde</th><th>Extra</th><th>Observação</th></tr></thead>
+    <tbody>${printable || '<tr><td colspan="5">Nenhum colaborador presente nesta data.</td></tr>'}</tbody>
+  </table>
+
   <div class="foot">P = Presente · — = Ausente/não marcado · Presença do dia = manhã e tarde.</div>
-  <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),500)}<\/script>
+  <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),700)}<\/script>
   </body></html>`);
   win.document.close();
 }
