@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.18";
+const APP_VERSION = "5.1.19";
 (() => {
 "use strict";
 try {
@@ -631,7 +631,7 @@ $("movementForm").addEventListener("submit",async e=>{e.preventDefault();if(!can
 }catch(x){$("movementError").textContent=x.message||"Erro ao salvar."}});
 $("cancelEdit").addEventListener("click",resetForm);
 $("movementType").addEventListener("change",toggleConcreteField);
-if(isMobile())return; $("historyBody").addEventListener("click",async e=>{const edit=e.target.closest("[data-edit]"),del=e.target.closest("[data-delete]");if(edit){const m=state.movements.find(x=>String(x.id)===edit.dataset.edit);if(!m)return;const d=new Date(m.date);$("movementId").value=m.id;$("movementType").value=m.type;$("movementQuantity").value=m.quantity;$("movementDate").value=String(m.date).slice(0,10);$("movementTime").value=d.toTimeString().slice(0,5);$("movementObservation").value=m.observation||"";$("movementConcrete").value=m.concretagem_m3??"";$("cancelEdit").classList.remove("hidden");toggleConcreteField();window.scrollTo({top:0,behavior:"smooth"})}if(del&&confirm("Excluir esta movimentação?")){try{await SiloSupabase.deleteMovement(del.dataset.delete);await refresh()}catch(x){alert(x.message)}}});
+if(!isMobile()){ $("historyBody").addEventListener("click",async e=>{const edit=e.target.closest("[data-edit]"),del=e.target.closest("[data-delete]");if(edit){const m=state.movements.find(x=>String(x.id)===edit.dataset.edit);if(!m)return;const d=new Date(m.date);$("movementId").value=m.id;$("movementType").value=m.type;$("movementQuantity").value=m.quantity;$("movementDate").value=String(m.date).slice(0,10);$("movementTime").value=d.toTimeString().slice(0,5);$("movementObservation").value=m.observation||"";$("movementConcrete").value=m.concretagem_m3??"";$("cancelEdit").classList.remove("hidden");toggleConcreteField();window.scrollTo({top:0,behavior:"smooth"})}if(del&&confirm("Excluir esta movimentação?")){try{await SiloSupabase.deleteMovement(del.dataset.delete);await refresh()}catch(x){alert(x.message)}}}); }
 document.addEventListener("click",e=>{
  const btn=e.target.closest(".btn-delete-delivery");
  if(btn) deleteDeliveryRecord(btn.dataset.deliveryId);
