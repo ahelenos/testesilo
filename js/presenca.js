@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.2";
+const APP_VERSION = "5.1.3";
 (() => {
 "use strict";
 const $ = id => document.getElementById(id);
@@ -155,13 +155,19 @@ function updateLunchButton(){
   const btn=$("lunchBtn");
   if(!btn) return;
 
+  const canRequestLunch=isAdmin();
   const isToday=selectedDate===isoToday();
-  btn.classList.toggle("hidden",!isToday);
-  btn.disabled=!isToday;
+
+  btn.classList.toggle("hidden",!canRequestLunch || !isToday);
+  btn.disabled=!canRequestLunch || !isToday;
+}
+
+function canRequestLunch(){
+  return isAdmin() && selectedDate===isoToday();
 }
 
 function openLunchDialog(){
-  if(selectedDate!==isoToday()) return;
+  if(!canRequestLunch()) return;
 
   const dialog=$("lunchDialog");
   const qty=$("lunchQuantity");
@@ -197,7 +203,7 @@ function buildLunchWhatsAppUrl(quantity){
 }
 
 async function confirmLunchOrder(){
-  if(selectedDate!==isoToday()) return;
+  if(!canRequestLunch()) return;
 
   const qtyEl=$("lunchQuantity");
   const errorEl=$("lunchDialogError");
