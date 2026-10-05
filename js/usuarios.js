@@ -1,5 +1,5 @@
 
-const APP_VERSION = "5.1.25";
+const APP_VERSION = "5.1.26";
 
 (() => {
 "use strict";
@@ -112,6 +112,29 @@ async function loadUsers(){
   try{
     const result=await SiloSupabase.adminUserManagement("list_users");
     allUsers=(result.users||[]).map(normalizeUser);
+
+    // A lista de usuários pode trazer "viewer" como valor de compatibilidade.
+    // Para exibição, a fonte autoritativa é module_permissions.
+    const {data:moduleRows,error:moduleError}=await supabaseClient.rpc("admin_list_module_permissions");
+    if(moduleError) throw moduleError;
+
+    const permissionsByUser=new Map();
+    for(const row of (moduleRows||[])){
+      if(!permissionsByUser.has(row.user_id)) permissionsByUser.set(row.user_id,{});
+      permissionsByUser.get(row.user_id)[String(row.module).toLowerCase()]=String(row.permission||"none").toLowerCase();
+    }
+
+    allUsers=allUsers.map(user=>{
+      const modulePermissions=permissionsByUser.get(user.id)||{};
+      return {
+        ...user,
+        silo: modulePermissions.silo ?? user.silo,
+        manutencao: modulePermissions.manutencao ?? user.manutencao,
+        ferramentas: modulePermissions.ferramentas ?? user.ferramentas,
+        presenca: modulePermissions.presenca ?? user.presenca
+      };
+    });
+
     renderUsers();
     setMessage("");
     return true;
@@ -162,19 +185,24 @@ function openEditor(id){
   $("editUserDialog").showModal();
 }
 
-async function applyNoAccessPermissions(userId, permissions){
+async function applyModulePermissions(userId, permissions){
   const entries=[
     ["silo",permissions.silo_permission],
     ["manutencao",permissions.manutencao_permission],
     ["ferramentas",permissions.ferramentas_permission],
     ["presenca",permissions.presenca_permission]
   ];
+
   for(const [module,permission] of entries){
-    if(String(permission).toLowerCase()!=="none") continue;
+    const normalized=String(permission||"none").toLowerCase();
+    if(!["admin","viewer","none"].includes(normalized)){
+      throw new Error(`Permissão inválida para o módulo ${module}.`);
+    }
+
     const {error}=await supabaseClient.rpc("set_module_permission",{
       p_user_id:userId,
       p_module:module,
-      p_permission:"none"
+      p_permission:normalized
     });
     if(error) throw error;
   }
@@ -207,7 +235,7 @@ async function saveEditor(){
 
   try{
     await SiloSupabase.adminUserManagement("update_user",payload);
-    await applyNoAccessPermissions(selectedUser.id,requestedPermissions);
+    await applyModulePermissions(selectedUser.id,requestedPermissions);
     $("editUserDialog").close();
     setMessage("Permissões, perfil e status atualizados com sucesso.","success");
     showGlobalLoading("Atualizando usuários...");
@@ -274,7 +302,7 @@ async function createUser(){
     const refreshed=await SiloSupabase.adminUserManagement("list_users");
     const created=(refreshed.users||[]).find(item=>String(item.email||"").toLowerCase()===email.toLowerCase());
     if(!created?.id) throw new Error("Usuário criado, mas não foi possível localizar o registro para aplicar as permissões.");
-    await applyNoAccessPermissions(created.id,requestedPermissions);
+    await applyModulePermissions(created.id,requestedPermissions);
 
     $("newUserDialog").close();
     setMessage("Usuário criado com sucesso.","success");
