@@ -1,6 +1,13 @@
-const APP_VERSION = "5.1.17";
+const APP_VERSION = "5.1.18";
 (() => {
 "use strict";
+try {
+  if (window.__SILO_HTML_DIAGNOSTIC__) {
+    window.__SILO_HTML_DIAGNOSTIC__.push("[SILO.JS] arquivo começou a executar");
+    const marker = document.getElementById("diagnosticLog");
+    if (marker) marker.textContent = window.__SILO_HTML_DIAGNOSTIC__.join("\n") + "\n" + (marker.textContent || "");
+  }
+} catch (_) {}
 const $=id=>document.getElementById(id);
 const state={user:null,profile:null,permissions:{},settings:null,movements:[],deliveryHistory:[],month:""};
 
