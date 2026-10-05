@@ -44,6 +44,7 @@
     </div>
     <div class="presence-hero-actions">
       <a class="btn secondary admin-only" href="presenca-colaboradores.html">Colaboradores</a>
+      <button id="absenceBtn" class="btn secondary" type="button">Ver Faltas</button>
       <button id="lunchBtn" class="btn secondary admin-only" type="button">Solicitar Almoço</button>
       <button id="pdfBtn" class="btn secondary" type="button">PDF do dia</button>
       <button id="periodReportBtn" class="btn primary" type="button">Relatório PDF</button>
@@ -148,6 +149,68 @@
     </div>
   </section>
 
+
+
+  <!-- Consulta de faltas -->
+<dialog id="absenceDialog" class="presence-dialog absence-dialog">
+  <form method="dialog" class="presence-dialog-card absence-dialog-card" id="absenceForm">
+    <div class="dialog-title">
+      <div>
+        <span class="eyebrow">CONTROLE DE PRESENÇA</span>
+        <h2>Ver Faltas</h2>
+        <p>Consulte as faltas por turno e o total de faltas de cada colaborador no período.</p>
+      </div>
+      <button class="dialog-close" value="cancel" type="submit" aria-label="Fechar">×</button>
+    </div>
+
+    <div class="report-date-grid absence-period-grid">
+      <label for="absenceStartDate">
+        Data inicial *
+        <input id="absenceStartDate" type="date" required>
+      </label>
+      <label for="absenceEndDate">
+        Data final *
+        <input id="absenceEndDate" type="date" required>
+      </label>
+    </div>
+
+    <div class="absence-help">
+      São considerados dias de chamada encontrados nos registros de presença. A falta é contabilizada quando o colaborador não possui presença no respectivo turno.
+    </div>
+
+    <div id="absenceError" class="presence-error"></div>
+
+    <div id="absenceSummary" class="absence-summary hidden"></div>
+
+    <section class="absence-section">
+      <div class="absence-section-head">
+        <div>
+          <span class="eyebrow">MANHÃ</span>
+          <h3>Faltas da manhã</h3>
+        </div>
+        <strong id="absenceMorningTotal">0</strong>
+      </div>
+      <div id="absenceMorningList" class="absence-list"></div>
+    </section>
+
+    <section class="absence-section">
+      <div class="absence-section-head">
+        <div>
+          <span class="eyebrow">TARDE</span>
+          <h3>Faltas da tarde</h3>
+        </div>
+        <strong id="absenceAfternoonTotal">0</strong>
+      </div>
+      <div id="absenceAfternoonList" class="absence-list"></div>
+    </section>
+
+    <div class="dialog-actions">
+      <button class="btn secondary" value="cancel" type="submit">Fechar</button>
+      <button id="loadAbsenceBtn" class="btn primary" value="default" type="submit">Atualizar faltas</button>
+    </div>
+  </form>
+</dialog>
+
   <!-- Pedido de almoço -->
 <dialog id="lunchDialog" class="presence-dialog">
   <form method="dialog" class="presence-dialog-card lunch-dialog-card" id="lunchForm">
@@ -246,8 +309,8 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js?v=5.1.20"></script>
-<script src="js/loading.js?v=5.1.20"></script>
-<script src="js/presenca.js?v=5.1.20"></script>
+<script src="js/supabase.js?v=5.1.21"></script>
+<script src="js/loading.js?v=5.1.21"></script>
+<script src="js/presenca.js?v=5.1.21"></script>
 </body>
 </html>

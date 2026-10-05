@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.14";
+const APP_VERSION = "5.1.21";
 (() => {
 "use strict";
 const $ = id => document.getElementById(id);
@@ -940,6 +940,165 @@ window.onload=()=>{window.print();setTimeout(()=>window.close(),700)}
   }
 }
 
+
+function setAbsenceDatesDefault(){
+  const end = selectedDate || isoToday();
+  const endDate = new Date(`${end}T12:00:00`);
+  const start = `${endDate.getFullYear()}-${String(endDate.getMonth()+1).padStart(2,"0")}-01`;
+  $("absenceStartDate").value = start;
+  $("absenceEndDate").value = end;
+}
+
+function formatAbsenceDate(iso){
+  return new Date(`${iso}T12:00:00`).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
+}
+
+function renderAbsenceList(targetId, entries, emptyText){
+  const target=$(targetId);
+  if(!target)return;
+  if(!entries.length){
+    target.innerHTML=`<div class="absence-empty">${esc(emptyText)}</div>`;
+    return;
+  }
+
+  target.innerHTML=entries.map(item=>{
+    const observations=item.observations.length
+      ? `<div class="absence-observations"><span>Observações</span>${item.observations.map(o=>`<div>${esc(o.date)} — ${esc(o.text)}</div>`).join("")}</div>`
+      : `<div class="absence-no-observation">Sem observação registrada.</div>`;
+
+    return `<article class="absence-person-card">
+      <div class="absence-person-main">
+        <strong>${esc(item.nome)}</strong>
+        <span>${item.total} ${item.total===1?"falta":"faltas"} no período</span>
+      </div>
+      ${observations}
+    </article>`;
+  }).join("");
+}
+
+async function loadAbsences(){
+  const start=$("absenceStartDate")?.value;
+  const end=$("absenceEndDate")?.value;
+  const errorEl=$("absenceError");
+  const loadBtn=$("loadAbsenceBtn");
+
+  if(errorEl) errorEl.textContent="";
+  if(!start || !end){
+    if(errorEl) errorEl.textContent="Informe a data inicial e a data final.";
+    return false;
+  }
+  if(start>end){
+    if(errorEl) errorEl.textContent="A data inicial não pode ser maior que a data final.";
+    return false;
+  }
+
+  if(loadBtn) loadBtn.disabled=true;
+  setLoading("Calculando faltas...");
+  try{
+    const [{data:collaborators,error:cError},{data:records,error:rError}]=await Promise.all([
+      sb.from("presenca_colaboradores")
+        .select("id,nome,ativo")
+        .order("nome",{ascending:true}),
+      sb.from("presenca_registros")
+        .select("colaborador_id,data,manha,tarde,observacao")
+        .gte("data",start)
+        .lte("data",end)
+        .order("data",{ascending:true})
+    ]);
+
+    if(cError) throw cError;
+    if(rError) throw rError;
+
+    const allRecords=records||[];
+    const calledDates=[...new Set(allRecords.map(r=>String(r.data)).filter(Boolean))].sort();
+
+    // Só contamos faltas em dias em que existe pelo menos um registro de chamada.
+    const byId=new Map();
+    allRecords.forEach(r=>{
+      const id=String(r.colaborador_id);
+      if(!byId.has(id)) byId.set(id,new Map());
+      byId.get(id).set(String(r.data),r);
+    });
+
+    const collaboratorList=(collaborators||[]).filter(c=>{
+      const id=String(c.id);
+      return c.ativo !== false || byId.has(id);
+    });
+
+    const buildEntries=(shift)=>{
+      return collaboratorList.map(c=>{
+        const id=String(c.id);
+        const recordsByDate=byId.get(id)||new Map();
+        const absences=[];
+        const observations=[];
+
+        calledDates.forEach(date=>{
+          const r=recordsByDate.get(date);
+          if(r?.[shift] !== true){
+            absences.push(date);
+            const note=String(r?.observacao||"").trim();
+            if(note) observations.push({date:formatAbsenceDate(date),text:note});
+          }
+        });
+
+        return {
+          nome:c.nome,
+          total:absences.length,
+          observations
+        };
+      }).filter(item=>item.total>0).sort((a,b)=>{
+        if(b.total!==a.total) return b.total-a.total;
+        return String(a.nome).localeCompare(String(b.nome),"pt-BR",{sensitivity:"base"});
+      });
+    };
+
+    const morning=buildEntries("manha");
+    const afternoon=buildEntries("tarde");
+    const morningTotal=morning.reduce((sum,item)=>sum+item.total,0);
+    const afternoonTotal=afternoon.reduce((sum,item)=>sum+item.total,0);
+
+    $("absenceMorningTotal").textContent=String(morningTotal);
+    $("absenceAfternoonTotal").textContent=String(afternoonTotal);
+
+    const summary=$("absenceSummary");
+    if(summary){
+      summary.classList.remove("hidden");
+      summary.innerHTML=`<div><span>Dias de chamada</span><strong>${calledDates.length}</strong></div>
+        <div><span>Faltas manhã</span><strong>${morningTotal}</strong></div>
+        <div><span>Faltas tarde</span><strong>${afternoonTotal}</strong></div>`;
+    }
+
+    renderAbsenceList("absenceMorningList",morning,"Nenhuma falta pela manhã no período.");
+    renderAbsenceList("absenceAfternoonList",afternoon,"Nenhuma falta à tarde no período.");
+    return true;
+  }catch(error){
+    console.error(error);
+    if(errorEl) errorEl.textContent=error.message||"Não foi possível carregar as faltas.";
+    $("absenceMorningTotal").textContent="—";
+    $("absenceAfternoonTotal").textContent="—";
+    $("absenceMorningList").innerHTML="";
+    $("absenceAfternoonList").innerHTML="";
+    return false;
+  }finally{
+    if(loadBtn) loadBtn.disabled=false;
+    clearLoading();
+  }
+}
+
+function openAbsenceDialog(){
+  const dialog=$("absenceDialog");
+  if(!dialog)return;
+  setAbsenceDatesDefault();
+  $("absenceError").textContent="";
+  $("absenceSummary").classList.add("hidden");
+  $("absenceMorningTotal").textContent="0";
+  $("absenceAfternoonTotal").textContent="0";
+  $("absenceMorningList").innerHTML="";
+  $("absenceAfternoonList").innerHTML="";
+  dialog.showModal();
+  loadAbsences();
+}
+
 async function boot(){
   try{
     if(!await checkAccess())return;
@@ -947,6 +1106,15 @@ async function boot(){
     $("presenceDate").addEventListener("change",loadDay);
     $("todayBtn").addEventListener("click",()=>{$("presenceDate").value=isoToday();loadDay();});
     $("pdfBtn").addEventListener("click",printPdf);
+    $("absenceBtn")?.addEventListener("click",openAbsenceDialog);
+    $("absenceForm")?.addEventListener("submit",(event)=>{
+      if(event.submitter?.value==="cancel") return;
+      event.preventDefault();
+      loadAbsences();
+    });
+    $("absenceDialog")?.addEventListener("click",(event)=>{
+      if(event.target === $("absenceDialog")) $("absenceDialog").close();
+    });
     $("lunchBtn")?.addEventListener("click",openLunchDialog);
     ["lunchFabrica","lunchObra","lunchMotoristas","lunchOutros"].forEach(id=>{
       $(id)?.addEventListener("input",updateLunchDialogTotal);
