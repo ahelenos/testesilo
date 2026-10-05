@@ -516,7 +516,7 @@ async function saveAll(){
 }
 
 function printPdf(){
-  const printable=rows.filter(r=>r.manha||r.tarde||r.extra).map(r=>`
+  const printable=rows.map(r=>`
     <tr>
       <td>${esc(r.nome)}</td>
       <td>${r.manha?"P":"—"}</td>
