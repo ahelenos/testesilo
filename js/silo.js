@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.11";
+const APP_VERSION = "5.1.12";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -342,7 +342,16 @@ function toggleConcreteField(){
  }
 }
 function resetForm(){$("movementId").value="";$("movementType").value="entrada";$("movementQuantity").value="";$("movementConcrete").value="";$("movementObservation").value="";setDateTime();$("cancelEdit").classList.add("hidden");toggleConcreteField()}
-async function refresh(){state.settings=await SiloSupabase.getSettings();state.movements=await SiloSupabase.getMovements();state.deliveryHistory=await SiloSupabase.getDeliveryHistory();render()}
+async function refresh(){
+  state.month=normalizeMonth(state.month||monthNow());
+  state.settings=await SiloSupabase.getSettings();
+  state.movements=await SiloSupabase.getMovements();
+  state.deliveryHistory=await SiloSupabase.getDeliveryHistory();
+  render();
+  // No mobile Safari, garante uma segunda pintura após o layout inicial.
+  requestAnimationFrame(()=>render());
+  setTimeout(()=>render(),80);
+}
 function translateAuthError(message){
   const m=String(message||"");
   const l=m.toLowerCase();
@@ -427,6 +436,12 @@ $("settingsForm").addEventListener("submit",async e=>{e.preventDefault();if(!can
  if(minimum>Number($("siloCapacity").value))throw Error("O estoque mínimo não pode ser maior que a capacidade do silo.");
  if(critical>Number($("siloCapacity").value))throw Error("O estoque crítico não pode ser maior que a capacidade do silo.");
  await SiloSupabase.saveSettings($("siloName").value.trim(),Number($("siloCapacity").value),minimum,critical,$("siloNextDelivery").value);await refresh()}catch(x){$("settingsError").textContent=x.message||"Erro ao salvar."}});
+window.addEventListener("pageshow",()=>{
+  if(!document.getElementById("appScreen").classList.contains("hidden")) refresh().catch(console.error);
+});
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden && !document.getElementById("appScreen").classList.contains("hidden")) refresh().catch(console.error);
+});
 window.addEventListener("resize",()=>{
   if(!document.getElementById("appScreen").classList.contains("hidden")){
     render();
