@@ -384,6 +384,17 @@ async function confirmLunchOrder(){
   }
 }
 
+function updateAbsenceKpis(){
+  const morningPresent=[...document.querySelectorAll('#presenceBody input[data-shift="manha"]')]
+    .filter(input=>input.checked).length;
+  const afternoonPresent=[...document.querySelectorAll('#presenceBody input[data-shift="tarde"]')]
+    .filter(input=>input.checked).length;
+
+  const total=rows.length;
+  $("countMorningAbsent").textContent=Math.max(0,total-morningPresent);
+  $("countAfternoonAbsent").textContent=Math.max(0,total-afternoonPresent);
+}
+
 function render(){
   $("rowsCount").textContent=`${rows.length} colaborador${rows.length===1?"":"es"}`;
   $("emptyPresence").classList.toggle("hidden",rows.length!==0);
@@ -414,11 +425,13 @@ function render(){
 
   updateColumnToggles();
   updateSaveAllButton();
+  updateAbsenceKpis();
 }
 
 function setDirty(tr,dirty){
   tr.classList.toggle("row-dirty",dirty);
   updateSaveAllButton();
+  updateAbsenceKpis();
 }
 
 function getRowValues(tr){

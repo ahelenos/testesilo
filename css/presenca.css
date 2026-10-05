@@ -20,6 +20,8 @@
 .presence-kpi span{display:block;font-size:9px;font-weight:850;letter-spacing:.08em;color:#7b8794}
 .presence-kpi strong{display:block;margin-top:7px;font-size:31px;line-height:1;letter-spacing:-.04em;color:#172033}
 .presence-kpi small{display:block;margin-top:7px;font-size:10px;color:#98a2b3}
+.presence-kpi .presence-absent-count{margin-top:3px;font-weight:700;color:#b42318}
+.presence-kpi .presence-absent-count b{font-weight:850}
 .presence-kpi.morning{border-top:3px solid #2563eb}
 .presence-kpi.afternoon{border-top:3px solid #f59e0b}
 .presence-kpi.extra{border-top:3px solid #7c3aed}

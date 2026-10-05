@@ -7,8 +7,8 @@
   <link rel="icon" type="image/x-icon" href="./favicon.ico?v=5">
   <title>Controle de Presença · Gestão de Fábrica</title>
   <link rel="stylesheet" href="css/style.css?v=5">
-  <link rel="stylesheet" href="css/loading.css?v=5.1.19">
-  <link rel="stylesheet" href="css/presenca.css?v=5.1.19">
+  <link rel="stylesheet" href="css/loading.css?v=5.1.20">
+  <link rel="stylesheet" href="css/presenca.css?v=5.1.20">
 </head>
 <body class="presence-page">
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -69,11 +69,13 @@
       <span>MANHÃ</span>
       <strong id="countMorning">0</strong>
       <small>presentes</small>
+      <small class="presence-absent-count">faltas: <b id="countMorningAbsent">0</b></small>
     </article>
     <article class="presence-kpi afternoon">
       <span>TARDE</span>
       <strong id="countAfternoon">0</strong>
       <small>presentes</small>
+      <small class="presence-absent-count">faltas: <b id="countAfternoonAbsent">0</b></small>
     </article>
     <article class="presence-kpi extra">
       <span>TURNO EXTRA</span>
@@ -244,8 +246,8 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js?v=5.1.19"></script>
-<script src="js/loading.js?v=5.1.19"></script>
-<script src="js/presenca.js?v=5.1.19"></script>
+<script src="js/supabase.js?v=5.1.20"></script>
+<script src="js/loading.js?v=5.1.20"></script>
+<script src="js/presenca.js?v=5.1.20"></script>
 </body>
 </html>
