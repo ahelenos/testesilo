@@ -22,6 +22,24 @@ const dateLabel = iso => iso ? new Date(`${iso}T12:00:00`).toLocaleDateString("p
 const isAdmin = () => isGlobalAdmin || modulePermission === "admin";
 const canEdit = () => isAdmin();
 
+// Pedido de almoço é permitido somente para ADMIN e somente para o dia atual.
+function canRequestLunch(){
+  return isAdmin() && selectedDate === isoToday();
+}
+
+function updateLunchButton(){
+  const btn = $("lunchBtn");
+  if(!btn) return;
+
+  // O botão já é removido para VISUALIZAÇÃO em checkAccess().
+  // Para ADMIN, mantém a ação disponível somente na data de hoje.
+  const allowed = canRequestLunch();
+  btn.disabled = !allowed;
+  btn.title = allowed
+    ? ""
+    : "A solicitação de almoço está disponível somente para o dia de hoje.";
+}
+
 function setMessage(text="", type=""){
   const el=$("presenceMessage");
   if(!el)return;
@@ -62,6 +80,7 @@ async function checkAccess(){
 async function loadDay(){
   selectedDate=$("presenceDate").value || isoToday();
   $("dateHeading").textContent=dateLabel(selectedDate);
+  updateLunchButton();
   setMessage("");
   setLoading("Carregando presença...");
   try{
