@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.22";
+const APP_VERSION = "5.1.23";
 (() => {
 "use strict";
 const $ = id => document.getElementById(id);
@@ -1112,7 +1112,7 @@ async function loadAbsences(){
   }
 }
 
-function openAbsenceDialog(){
+async function openAbsenceDialog(){
   const dialog=$("absenceDialog");
   if(!dialog)return;
   setAbsenceDatesDefault();
