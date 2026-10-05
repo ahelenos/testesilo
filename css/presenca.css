@@ -134,7 +134,7 @@
 
 
 /* =========================================================
-   V5.1.8 — ALMOÇO POR EQUIPE
+   V5.1.9 — ALMOÇO POR EQUIPE
 ========================================================= */
 .presence-kpi.lunch{
   position:relative;
@@ -253,7 +253,7 @@
 }
 
 /* =========================================================
-   V5.1.8 — MOBILE: SOMENTE VISUALIZAÇÃO
+   V5.1.9 — MOBILE: SOMENTE VISUALIZAÇÃO
 ========================================================= */
 .mobile-readonly-notice{
   display:none;
@@ -416,5 +416,109 @@
   .mobile-readonly #presenceBody input[data-shift],
   .mobile-readonly #presenceBody input[data-observation]{
     pointer-events:none;
+  }
+}
+
+
+/* V5.1.9 - Cabeçalho mobile simplificado e consistente */
+@media (max-width:650px){
+  header,
+  .app-header{
+    min-height:68px;
+    height:68px;
+    padding:8px 12px !important;
+    gap:8px;
+    overflow:hidden;
+  }
+
+  header .brand,
+  .app-header .brand{
+    min-width:0;
+    flex:1 1 auto;
+    gap:8px;
+    overflow:hidden;
+  }
+
+  header .brand img,
+  .app-header .brand img,
+  .vigas-header-logo{
+    width:76px !important;
+    max-width:76px !important;
+    max-height:42px !important;
+    flex:0 0 76px;
+  }
+
+  header .brand-text,
+  .app-header .brand-text{
+    min-width:0;
+    overflow:hidden;
+  }
+
+  header .brand strong,
+  .app-header .brand strong{
+    display:block;
+    max-width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:12px;
+    line-height:1.2;
+  }
+
+  header .brand span,
+  .app-header .brand span{
+    display:none;
+  }
+
+  header .header-actions,
+  .app-header .header-actions{
+    display:flex !important;
+    flex:0 0 auto;
+    align-items:center;
+    justify-content:flex-end;
+    gap:6px;
+    min-width:auto;
+  }
+
+  header .header-actions > *,
+  .app-header .header-actions > *{
+    display:none !important;
+  }
+
+  header .header-actions > a[href="index.html"],
+  .app-header .header-actions > a[href="index.html"],
+  header .header-actions > button#logoutBtn,
+  .app-header .header-actions > button#logoutBtn{
+    display:inline-flex !important;
+    align-items:center;
+    justify-content:center;
+    min-height:38px;
+    height:38px;
+    padding:7px 10px;
+    margin:0;
+    white-space:nowrap;
+  }
+
+  header .header-actions > a[href="index.html"]{
+    width:40px;
+    min-width:40px;
+    padding:0;
+    font-size:0;
+  }
+
+  header .header-actions > a[href="index.html"]::before{
+    content:"←";
+    font-size:21px;
+    line-height:1;
+  }
+
+  header .header-actions > button#logoutBtn{
+    min-width:52px;
+    font-size:12px;
+  }
+
+  /* A página inicial já é a tela inicial: mostra somente Sair. */
+  body:has(> #appScreen) header .header-actions > a[href="index.html"]:only-child{
+    display:none !important;
   }
 }

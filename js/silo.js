@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.8";
+const APP_VERSION = "5.1.9";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -10,7 +10,8 @@ const escapeHtml=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;")
 const fmtKg=v=>`${Number(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})} kg`;
 const fmtNum=v=>Number(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
 const monthNow=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`};
-const monthLabel=m=>{const [y,mo]=m.split("-");return new Date(Number(y),Number(mo)-1,1).toLocaleDateString("pt-BR",{month:"long",year:"numeric"})};
+const normalizeMonth=m=>/^\\d{4}-(0[1-9]|1[0-2])$/.test(String(m||""))?String(m):monthNow();
+const monthLabel=m=>{const safe=normalizeMonth(m);const [y,mo]=safe.split("-").map(Number);const d=new Date(y,mo-1,1);return Number.isNaN(d.getTime())?"":d.toLocaleDateString("pt-BR",{month:"long",year:"numeric"})};
 const monthMovements=()=>state.movements.filter(m=>String(m.date||"").slice(0,7)===state.month);
 const stock=()=>state.movements.reduce((s,m)=>s+(m.type==="entrada"?Number(m.quantity||0):-Number(m.quantity||0)),0);
 function dailyConsumption(movs){const map=new Map();movs.filter(m=>m.type==="consumo").forEach(m=>{const d=String(m.date).slice(0,10);map.set(d,(map.get(d)||0)+Number(m.quantity||0));});return map}
@@ -44,7 +45,12 @@ function formatDayBr(iso){
  const d=new Date(`${iso}T00:00:00`);
  return Number.isNaN(d.getTime())?"Sem consumo registrado":`em ${d.toLocaleDateString("pt-BR")}`;
 }
-function previousMonth(key){const [y,m]=key.split("-").map(Number);const d=new Date(y,m-2,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
+function previousMonth(key){
+ const safe=normalizeMonth(key);
+ const [y,m]=safe.split("-").map(Number);
+ const d=new Date(y,m-2,1);
+ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+}
 function percent(a,b){return b?((a-b)/b)*100:null}
 function renderRole(){document.querySelectorAll(".admin-only").forEach(e=>e.classList.toggle("hidden",!canEdit()));$("userRole").textContent=isAdmin()?"ADMIN":"VISUALIZAÇÃO"}
 function getStockLevel(allStock){
@@ -375,10 +381,10 @@ async function boot(){
 }
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginError").textContent="";try{await SiloSupabase.signIn($("loginEmail").value.trim(),$("loginPassword").value);await boot()}catch(x){$("loginError").textContent=translateAuthError(x?.message||"Falha no login.")}});
 $("logoutBtn").addEventListener("click",async()=>{try{await SiloSupabase.signOut()}finally{location.reload()}});
-$("monthPicker").addEventListener("change",e=>{state.month=e.target.value;render()});
+$("monthPicker").addEventListener("change",e=>{state.month=normalizeMonth(e.target.value);render()});
 $("exportCsvBtn").addEventListener("click",exportMovementsCsv);
 $("prevMonth").addEventListener("click",()=>{state.month=previousMonth(state.month);render()});
-$("nextMonth").addEventListener("click",()=>{const [y,m]=state.month.split("-").map(Number);const d=new Date(y,m,1);state.month=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;render()});
+$("nextMonth").addEventListener("click",()=>{state.month=normalizeMonth(state.month);const [y,m]=state.month.split("-").map(Number);const d=new Date(y,m,1);state.month=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;render()});
 $("movementForm").addEventListener("submit",async e=>{e.preventDefault();if(!canEdit())return;try{
  const type=$("movementType").value;
  const concrete=Number($("movementConcrete").value);
@@ -427,5 +433,5 @@ window.addEventListener("resize",()=>{
     drawConsumptionChart();
   }
 });
-state.month=monthNow();setDateTime();toggleConcreteField();boot().catch(x=>{$("loginError").textContent=x.message||"Erro ao iniciar.";console.error(x)});
+state.month=normalizeMonth(monthNow());setDateTime();toggleConcreteField();boot().catch(x=>{$("loginError").textContent=x.message||"Erro ao iniciar.";console.error(x)});
 })();
