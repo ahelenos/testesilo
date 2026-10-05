@@ -1,6 +1,6 @@
 (() => {
 "use strict";
-const APP_VERSION = "5.1.12";
+const APP_VERSION = "5.1.13";
 const $=id=>document.getElementById(id);
 const sb=window.supabaseClient || window.supabase;
 let role="viewer", modulePermission="viewer", tools=[], repairs=[], loans=[], assists=[], toolTypes=[];

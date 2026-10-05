@@ -91,13 +91,38 @@ const SiloSupabase = {
     return profile?.role==="admin" ? "admin" : "viewer";
   },
   async getUser(){
-    const {data,error}=await supabaseClient.auth.getUser();
-    if(error){
-      const msg=String(error.message||"").toLowerCase();
-      if(msg.includes("auth session missing")) return null;
-      throw error;
+    // Em mobile, especialmente Safari/iOS, a sessão persistida pode ainda
+    // estar sendo restaurada quando a página do módulo termina de carregar.
+    // Primeiro consultamos a sessão local já persistida e damos pequenas
+    // tentativas para permitir a hidratação do cliente Supabase.
+    for(let attempt=0; attempt<4; attempt++){
+      try{
+        const {data:sessionData,error:sessionError}=await supabaseClient.auth.getSession();
+        if(sessionError) throw sessionError;
+        if(sessionData?.session?.user) return sessionData.session.user;
+      }catch(error){
+        const msg=String(error?.message||"").toLowerCase();
+        if(!msg.includes("auth session missing")) throw error;
+      }
+
+      try{
+        const {data,error}=await supabaseClient.auth.getUser();
+        if(error){
+          const msg=String(error.message||"").toLowerCase();
+          if(!msg.includes("auth session missing")) throw error;
+        }else if(data?.user){
+          return data.user;
+        }
+      }catch(error){
+        const msg=String(error?.message||"").toLowerCase();
+        if(!msg.includes("auth session missing")) throw error;
+      }
+
+      if(attempt<3){
+        await new Promise(resolve=>setTimeout(resolve, 250));
+      }
     }
-    return data.user||null;
+    return null;
   },
   async getSession(){
     const {data,error}=await supabaseClient.auth.getSession();
