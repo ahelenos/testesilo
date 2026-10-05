@@ -1,4 +1,4 @@
-const APP_VERSION = "4.2.1";
+const APP_VERSION = "5.1.4";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -47,25 +47,28 @@ function formatDayBr(iso){
 function previousMonth(key){const [y,m]=key.split("-").map(Number);const d=new Date(y,m-2,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function percent(a,b){return b?((a-b)/b)*100:null}
 function renderRole(){document.querySelectorAll(".admin-only").forEach(e=>e.classList.toggle("hidden",!canEdit()));$("userRole").textContent=isAdmin()?"ADMIN":"VISUALIZAÇÃO"}
+function getStockLevel(allStock){
+ const minimum=Number(state.settings?.minimum_stock||0);
+ const critical=Number(state.settings?.critical_stock||0);
+ if(critical>0 && allStock<critical)return "critical";
+ if(minimum>0 && allStock<minimum)return "warning";
+ return "normal";
+}
 function renderStockAlert(allStock){
  const minimum=Number(state.settings?.minimum_stock||0);
  const critical=Number(state.settings?.critical_stock||0);
  const alert=$("stockAlert");
  if(!alert)return;
- if(minimum<=0 || allStock>minimum){
-   alert.classList.add("hidden");
-   alert.classList.remove("critical","warning");
-   return;
- }
- alert.classList.remove("hidden");
- if(critical>0 && allStock<=critical){
-   alert.classList.add("critical"); alert.classList.remove("warning");
+ const level=getStockLevel(allStock);
+ alert.classList.toggle("hidden",level==="normal");
+ alert.classList.toggle("critical",level==="critical");
+ alert.classList.toggle("warning",level==="warning");
+ if(level==="critical"){
    $("stockAlertTitle").textContent="Estoque crítico — solicitar carga de cimento";
    $("stockAlertText").textContent=`Estoque atual de ${fmtKg(allStock)} está abaixo do nível crítico de ${fmtKg(critical)}.`;
- }else{
-   alert.classList.add("warning"); alert.classList.remove("critical");
+ }else if(level==="warning"){
    $("stockAlertTitle").textContent="Solicitar carga de cimento";
-   $("stockAlertText").textContent=`Estoque atual de ${fmtKg(allStock)} atingiu o nível mínimo de ${fmtKg(minimum)}.`;
+   $("stockAlertText").textContent=`Estoque atual de ${fmtKg(allStock)} está abaixo do nível mínimo de ${fmtKg(minimum)}.`;
  }
 }
 function getDeliveryStatus(dateValue){
@@ -123,16 +126,39 @@ function renderTop(){
  $("monthEntries").textContent=fmtKg(entries);$("monthConsumption").textContent=fmtKg(cons);$("consumptionDays").textContent=days;$("monthAverage").textContent=`${fmtNum(avg)} kg/dia`;
  if($("monthConcrete"))$("monthConcrete").textContent=`${fmtNum(concrete)} m³`;
  if($("monthConcreteRatio"))$("monthConcreteRatio").textContent=ratio===null?"—":`${fmtNum(ratio)} kg/m³`;
+ const stockLevel=getStockLevel(allStock);
+ const stockKpi=$("stockKpi");
+ const stockPanel=document.querySelector(".stock-panel");
  const ring=document.querySelector(".stock-ring");
+ const stockBar=$("stockBar");
+ const stockStatus=$("stockStatus");
+ const stockCaptionStatus=$("stockCaptionStatus");
+ [stockKpi,stockPanel,ring,stockBar,stockStatus,stockCaptionStatus].forEach(el=>{
+   if(!el)return;
+   el.classList.remove("stock-normal","stock-warning","stock-critical");
+   if(stockLevel!=="normal")el.classList.add(`stock-${stockLevel}`);
+ });
+ if(stockKpi)stockKpi.classList.toggle("blue",stockLevel==="normal");
  if(ring){
    const ringOcc=Math.min(Math.max(Number(occ)||0,0),100);
-   ring.style.background=`conic-gradient(#2563eb 0deg ${ringOcc*3.6}deg, #e9eef5 ${ringOcc*3.6}deg 360deg)`;
+   const ringColor=stockLevel==="critical"?"#dc2626":stockLevel==="warning"?"#d97706":"#2563eb";
+   const trackColor=stockLevel==="critical"?"#fee2e2":stockLevel==="warning"?"#fef3c7":"#e9eef5";
+   ring.style.background=`conic-gradient(${ringColor} 0deg ${ringOcc*3.6}deg, ${trackColor} ${ringOcc*3.6}deg 360deg)`;
  }
  $("siloTitle").textContent=state.settings?.name||"Controle de Silo";$("welcomeTitle").textContent=state.settings?.name||"Painel de controle";
  $("periodLabel").textContent=monthLabel(state.month);$("stockPercent").textContent=`${fmtNum(occ)}%`;
  $("stockBar").style.width=`${Math.min(Math.max(occ,0),100)}%`;
- const status=occ>=90?"Atenção: capacidade próxima do limite":occ>=70?"Estoque em nível elevado":"Capacidade disponível";
+ const status=stockLevel==="critical"
+   ? `Abaixo do estoque crítico (${fmtKg(Number(state.settings?.critical_stock||0))})`
+   : stockLevel==="warning"
+     ? `Abaixo do estoque mínimo (${fmtKg(Number(state.settings?.minimum_stock||0))})`
+     : occ>=90
+       ? "Atenção: capacidade próxima do limite"
+       : occ>=70
+         ? "Estoque em nível elevado"
+         : "Capacidade disponível";
  $("stockStatus").textContent=status;
+ if(stockCaptionStatus)stockCaptionStatus.textContent=status;
  const prev=state.movements.filter(m=>String(m.date||"").slice(0,7)===previousMonth(state.month));
  const pa=monthlyAverage(prev), diff=percent(avg,pa);
  $("trendValue").textContent=diff===null?"—":`${diff>=0?"↑":"↓"} ${Math.abs(diff).toLocaleString("pt-BR",{maximumFractionDigits:1})}%`;

@@ -333,7 +333,7 @@
   .concrete-ratio-kpi strong{font-size:21px}
 }
 
-/* V3.0.2 - ações administrativas da entrega */
+/* V5.1.4 - ações administrativas da entrega */
 .delivery-actions{
   display:flex;
   align-items:center;
@@ -410,7 +410,7 @@
 
 .user-email{display:block;font-size:10px!important;line-height:1.2!important;color:#9fb0c6!important;letter-spacing:.02em!important;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 
-/* V4.2.1 — módulo de Gerenciamento de Usuários */
+/* V5.1.4 — módulo de Gerenciamento de Usuários */
 .module-users:before{background:#7c3aed}
 .module-users .module-icon{background:#f5f3ff}
 .module-users .module-arrow{color:#6d28d9}
@@ -420,3 +420,17 @@
 .module-presence:before{background:#0ea5e9}
 .module-presence .module-icon{background:#ecfeff}
 .module-presence .module-arrow{color:#0284c7}
+
+/* V5.1.4 — estados visuais do estoque mínimo/crítico */
+.kpi.stock-warning{background:linear-gradient(135deg,#fff,#fffbeb);border-color:#f4d28a}
+.kpi.stock-warning .kpi-icon{background:#fef3c7;color:#92400e}
+.kpi.stock-warning strong,.kpi.stock-warning small{color:#92400e}
+.kpi.stock-critical{background:linear-gradient(135deg,#fff,#fff5f5);border-color:#f5c2c7}
+.kpi.stock-critical .kpi-icon{background:#fee2e2;color:#991b1b}
+.kpi.stock-critical strong,.kpi.stock-critical small{color:#991b1b}
+.stock-panel.stock-warning{border-color:#f4d28a}
+.stock-panel.stock-critical{border-color:#f5c2c7}
+.stock-status.stock-warning{color:#92400e!important}
+.stock-status.stock-critical{color:#991b1b!important}
+.stock-bar.stock-warning{background:linear-gradient(90deg,#d97706,#f59e0b)}
+.stock-bar.stock-critical{background:linear-gradient(90deg,#dc2626,#ef4444)}
