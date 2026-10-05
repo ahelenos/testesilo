@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.9";
+const APP_VERSION = "5.1.10";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -10,7 +10,7 @@ const escapeHtml=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;")
 const fmtKg=v=>`${Number(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})} kg`;
 const fmtNum=v=>Number(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
 const monthNow=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`};
-const normalizeMonth=m=>/^\\d{4}-(0[1-9]|1[0-2])$/.test(String(m||""))?String(m):monthNow();
+const normalizeMonth=m=>/^\d{4}-(0[1-9]|1[0-2])$/.test(String(m||""))?String(m):monthNow();
 const monthLabel=m=>{const safe=normalizeMonth(m);const [y,mo]=safe.split("-").map(Number);const d=new Date(y,mo-1,1);return Number.isNaN(d.getTime())?"":d.toLocaleDateString("pt-BR",{month:"long",year:"numeric"})};
 const monthMovements=()=>state.movements.filter(m=>String(m.date||"").slice(0,7)===state.month);
 const stock=()=>state.movements.reduce((s,m)=>s+(m.type==="entrada"?Number(m.quantity||0):-Number(m.quantity||0)),0);

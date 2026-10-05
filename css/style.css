@@ -333,7 +333,7 @@
   .concrete-ratio-kpi strong{font-size:21px}
 }
 
-/* V5.1.9 - ações administrativas da entrega */
+/* V5.1.10 - ações administrativas da entrega */
 .delivery-actions{
   display:flex;
   align-items:center;
@@ -410,7 +410,7 @@
 
 .user-email{display:block;font-size:10px!important;line-height:1.2!important;color:#9fb0c6!important;letter-spacing:.02em!important;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 
-/* V5.1.9 — módulo de Gerenciamento de Usuários */
+/* V5.1.10 — módulo de Gerenciamento de Usuários */
 .module-users:before{background:#7c3aed}
 .module-users .module-icon{background:#f5f3ff}
 .module-users .module-arrow{color:#6d28d9}
@@ -421,7 +421,7 @@
 .module-presence .module-icon{background:#ecfeff}
 .module-presence .module-arrow{color:#0284c7}
 
-/* V5.1.9 — estados visuais do estoque mínimo/crítico */
+/* V5.1.10 — estados visuais do estoque mínimo/crítico */
 .kpi.stock-warning{background:linear-gradient(135deg,#fff,#fffbeb);border-color:#f4d28a}
 .kpi.stock-warning .kpi-icon{background:#fef3c7;color:#92400e}
 .kpi.stock-warning strong,.kpi.stock-warning small{color:#92400e}
@@ -436,7 +436,7 @@
 .stock-bar.stock-critical{background:linear-gradient(90deg,#dc2626,#ef4444)}
 
 
-/* V5.1.9 - Cabeçalho mobile simplificado e consistente */
+/* V5.1.10 - Cabeçalho mobile simplificado e consistente */
 @media (max-width:650px){
   header,
   .app-header{
