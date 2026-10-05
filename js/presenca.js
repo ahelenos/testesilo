@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.4";
+const APP_VERSION = "5.1.5";
 (() => {
 "use strict";
 const $ = id => document.getElementById(id);
@@ -133,10 +133,22 @@ async function loadLunchOrder(){
     if(error) throw error;
 
     lunchOrder=Array.isArray(data) && data.length ? data[0] : null;
-    countEl.textContent=String(Number(lunchOrder?.quantidade||0));
+
+    const total=Number(lunchOrder?.quantidade||0);
+    const fabrica=Number(lunchOrder?.quantidade_fabrica||0);
+    const obra=Number(lunchOrder?.quantidade_obra||0);
+    const motoristas=Number(lunchOrder?.quantidade_motoristas||0);
+    const outros=Number(lunchOrder?.quantidade_outros||0);
+
+    countEl.textContent=String(total);
+    $("countLunchFabrica")?.replaceChildren(document.createTextNode(String(fabrica)));
+    $("countLunchObra")?.replaceChildren(document.createTextNode(String(obra)));
+    $("countLunchMotoristas")?.replaceChildren(document.createTextNode(String(motoristas)));
+    $("countLunchOutros")?.replaceChildren(document.createTextNode(String(outros)));
 
     if(lunchOrder){
-      statusEl.textContent=`solicitado em ${new Date(lunchOrder.solicitado_em).toLocaleString("pt-BR")}`;
+      const outrosDescricao=String(lunchOrder.outros_descricao||"").trim();
+      statusEl.textContent=`solicitado em ${new Date(lunchOrder.solicitado_em).toLocaleString("pt-BR")}${outrosDescricao ? ` · Outros: ${outrosDescricao}` : ""}`;
     }else{
       statusEl.textContent="nenhum pedido";
     }
@@ -146,77 +158,139 @@ async function loadLunchOrder(){
     console.error(error);
     lunchOrder=null;
     countEl.textContent="—";
+    ["countLunchFabrica","countLunchObra","countLunchMotoristas","countLunchOutros"].forEach(id=>{
+      const el=$(id);
+      if(el) el.textContent="—";
+    });
     statusEl.textContent="não disponível";
     updateLunchButton();
   }
 }
 
-function updateLunchButton(){
-  const btn=$("lunchBtn");
-  if(!btn) return;
+function updateLunchDialogTotal(){
+  const values=["lunchFabrica","lunchObra","lunchMotoristas","lunchOutros"].map(id=>{
+    const n=Number($(id)?.value);
+    return Number.isInteger(n)&&n>=0 ? n : 0;
+  });
+  const total=values.reduce((sum,n)=>sum+n,0);
+  const totalEl=$("lunchDialogTotal");
+  if(totalEl) totalEl.textContent=String(total);
 
-  const canRequestLunch=isAdmin();
-  const isToday=selectedDate===isoToday();
+  const outros=values[3];
+  const wrap=$("lunchOutrosDescricaoWrap");
+  const desc=$("lunchOutrosDescricao");
+  if(wrap){
+    wrap.classList.toggle("hidden",outros===0);
+  }
+  if(desc){
+    desc.required=outros>0;
+    if(outros===0) desc.value="";
+  }
 
-  btn.classList.toggle("hidden",!canRequestLunch || !isToday);
-  btn.disabled=!canRequestLunch || !isToday;
+  return {fabrica:values[0],obra:values[1],motoristas:values[2],outros:values[3],total};
 }
 
-function canRequestLunch(){
-  return isAdmin() && selectedDate===isoToday();
+function setLunchDialogValues(order){
+  const morning=Number($("countMorning")?.textContent||0);
+  $("lunchFabrica").value=String(Number(order?.quantidade_fabrica ?? morning));
+  $("lunchObra").value=String(Number(order?.quantidade_obra ?? 0));
+  $("lunchMotoristas").value=String(Number(order?.quantidade_motoristas ?? 0));
+  $("lunchOutros").value=String(Number(order?.quantidade_outros ?? 0));
+  $("lunchOutrosDescricao").value=String(order?.outros_descricao||"");
+  updateLunchDialogTotal();
 }
 
 function openLunchDialog(){
   if(!canRequestLunch()) return;
 
   const dialog=$("lunchDialog");
-  const qty=$("lunchQuantity");
   const text=$("lunchDialogText");
   const title=$("lunchDialogTitle");
   const error=$("lunchDialogError");
-  if(!dialog||!qty) return;
+  if(!dialog) return;
 
   error.textContent="";
 
   if(lunchOrder){
     lunchDialogMode="edit";
     title.textContent="Alterar pedido de almoço";
-    text.textContent=`Você já solicitou ${Number(lunchOrder.quantidade)} almoço${Number(lunchOrder.quantidade)===1?"":"s"} hoje. Deseja alterar a quantidade?`;
-    qty.value=String(Number(lunchOrder.quantidade));
+    text.textContent="Altere as quantidades por equipe. O total do dia é calculado automaticamente.";
+    setLunchDialogValues(lunchOrder);
   }else{
     lunchDialogMode="new";
     const morning=Number($("countMorning")?.textContent||0);
     title.textContent="Solicitar almoço";
-    text.textContent=`Foi calculado ${morning} almoço${morning===1?"":"s"}, deseja acrescentar almoços extras?`;
-    qty.value=String(morning);
+    text.textContent=`Foram identificados ${morning} presente${morning===1?"":"s"} pela manhã. Você pode distribuir a quantidade entre as equipes.`;
+    setLunchDialogValues({
+      quantidade_fabrica:morning,
+      quantidade_obra:0,
+      quantidade_motoristas:0,
+      quantidade_outros:0,
+      outros_descricao:""
+    });
   }
 
   if(typeof dialog.showModal==="function") dialog.showModal();
   else dialog.setAttribute("open","");
-  setTimeout(()=>{qty.focus();qty.select();},50);
+  setTimeout(()=>{$("lunchFabrica")?.focus();$("lunchFabrica")?.select();},50);
 }
 
-function buildLunchWhatsAppUrl(quantity){
+function buildLunchWhatsAppUrl(order){
   const phone="555193767114";
-  const message=`*Pedido de Almoço*\n\nPara o dia de hoje favor solicitar ${quantity} almoço${quantity===1?"":"s"} para os colaboradores da Fábrica.`;
-  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  const outrosDescricao=String(order.outros_descricao||"").trim();
+  const lines=[
+    "*Pedido de Almoço*",
+    "",
+    "Para o dia de hoje favor solicitar:",
+    `*ALMOÇO TOTAL DO DIA: ${order.total}*`,
+    "",
+    `Almoço Equipe Fábrica: ${order.fabrica}`,
+    `Almoço Equipe Obra: ${order.obra}`,
+    `Almoço Equipe Motoristas: ${order.motoristas}`,
+    `Almoço Outros: ${order.outros}`
+  ];
+  if(outrosDescricao){
+    lines.push(`Quem são os outros: ${outrosDescricao}`);
+  }
+  return `https://wa.me/${phone}?text=${encodeURIComponent(lines.join("\n"))}`;
 }
 
 async function confirmLunchOrder(){
   if(!canRequestLunch()) return;
 
-  const qtyEl=$("lunchQuantity");
   const errorEl=$("lunchDialogError");
   const btn=$("confirmLunchBtn");
   const dialog=$("lunchDialog");
+  const values=updateLunchDialogTotal();
 
-  const quantity=Number(qtyEl?.value);
   errorEl.textContent="";
 
-  if(!Number.isInteger(quantity)||quantity<0){
-    errorEl.textContent="Informe uma quantidade inteira maior ou igual a zero.";
+  if(![values.fabrica,values.obra,values.motoristas,values.outros].every(Number.isInteger)){
+    errorEl.textContent="Informe quantidades inteiras para todas as equipes.";
     return;
   }
+
+  if(values.total<0){
+    errorEl.textContent="O total não pode ser negativo.";
+    return;
+  }
+
+  const outrosDescricao=String($("lunchOutrosDescricao")?.value||"").trim();
+
+  if(values.outros>0 && !outrosDescricao){
+    errorEl.textContent="Informe quem são os outros quando a quantidade de Outros for maior que zero.";
+    $("lunchOutrosDescricao")?.focus();
+    return;
+  }
+
+  const order={
+    fabrica:values.fabrica,
+    obra:values.obra,
+    motoristas:values.motoristas,
+    outros:values.outros,
+    total:values.total,
+    outros_descricao:outrosDescricao
+  };
 
   // Abre a janela dentro do gesto do usuário para evitar bloqueio de pop-up
   // depois da chamada assíncrona ao Supabase.
@@ -226,18 +300,37 @@ async function confirmLunchOrder(){
   setLoading(lunchDialogMode==="edit" ? "Alterando pedido de almoço..." : "Salvando pedido de almoço...");
 
   try{
-    const {data,error}=await sb.rpc("salvar_pedido_almoco",{p_quantidade:quantity});
+    const {data,error}=await sb.rpc("salvar_pedido_almoco",{
+      p_quantidade_fabrica:order.fabrica,
+      p_quantidade_obra:order.obra,
+      p_quantidade_motoristas:order.motoristas,
+      p_quantidade_outros:order.outros,
+      p_outros_descricao:order.outros_descricao || null
+    });
     if(error) throw error;
 
     lunchOrder=Array.isArray(data) && data.length ? data[0] : {
       data:isoToday(),
-      quantidade:quantity,
+      quantidade:order.total,
+      quantidade_fabrica:order.fabrica,
+      quantidade_obra:order.obra,
+      quantidade_motoristas:order.motoristas,
+      quantidade_outros:order.outros,
+      outros_descricao:order.outros_descricao,
       solicitado_em:new Date().toISOString()
     };
 
     await loadLunchOrder();
 
-    const whatsappUrl=buildLunchWhatsAppUrl(quantity);
+    const whatsappOrder={
+      total:order.total,
+      fabrica:order.fabrica,
+      obra:order.obra,
+      motoristas:order.motoristas,
+      outros:order.outros,
+      outros_descricao:order.outros_descricao
+    };
+    const whatsappUrl=buildLunchWhatsAppUrl(whatsappOrder);
 
     if(whatsappWindow && !whatsappWindow.closed){
       whatsappWindow.location.href=whatsappUrl;
@@ -248,8 +341,8 @@ async function confirmLunchOrder(){
     if(dialog?.open) dialog.close();
     setMessage(
       lunchDialogMode==="edit"
-        ? `Pedido de almoço alterado para ${quantity} almoço${quantity===1?"":"s"}.`
-        : `Pedido de ${quantity} almoço${quantity===1?"":"s"} registrado com sucesso.`,
+        ? `Pedido de almoço alterado para ${order.total} almoço${order.total===1?"":"s"}.`
+        : `Pedido de ${order.total} almoço${order.total===1?"":"s"} registrado com sucesso.`,
       "success"
     );
   }catch(error){
@@ -660,6 +753,9 @@ async function boot(){
     $("todayBtn").addEventListener("click",()=>{$("presenceDate").value=isoToday();loadDay();});
     $("pdfBtn").addEventListener("click",printPdf);
     $("lunchBtn")?.addEventListener("click",openLunchDialog);
+    ["lunchFabrica","lunchObra","lunchMotoristas","lunchOutros"].forEach(id=>{
+      $(id)?.addEventListener("input",updateLunchDialogTotal);
+    });
     $("saveAllBtn")?.addEventListener("click",saveAll);
     document.querySelectorAll("[data-toggle-column]").forEach(btn=>{
       btn.addEventListener("click",()=>toggleColumn(btn.dataset.toggleColumn));

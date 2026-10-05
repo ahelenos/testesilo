@@ -7,8 +7,8 @@
   <link rel="icon" type="image/x-icon" href="./favicon.ico?v=5">
   <title>Controle de Presença · Gestão de Fábrica</title>
   <link rel="stylesheet" href="css/style.css?v=5">
-  <link rel="stylesheet" href="css/loading.css?v=5.1.4">
-  <link rel="stylesheet" href="css/presenca.css?v=5.1.0">
+  <link rel="stylesheet" href="css/loading.css?v=5.1.5">
+  <link rel="stylesheet" href="css/presenca.css?v=5.1.5">
 </head>
 <body class="presence-page">
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -81,8 +81,15 @@
       <small>manhã + tarde</small>
     </article>
     <article class="presence-kpi lunch">
-      <span>ALMOÇOS SOLICITADOS</span>
-      <strong id="countLunch">0</strong>
+      <span class="lunch-kpi-title">ALMOÇO DO DIA</span>
+      <div class="lunch-total-label">TOTAL DO DIA</div>
+      <strong id="countLunch" class="lunch-total">0</strong>
+      <div class="lunch-breakdown">
+        <div><span>Equipe Fábrica</span><b id="countLunchFabrica">0</b></div>
+        <div><span>Equipe Obra</span><b id="countLunchObra">0</b></div>
+        <div><span>Equipe Motoristas</span><b id="countLunchMotoristas">0</b></div>
+        <div><span>Outros</span><b id="countLunchOutros">0</b></div>
+      </div>
       <small id="lunchStatus">nenhum pedido</small>
     </article>
   </section>
@@ -136,18 +143,47 @@
 
   <!-- Pedido de almoço -->
 <dialog id="lunchDialog" class="presence-dialog">
-  <form method="dialog" class="presence-dialog-card" id="lunchForm">
+  <form method="dialog" class="presence-dialog-card lunch-dialog-card" id="lunchForm">
     <div class="dialog-title">
       <div>
         <span class="eyebrow">ALIMENTAÇÃO</span>
         <h2 id="lunchDialogTitle">Solicitar almoço</h2>
-        <p id="lunchDialogText">Foi calculado 0 almoço, deseja acrescentar almoços extras?</p>
+        <p id="lunchDialogText">Informe a quantidade de almoços por equipe.</p>
       </div>
       <button class="dialog-close" value="cancel" type="submit" aria-label="Fechar">×</button>
     </div>
 
-    <label for="lunchQuantity">Quantidade de almoços</label>
-    <input id="lunchQuantity" type="number" min="0" step="1" inputmode="numeric" required>
+    <div class="lunch-fields">
+      <label for="lunchFabrica">
+        Almoço Equipe Fábrica
+        <input id="lunchFabrica" type="number" min="0" step="1" inputmode="numeric" required>
+      </label>
+
+      <label for="lunchObra">
+        Almoço Equipe Obra
+        <input id="lunchObra" type="number" min="0" step="1" inputmode="numeric" required>
+      </label>
+
+      <label for="lunchMotoristas">
+        Almoço Equipe Motoristas
+        <input id="lunchMotoristas" type="number" min="0" step="1" inputmode="numeric" required>
+      </label>
+
+      <label for="lunchOutros">
+        Almoço Outros
+        <input id="lunchOutros" type="number" min="0" step="1" inputmode="numeric" required>
+      </label>
+
+      <label id="lunchOutrosDescricaoWrap" class="lunch-other-description hidden" for="lunchOutrosDescricao">
+        Quem são os outros?
+        <textarea id="lunchOutrosDescricao" rows="2" maxlength="500" placeholder="Ex.: João, Pedro, visitante..."></textarea>
+      </label>
+    </div>
+
+    <div class="lunch-total-preview">
+      <span>ALMOÇO TOTAL DO DIA</span>
+      <strong id="lunchDialogTotal">0</strong>
+    </div>
 
     <div id="lunchDialogError" class="presence-error"></div>
 
@@ -203,8 +239,8 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js?v=5.0.5"></script>
-<script src="js/loading.js?v=5.1.4"></script>
-<script src="js/presenca.js?v=5.1.0"></script>
+<script src="js/supabase.js?v=5.1.5"></script>
+<script src="js/loading.js?v=5.1.5"></script>
+<script src="js/presenca.js?v=5.1.5"></script>
 </body>
 </html>
