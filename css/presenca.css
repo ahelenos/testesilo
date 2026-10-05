@@ -531,6 +531,12 @@
 ========================================================= */
 .absence-dialog{width:min(760px,calc(100% - 24px))}
 .absence-dialog-card{max-height:min(88vh,860px);overflow:auto}
+
+.absence-filter-row{margin-top:12px}
+.absence-filter-row label{display:block;font-size:11px;font-weight:700;color:#344054}
+.absence-filter-row select{width:100%;box-sizing:border-box;margin-top:5px}
+.absence-update-row{display:flex;justify-content:flex-start;margin-top:10px}
+.absence-update-row .btn{min-width:150px}
 .absence-help{margin-top:14px;padding:11px 12px;background:#f8fafc;border:1px solid #e7ebf1;border-radius:10px;color:#667085;font-size:11px;line-height:1.5}
 .absence-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
 .absence-summary div{padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#f8fafc}

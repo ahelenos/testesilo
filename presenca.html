@@ -174,6 +174,19 @@
       </label>
     </div>
 
+    <div class="absence-filter-row">
+      <label for="absenceCollaboratorFilter">
+        Colaborador
+        <select id="absenceCollaboratorFilter">
+          <option value="">Todos os colaboradores</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="absence-update-row">
+      <button id="loadAbsenceBtn" class="btn primary" type="button">Atualizar faltas</button>
+    </div>
+
     <div class="absence-help">
       São considerados dias de chamada encontrados nos registros de presença. A falta é contabilizada quando o colaborador não possui presença no respectivo turno.
     </div>
@@ -206,7 +219,6 @@
 
     <div class="dialog-actions">
       <button class="btn secondary" value="cancel" type="submit">Fechar</button>
-      <button id="loadAbsenceBtn" class="btn primary" value="default" type="submit">Atualizar faltas</button>
     </div>
   </form>
 </dialog>
@@ -309,8 +321,8 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js?v=5.1.21"></script>
-<script src="js/loading.js?v=5.1.21"></script>
-<script src="js/presenca.js?v=5.1.21"></script>
+<script src="js/supabase.js?v=5.1.22"></script>
+<script src="js/loading.js?v=5.1.22"></script>
+<script src="js/presenca.js?v=5.1.22"></script>
 </body>
 </html>

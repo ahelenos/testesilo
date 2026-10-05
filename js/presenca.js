@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.21";
+const APP_VERSION = "5.1.22";
 (() => {
 "use strict";
 const $ = id => document.getElementById(id);
@@ -942,11 +942,36 @@ window.onload=()=>{window.print();setTimeout(()=>window.close(),700)}
 
 
 function setAbsenceDatesDefault(){
-  const end = selectedDate || isoToday();
-  const endDate = new Date(`${end}T12:00:00`);
-  const start = `${endDate.getFullYear()}-${String(endDate.getMonth()+1).padStart(2,"0")}-01`;
-  $("absenceStartDate").value = start;
-  $("absenceEndDate").value = end;
+  const today = isoToday();
+  $("absenceStartDate").value = today;
+  $("absenceEndDate").value = today;
+}
+
+async function populateAbsenceCollaboratorFilter(){
+  const select=$("absenceCollaboratorFilter");
+  if(!select)return;
+
+  try{
+    const {data,error}=await sb
+      .from("presenca_colaboradores")
+      .select("id,nome,ativo")
+      .order("nome",{ascending:true});
+    if(error) throw error;
+
+    const current=select.value;
+    select.innerHTML='<option value="">Todos os colaboradores</option>';
+    (data||[]).forEach(c=>{
+      const option=document.createElement("option");
+      option.value=String(c.id);
+      option.textContent=c.nome;
+      select.appendChild(option);
+    });
+    if(current && [...select.options].some(o=>o.value===current)){
+      select.value=current;
+    }
+  }catch(error){
+    console.error("Filtro de colaborador:",error);
+  }
 }
 
 function formatAbsenceDate(iso){
@@ -979,6 +1004,7 @@ function renderAbsenceList(targetId, entries, emptyText){
 async function loadAbsences(){
   const start=$("absenceStartDate")?.value;
   const end=$("absenceEndDate")?.value;
+  const collaboratorFilter=$("absenceCollaboratorFilter")?.value || "";
   const errorEl=$("absenceError");
   const loadBtn=$("loadAbsenceBtn");
 
@@ -1022,6 +1048,7 @@ async function loadAbsences(){
 
     const collaboratorList=(collaborators||[]).filter(c=>{
       const id=String(c.id);
+      if(collaboratorFilter && id !== String(collaboratorFilter)) return false;
       return c.ativo !== false || byId.has(id);
     });
 
@@ -1095,7 +1122,9 @@ function openAbsenceDialog(){
   $("absenceAfternoonTotal").textContent="0";
   $("absenceMorningList").innerHTML="";
   $("absenceAfternoonList").innerHTML="";
+  $("absenceCollaboratorFilter").value="";
   dialog.showModal();
+  await populateAbsenceCollaboratorFilter();
   loadAbsences();
 }
 
@@ -1107,10 +1136,11 @@ async function boot(){
     $("todayBtn").addEventListener("click",()=>{$("presenceDate").value=isoToday();loadDay();});
     $("pdfBtn").addEventListener("click",printPdf);
     $("absenceBtn")?.addEventListener("click",openAbsenceDialog);
+    $("loadAbsenceBtn")?.addEventListener("click",loadAbsences);
+    $("absenceCollaboratorFilter")?.addEventListener("change",loadAbsences);
     $("absenceForm")?.addEventListener("submit",(event)=>{
       if(event.submitter?.value==="cancel") return;
       event.preventDefault();
-      loadAbsences();
     });
     $("absenceDialog")?.addEventListener("click",(event)=>{
       if(event.target === $("absenceDialog")) $("absenceDialog").close();
