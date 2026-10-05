@@ -7,8 +7,8 @@
   <link rel="icon" type="image/x-icon" href="./favicon.ico?v=5">
   <title>Controle de Presença · Gestão de Fábrica</title>
   <link rel="stylesheet" href="css/style.css?v=5">
-  <link rel="stylesheet" href="css/loading.css?v=5.1.5">
-  <link rel="stylesheet" href="css/presenca.css?v=5.1.5">
+  <link rel="stylesheet" href="css/loading.css?v=5.1.8">
+  <link rel="stylesheet" href="css/presenca.css?v=5.1.8">
 </head>
 <body class="presence-page">
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -49,6 +49,11 @@
       <button id="periodReportBtn" class="btn primary" type="button">Relatório PDF</button>
     </div>
   </section>
+
+  <div class="mobile-readonly-notice" role="status">
+    <strong>Modo visualização no celular</strong>
+    <span>Alterações de presença, almoço e cadastro ficam disponíveis somente no computador.</span>
+  </div>
 
   <section class="presence-toolbar panel">
     <div class="date-control">
@@ -239,8 +244,8 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js?v=5.1.5"></script>
-<script src="js/loading.js?v=5.1.5"></script>
-<script src="js/presenca.js?v=5.1.5"></script>
+<script src="js/supabase.js?v=5.1.8"></script>
+<script src="js/loading.js?v=5.1.8"></script>
+<script src="js/presenca.js?v=5.1.8"></script>
 </body>
 </html>

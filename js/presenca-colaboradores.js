@@ -1,4 +1,4 @@
-const APP_VERSION = "5.0.0";
+const APP_VERSION = "5.1.8";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -10,7 +10,9 @@ let collaborators=[];
 let editingId=null;
 
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+const isMobileView=()=>window.matchMedia("(max-width: 650px)").matches;
 const isAdmin=()=>isGlobalAdmin || modulePermission==="admin";
+const canEdit=()=>isAdmin() && !isMobileView();
 
 function setMessage(text="",type=""){
   const el=$("collaboratorMessage");
@@ -35,11 +37,17 @@ async function checkAccess(){
   }catch(_){}
   try{modulePermission=await window.SiloSupabase.getModulePermission("presenca",user)}
   catch(_){modulePermission=isGlobalAdmin?"admin":"viewer"}
-  $("roleLabel").textContent=isAdmin()?"ADMIN":"VISUALIZAÇÃO";
+  const mobileReadOnly=isMobileView();
+  $("roleLabel").textContent=(!mobileReadOnly && isAdmin())?"ADMIN":"VISUALIZAÇÃO";
   if(!isAdmin()){
     location.href="presenca.html";
     return false;
   }
+  if(mobileReadOnly){
+    document.body.classList.add("mobile-readonly");
+    document.querySelectorAll(".admin-only").forEach(el=>el.remove());
+  }
+
   return true;
 }
 
@@ -73,7 +81,7 @@ function render(){
       <td><span class="presence-status ${c.ativo?"active":"inactive"}">${c.ativo?"Ativo":"Inativo"}</span></td>
       <td>${esc(formatDate(c.created_at))}</td>
       <td>${esc(formatDate(c.updated_at))}</td>
-      <td>${isAdmin()?`<button class="tiny" data-edit="${esc(c.id)}" type="button">Editar</button>`:""}</td>
+      <td>${canEdit()?`<button class="tiny" data-edit="${esc(c.id)}" type="button">Editar</button>`:""}</td>
     </tr>
   `).join("");
   document.querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openEditor(b.dataset.edit)));
@@ -102,7 +110,7 @@ function openEditor(id){
 
 async function saveCollaborator(event){
   event.preventDefault();
-  if(!isAdmin())return;
+  if(!canEdit())return;
   const nome=$("collaboratorName").value.trim();
   if(!nome){
     $("collaboratorError").textContent="Informe o nome do colaborador.";
@@ -154,5 +162,14 @@ async function boot(){
     location.href="index.html";
   }
 }
+window.addEventListener("resize",()=>{
+  const mobile=isMobileView();
+  document.body.classList.toggle("mobile-readonly",mobile);
+  if(mobile){
+    document.querySelectorAll(".admin-only").forEach(el=>el.style.display="none");
+  }else if(canEdit()){
+    document.querySelectorAll(".admin-only").forEach(el=>el.style.display="");
+  }
+});
 boot();
 })();

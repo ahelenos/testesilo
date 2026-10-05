@@ -7,8 +7,8 @@
   <link rel="icon" type="image/x-icon" href="./favicon.ico?v=5">
   <title>Colaboradores · Controle de Presença V5</title>
   <link rel="stylesheet" href="css/style.css?v=5">
-  <link rel="stylesheet" href="css/loading.css?v=5">
-  <link rel="stylesheet" href="css/presenca.css?v=5">
+  <link rel="stylesheet" href="css/loading.css?v=5.1.8">
+  <link rel="stylesheet" href="css/presenca.css?v=5.1.8">
 </head>
 <body class="presence-page">
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -44,9 +44,14 @@
     </div>
     <div class="presence-hero-actions">
       <a class="btn secondary" href="presenca.html">← Ficha de chamada</a>
-      <button id="newCollaboratorBtn" class="btn primary" type="button">+ Novo colaborador</button>
+      <button id="newCollaboratorBtn" class="btn primary admin-only" type="button">+ Novo colaborador</button>
     </div>
   </section>
+
+  <div class="mobile-readonly-notice" role="status">
+    <strong>Modo visualização no celular</strong>
+    <span>O cadastro de colaboradores só pode ser alterado no computador.</span>
+  </div>
 
   <section class="presence-toolbar panel">
     <div class="date-control collaborator-search">

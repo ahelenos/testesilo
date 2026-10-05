@@ -5,7 +5,7 @@ if (!window.supabase || typeof window.supabase.createClient !== "function") {
   throw new Error("Biblioteca Supabase não foi carregada.");
 }
 
-const AUTH_STORAGE_KEY = "controle-fabrica-v5.1.6-auth";
+const AUTH_STORAGE_KEY = "controle-fabrica-v5.1.8-auth";
 
 // Sessão de autenticação restrita à aba/sessão do navegador.
 // Assim o sistema não reutiliza automaticamente um login salvo de sessões

@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.6";
+const APP_VERSION = "5.1.8";
 (() => {
 "use strict";
 const $ = id => document.getElementById(id);
@@ -20,11 +20,12 @@ const isoToday = () => {
 };
 const dateLabel = iso => iso ? new Date(`${iso}T12:00:00`).toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"}) : "—";
 const isAdmin = () => isGlobalAdmin || modulePermission === "admin";
-const canEdit = () => isAdmin();
+const isMobileView = () => window.matchMedia("(max-width: 650px)").matches;
+const canEdit = () => isAdmin() && !isMobileView();
 
 // Pedido de almoço é permitido somente para ADMIN e somente para o dia atual.
 function canRequestLunch(){
-  return isAdmin() && selectedDate === isoToday();
+  return isAdmin() && !isMobileView() && selectedDate === isoToday();
 }
 
 function updateLunchButton(){
@@ -70,9 +71,13 @@ async function checkAccess(){
     modulePermission = isGlobalAdmin ? "admin" : "viewer";
   }
 
-  $("roleLabel").textContent = isAdmin() ? "ADMIN" : "VISUALIZAÇÃO";
-  if(!isAdmin()){
+  const mobileReadOnly = isMobileView();
+  $("roleLabel").textContent = (!mobileReadOnly && isAdmin()) ? "ADMIN" : "VISUALIZAÇÃO";
+  if(!isAdmin() || mobileReadOnly){
     document.querySelectorAll(".admin-only").forEach(el=>el.remove());
+  }
+  if(mobileReadOnly){
+    document.body.classList.add("mobile-readonly");
   }
   return true;
 }
@@ -956,5 +961,17 @@ async function boot(){
     location.href="index.html";
   }
 }
+window.addEventListener("resize",()=>{
+  const mobile=isMobileView();
+  document.body.classList.toggle("mobile-readonly",mobile);
+  if(mobile){
+    document.querySelectorAll("#presenceBody input[data-shift], #presenceBody input[data-observation]").forEach(el=>{el.disabled=true;});
+  }else{
+    document.querySelectorAll("#presenceBody input[data-shift], #presenceBody input[data-observation]").forEach(el=>{el.disabled=false;});
+  }
+  updateLunchButton();
+  updateColumnToggles();
+  updateSaveAllButton();
+});
 boot();
 })();

@@ -134,7 +134,7 @@
 
 
 /* =========================================================
-   V5.1.6 — ALMOÇO POR EQUIPE
+   V5.1.8 — ALMOÇO POR EQUIPE
 ========================================================= */
 .presence-kpi.lunch{
   position:relative;
@@ -250,4 +250,171 @@
   .lunch-fields{grid-template-columns:1fr}
   .lunch-other-description{grid-column:auto}
   .presence-kpi.lunch .lunch-total{font-size:30px}
+}
+
+/* =========================================================
+   V5.1.8 — MOBILE: SOMENTE VISUALIZAÇÃO
+========================================================= */
+.mobile-readonly-notice{
+  display:none;
+  margin:-8px 0 14px;
+  padding:12px 14px;
+  border:1px solid #bfdbfe;
+  border-radius:12px;
+  background:#eff6ff;
+  color:#1d4ed8;
+  font-size:11px;
+  line-height:1.45;
+}
+.mobile-readonly-notice strong{
+  display:block;
+  font-size:11px;
+  margin-bottom:2px;
+}
+.mobile-readonly-notice span{display:block;color:#475467}
+.mobile-readonly .admin-only{display:none!important}
+
+@media(max-width:650px){
+  .mobile-readonly-notice{display:block}
+  .app-header{
+    height:auto;
+    min-height:68px;
+    padding:10px 12px;
+  }
+  .app-header .brand{gap:10px;min-width:0}
+  .app-header .vigas-header-logo{width:76px;max-height:38px}
+  .app-header .brand-text strong{font-size:13px}
+  .app-header .brand-text span{font-size:8px;letter-spacing:.05em}
+  .app-header .brand-text .user-email{font-size:9px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .app-header .header-actions{gap:5px}
+  .app-header .header-actions .btn:first-child{display:none}
+  .app-header .header-actions .home-version{font-size:8px}
+  .app-header .header-actions .btn{padding:8px 9px;font-size:11px}
+
+  .presence-main{width:calc(100% - 20px);margin:18px auto 45px}
+  .presence-hero{gap:12px;margin-bottom:14px}
+  .presence-hero h1{font-size:25px;margin-top:6px}
+  .presence-hero p{font-size:11px;line-height:1.4}
+  .presence-hero-actions{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:7px}
+  .presence-hero-actions .btn{min-width:0;width:100%;padding:9px 8px;font-size:11px}
+  .presence-hero-actions .btn.primary{grid-column:1 / -1}
+
+  .presence-toolbar{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:8px;
+    padding:12px;
+    align-items:end;
+  }
+  .presence-toolbar .presence-message{grid-column:1 / -1}
+  .date-control{min-width:0}
+  .date-control input{height:40px;font-size:13px}
+  #todayBtn{height:40px;padding:8px 12px}
+
+  .presence-kpis{
+    grid-template-columns:1fr 1fr!important;
+    gap:8px;
+  }
+  .presence-kpi{
+    padding:12px;
+    border-radius:12px;
+  }
+  .presence-kpi strong{font-size:25px}
+  .presence-kpi small{font-size:9px}
+  .presence-kpi.lunch{grid-column:1 / -1}
+  .presence-kpi.lunch .lunch-total{font-size:30px}
+
+  .presence-panel{padding:12px}
+  .presence-panel .panel-head{margin-bottom:10px}
+  .presence-panel h2{font-size:15px}
+  .presence-head-actions{width:auto}
+  .presence-head-actions .btn{display:none!important}
+
+  /* A tabela vira cartões por colaborador, sem rolagem horizontal. */
+  .presence-table-wrap{overflow:visible}
+  .presence-table{
+    width:100%;
+    min-width:0;
+    display:block;
+  }
+  .presence-table thead{display:none}
+  .presence-table tbody,
+  .presence-table tr{
+    display:block;
+    width:100%;
+  }
+  .presence-table tbody tr{
+    margin-bottom:9px;
+    padding:10px;
+    border:1px solid #e7ebf1;
+    border-radius:12px;
+    background:#fff;
+    box-shadow:0 3px 12px #0b122008;
+  }
+  .presence-table tbody tr:hover{background:#fff}
+  .presence-table tbody tr.row-dirty{background:#fffaf0}
+  .presence-table td{
+    display:block;
+    width:100%;
+    min-width:0;
+    padding:0;
+    border:0;
+  }
+  .presence-table td:first-child{
+    padding-bottom:9px;
+    border-bottom:1px solid #edf0f4;
+    margin-bottom:8px;
+  }
+  .presence-table td:nth-child(2),
+  .presence-table td:nth-child(3),
+  .presence-table td:nth-child(4){
+    display:inline-flex;
+    width:31%;
+    align-items:center;
+    justify-content:center;
+    padding:3px 0 7px;
+  }
+  .presence-table td:nth-child(2)::before,
+  .presence-table td:nth-child(3)::before,
+  .presence-table td:nth-child(4)::before{
+    display:block;
+    margin-right:5px;
+    font-size:8px;
+    font-weight:800;
+    color:#7b8794;
+    text-transform:uppercase;
+  }
+  .presence-table td:nth-child(2)::before{content:"Manhã"}
+  .presence-table td:nth-child(3)::before{content:"Tarde"}
+  .presence-table td:nth-child(4)::before{content:"Extra"}
+  .presence-table td:nth-child(5){
+    margin-top:5px;
+  }
+  .presence-table td:nth-child(5)::before{
+    content:"Observação";
+    display:block;
+    margin-bottom:4px;
+    font-size:8px;
+    font-weight:800;
+    color:#7b8794;
+    text-transform:uppercase;
+  }
+  .presence-observation{
+    min-width:0!important;
+    height:36px;
+    font-size:11px;
+  }
+  .presence-switch{cursor:default}
+  .presence-switch span{
+    width:28px;
+    height:28px;
+  }
+  .presence-switch input:disabled+span{opacity:1}
+  .presence-person strong{font-size:12px}
+
+  /* Na versão mobile, todos os campos de presença são visualização. */
+  .mobile-readonly #presenceBody input[data-shift],
+  .mobile-readonly #presenceBody input[data-observation]{
+    pointer-events:none;
+  }
 }
