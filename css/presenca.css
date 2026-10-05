@@ -134,7 +134,7 @@
 
 
 /* =========================================================
-   V5.1.10 — ALMOÇO POR EQUIPE
+   V5.1.11 — ALMOÇO POR EQUIPE
 ========================================================= */
 .presence-kpi.lunch{
   position:relative;
@@ -253,7 +253,7 @@
 }
 
 /* =========================================================
-   V5.1.10 — MOBILE: SOMENTE VISUALIZAÇÃO
+   V5.1.11 — MOBILE: SOMENTE VISUALIZAÇÃO
 ========================================================= */
 .mobile-readonly-notice{
   display:none;
@@ -420,7 +420,7 @@
 }
 
 
-/* V5.1.10 - Cabeçalho mobile simplificado e consistente */
+/* V5.1.11 - Cabeçalho mobile simplificado e consistente */
 @media (max-width:650px){
   header,
   .app-header{

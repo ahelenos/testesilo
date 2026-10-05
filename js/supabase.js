@@ -7,9 +7,9 @@ if (!window.supabase || typeof window.supabase.createClient !== "function") {
 
 const AUTH_STORAGE_KEY = "controle-fabrica-auth";
 
-// Sessão de autenticação restrita à aba/sessão do navegador.
-// Assim o sistema não reutiliza automaticamente um login salvo de sessões
-// anteriores, mas mantém a autenticação durante a navegação entre módulos.
+// A sessão precisa sobreviver à navegação entre todos os módulos.
+// Usamos localStorage como armazenamento principal e sessionStorage como
+// fallback. O logout remove os dois armazenamentos.
 const memoryStorage = (() => {
   const data = Object.create(null);
   return {
@@ -29,9 +29,18 @@ function storageWorks(storage){
   }catch(_){ return false; }
 }
 
-const authStorage = storageWorks(window.sessionStorage)
-  ? window.sessionStorage
-  : memoryStorage;
+// Migra uma sessão antiga que ainda esteja no sessionStorage para o
+// armazenamento principal, evitando perda de login após atualizações.
+try{
+  if(storageWorks(window.localStorage) && !window.localStorage.getItem(AUTH_STORAGE_KEY)){
+    const legacySession = window.sessionStorage.getItem(AUTH_STORAGE_KEY);
+    if(legacySession) window.localStorage.setItem(AUTH_STORAGE_KEY, legacySession);
+  }
+}catch(_){}
+
+const authStorage = storageWorks(window.localStorage)
+  ? window.localStorage
+  : (storageWorks(window.sessionStorage) ? window.sessionStorage : memoryStorage);
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {

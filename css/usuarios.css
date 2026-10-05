@@ -124,7 +124,7 @@
 @media(max-width:650px){.permission-grid{grid-template-columns:1fr}}
 
 
-/* V5.1.10 - Cabeçalho mobile simplificado e consistente */
+/* V5.1.11 - Cabeçalho mobile simplificado e consistente */
 @media (max-width:650px){
   header,
   .app-header{

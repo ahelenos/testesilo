@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.10";
+const APP_VERSION = "5.1.11";
 (() => {
 "use strict";
 const $ = id => document.getElementById(id);
@@ -56,6 +56,11 @@ function clearLoading(){
 
 async function checkAccess(){
   user = await window.SiloSupabase.getUser();
+  if(!user){
+    // Pequena tolerância para inicialização/refresh do token após trocar de módulo.
+    await new Promise(resolve=>setTimeout(resolve,250));
+    user = await window.SiloSupabase.getUser();
+  }
   if(!user){ location.href="index.html"; return false; }
 
   $("userEmail").textContent=user.email||"";
@@ -957,8 +962,9 @@ async function boot(){
     $("logoutBtn").addEventListener("click",async()=>{await window.SiloSupabase.signOut();location.href="index.html";});
     await loadDay();
   }catch(error){
-    console.error(error);
-    location.href="index.html";
+    console.error("Inicialização do Controle de Presença:",error);
+    setMessage(error?.message||"Não foi possível carregar o Controle de Presença.","error");
+    clearLoading();
   }
 }
 window.addEventListener("resize",()=>{

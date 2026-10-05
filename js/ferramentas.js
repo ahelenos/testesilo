@@ -1,6 +1,6 @@
 (() => {
 "use strict";
-const APP_VERSION = "5.1.10";
+const APP_VERSION = "5.1.11";
 const $=id=>document.getElementById(id);
 const sb=window.supabaseClient || window.supabase;
 let role="viewer", modulePermission="viewer", tools=[], repairs=[], loans=[], assists=[], toolTypes=[];
@@ -16,20 +16,23 @@ const budgetStatus={aguardando:"Aguardando orçamento",aprovado:"Aprovado",repro
 const loanStatus={emprestada:"No canteiro",devolvida:"Devolvida",cancelada:"Cancelada"};
 
 async function boot(){
-  const {data:{session}}=await sb.auth.getSession();
-  if(!session){ location.href="index.html"; return; }
-  const {data:p,error}=await sb.from("profiles").select("role").eq("id",session.user.id).maybeSingle();
+  const authenticatedUser = await window.SiloSupabase.getUser();
+  if(!authenticatedUser){ location.href="index.html"; return; }
+
+  const session = await window.SiloSupabase.getSession();
+  const user = authenticatedUser;
+  const {data:p,error}=await sb.from("profiles").select("role").eq("id",user.id).maybeSingle();
   if(error){showError(error.message);return}
   role=String(p?.role||"viewer").toLowerCase();
   try{
-    if(window.SiloSupabase?.getModulePermission) modulePermission=await window.SiloSupabase.getModulePermission("ferramentas",session.user);
+    if(window.SiloSupabase?.getModulePermission) modulePermission=await window.SiloSupabase.getModulePermission("ferramentas",user);
     else {
-      const {data:mp}=await sb.from("module_permissions").select("permission").eq("user_id",session.user.id).eq("module","ferramentas").maybeSingle();
+      const {data:mp}=await sb.from("module_permissions").select("permission").eq("user_id",user.id).eq("module","ferramentas").maybeSingle();
       modulePermission=String(mp?.permission||"viewer").toLowerCase();
     }
   }catch(e){ modulePermission="viewer"; console.warn("Permissão por módulo:",e); }
   $("roleLabel").textContent=isAdmin()?"ADMIN":"VISUALIZAÇÃO";
-  $("userEmail").textContent=session.user.email||"";
+  $("userEmail").textContent=user.email||"";
   if(!isAdmin()) document.querySelectorAll(".admin-only").forEach(e=>e.remove());
   $("logoutBtn").onclick=async()=>{await sb.auth.signOut();location.href="index.html"};
   bind();
