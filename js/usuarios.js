@@ -15,7 +15,10 @@ function escapeHtml(value){
 }
 
 function permissionText(value){
-  return String(value).toLowerCase()==="admin" ? "Administrar" : "Visualizar";
+  const normalized=String(value||"none").toLowerCase();
+  if(normalized==="admin") return "Administrar";
+  if(normalized==="viewer") return "Visualizar";
+  return "Sem acesso";
 }
 
 function pill(value, type){
@@ -49,10 +52,10 @@ function normalizeUser(row){
     email: row.email || "",
     role: row.role || "viewer",
     active: row.active !== false,
-    silo: row.silo_permission || "viewer",
-    manutencao: row.manutencao_permission || "viewer",
-    ferramentas: row.ferramentas_permission || "viewer",
-    presenca: row.presenca_permission || "viewer"
+    silo: row.silo_permission || "none",
+    manutencao: row.manutencao_permission || "none",
+    ferramentas: row.ferramentas_permission || "none",
+    presenca: row.presenca_permission || "none"
   };
 }
 
@@ -77,10 +80,10 @@ function renderUsers(){
       </td>
       <td>${pill(u.role==="admin"?"Administrador":"Usuário",u.role==="admin"?"access-admin":"access-viewer")}</td>
       <td>${pill(u.active?"Ativo":"Inativo",u.active?"status-active":"status-inactive")}</td>
-      <td>${pill(permissionText(u.silo),u.silo==="admin"?"access-admin":"access-viewer")}</td>
-      <td>${pill(permissionText(u.manutencao),u.manutencao==="admin"?"access-admin":"access-viewer")}</td>
-      <td>${pill(permissionText(u.ferramentas),u.ferramentas==="admin"?"access-admin":"access-viewer")}</td>
-      <td>${pill(permissionText(u.presenca),u.presenca==="admin"?"access-admin":"access-viewer")}</td>
+      <td>${pill(permissionText(u.silo),u.silo==="admin"?"access-admin":(u.silo==="viewer"?"access-viewer":"access-none"))}</td>
+      <td>${pill(permissionText(u.manutencao),u.manutencao==="admin"?"access-admin":(u.manutencao==="viewer"?"access-viewer":"access-none"))}</td>
+      <td>${pill(permissionText(u.ferramentas),u.ferramentas==="admin"?"access-admin":(u.ferramentas==="viewer"?"access-viewer":"access-none"))}</td>
+      <td>${pill(permissionText(u.presenca),u.presenca==="admin"?"access-admin":(u.presenca==="viewer"?"access-viewer":"access-none"))}</td>
       <td>
         <div class="row-actions">
           <button class="row-action edit-user" data-id="${u.id}" type="button">Editar</button>
@@ -159,6 +162,24 @@ function openEditor(id){
   $("editUserDialog").showModal();
 }
 
+async function applyNoAccessPermissions(userId, permissions){
+  const entries=[
+    ["silo",permissions.silo_permission],
+    ["manutencao",permissions.manutencao_permission],
+    ["ferramentas",permissions.ferramentas_permission],
+    ["presenca",permissions.presenca_permission]
+  ];
+  for(const [module,permission] of entries){
+    if(String(permission).toLowerCase()!=="none") continue;
+    const {error}=await supabaseClient.rpc("set_module_permission",{
+      p_user_id:userId,
+      p_module:module,
+      p_permission:"none"
+    });
+    if(error) throw error;
+  }
+}
+
 async function saveEditor(){
   if(!selectedUser) return;
 
@@ -170,6 +191,14 @@ async function saveEditor(){
     target_user_id:selectedUser.id,
     role:$("editRole").value,
     active:$("editActive").value==="true",
+    // A Edge Function existente continua recebendo apenas viewer/admin.
+    // "none" é aplicado logo depois pelo RPC seguro, removendo a permissão.
+    silo_permission:$("editSilo").value==="none"?"viewer":$("editSilo").value,
+    manutencao_permission:$("editManutencao").value==="none"?"viewer":$("editManutencao").value,
+    ferramentas_permission:$("editFerramentas").value==="none"?"viewer":$("editFerramentas").value,
+    presenca_permission:$("editPresenca").value==="none"?"viewer":$("editPresenca").value
+  };
+  const requestedPermissions={
     silo_permission:$("editSilo").value,
     manutencao_permission:$("editManutencao").value,
     ferramentas_permission:$("editFerramentas").value,
@@ -178,6 +207,7 @@ async function saveEditor(){
 
   try{
     await SiloSupabase.adminUserManagement("update_user",payload);
+    await applyNoAccessPermissions(selectedUser.id,requestedPermissions);
     $("editUserDialog").close();
     setMessage("Permissões, perfil e status atualizados com sucesso.","success");
     showGlobalLoading("Atualizando usuários...");
@@ -221,16 +251,30 @@ async function createUser(){
   showGlobalLoading("Criando usuário...");
 
   try{
+    const requestedPermissions={
+      silo_permission:$("newSilo").value,
+      manutencao_permission:$("newManutencao").value,
+      ferramentas_permission:$("newFerramentas").value,
+      presenca_permission:$("newPresenca").value
+    };
+
     await SiloSupabase.adminUserManagement("create_user",{
       email,
       password,
       role:$("newRole").value,
       active:$("newActive").value==="true",
-      silo_permission:$("newSilo").value,
-      manutencao_permission:$("newManutencao").value,
-      ferramentas_permission:$("newFerramentas").value,
-      presenca_permission:$("newPresenca").value
+      silo_permission:$("newSilo").value==="none"?"viewer":$("newSilo").value,
+      manutencao_permission:$("newManutencao").value==="none"?"viewer":$("newManutencao").value,
+      ferramentas_permission:$("newFerramentas").value==="none"?"viewer":$("newFerramentas").value,
+      presenca_permission:$("newPresenca").value==="none"?"viewer":$("newPresenca").value
     });
+
+    // Localiza o usuário recém-criado pelo e-mail e remove as permissões
+    // marcadas como "Sem acesso".
+    const refreshed=await SiloSupabase.adminUserManagement("list_users");
+    const created=(refreshed.users||[]).find(item=>String(item.email||"").toLowerCase()===email.toLowerCase());
+    if(!created?.id) throw new Error("Usuário criado, mas não foi possível localizar o registro para aplicar as permissões.");
+    await applyNoAccessPermissions(created.id,requestedPermissions);
 
     $("newUserDialog").close();
     setMessage("Usuário criado com sucesso.","success");

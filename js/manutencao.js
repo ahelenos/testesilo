@@ -25,7 +25,7 @@ async function getRole(){
     const sb=getSupabase();
     if(!sb)return "admin";
     const {data:{user}}=await sb.auth.getUser();
-    if(!user)return "viewer";
+    if(!user)return "none";
     const {data,error}=await sb.from("profiles").select("role").eq("id",user.id).maybeSingle();
     if(error||!data)return "viewer";
     return String(data.role||"viewer").toLowerCase();
@@ -34,13 +34,13 @@ async function getRole(){
 async function getModulePermission(){
   try{
     const sb=getSupabase();
-    if(!sb)return "viewer";
+    if(!sb)return "none";
     const {data:{user}}=await sb.auth.getUser();
     if(!user)return "viewer";
     if(window.SiloSupabase?.getModulePermission) return await window.SiloSupabase.getModulePermission("manutencao",user);
     const {data:p}=await sb.from("module_permissions").select("permission").eq("user_id",user.id).eq("module","manutencao").maybeSingle();
-    return String(p?.permission||"viewer").toLowerCase();
-  }catch{return "viewer"}
+    return String(p?.permission||"none").toLowerCase();
+  }catch{return "none"}
 }
 function isAdmin(role){return ["admin","administrador","administrator"].includes(String(role).toLowerCase()) || modulePermission==="admin"}
 
@@ -474,6 +474,17 @@ if(logoutButton){
   };
 }
 
-resetForm();
-setLoggedUserHeader();
-load();
+async function startMaintenanceModule(){
+  const permission=await getModulePermission();
+  if(!["viewer","admin"].includes(String(permission).toLowerCase())){
+    window.location.href="index.html?access=denied&module=manutencao";
+    return;
+  }
+  resetForm();
+  await setLoggedUserHeader();
+  await load();
+}
+startMaintenanceModule().catch(error=>{
+  console.error("Inicialização do módulo Manutenção:",error);
+  window.location.href="index.html";
+});

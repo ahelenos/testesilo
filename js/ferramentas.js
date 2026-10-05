@@ -31,7 +31,11 @@ async function boot(){
       const {data:mp}=await sb.from("module_permissions").select("permission").eq("user_id",user.id).eq("module","ferramentas").maybeSingle();
       modulePermission=String(mp?.permission||"viewer").toLowerCase();
     }
-  }catch(e){ modulePermission="viewer"; console.warn("Permissão por módulo:",e); }
+  }catch(e){ modulePermission="none"; console.warn("Permissão por módulo:",e); }
+  if(!["viewer","admin"].includes(String(modulePermission).toLowerCase())){
+    location.href="index.html?access=denied&module=ferramentas";
+    return;
+  }
   $("roleLabel").textContent=isMobile()?"VISUALIZAÇÃO • CELULAR":(isAdmin()?"ADMIN":"VISUALIZAÇÃO");
   $("userEmail").textContent=user.email||"";
   if(!isAdmin()) document.querySelectorAll(".admin-only").forEach(e=>e.remove());

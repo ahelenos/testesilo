@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.19";
+const APP_VERSION = "5.1.24";
 (() => {
 "use strict";
 try {
@@ -560,6 +560,13 @@ async function boot(){
       diagnostic.log("PERMISSIONS", "carregando");
       state.permissions=await SiloSupabase.getModulePermissions(state.user);
       diagnostic.log("PERMISSIONS RESULT", state.permissions);
+
+      const siloPermission=String(state.profile?.role==="admin" ? "admin" : (state.permissions?.silo||"none")).toLowerCase();
+      if(!["viewer","admin"].includes(siloPermission)){
+        diagnostic.log("ACCESS DENIED", {module:"silo",permission:siloPermission});
+        location.href="index.html?access=denied&module=silo";
+        return;
+      }
 
       $("loginScreen").classList.add("hidden");
       $("appScreen").classList.remove("hidden");

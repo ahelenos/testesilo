@@ -73,7 +73,12 @@ async function checkAccess(){
   try{
     modulePermission = await window.SiloSupabase.getModulePermission("presenca",user);
   }catch(_){
-    modulePermission = isGlobalAdmin ? "admin" : "viewer";
+    modulePermission = isGlobalAdmin ? "admin" : "none";
+  }
+
+  if(!["viewer","admin"].includes(String(modulePermission).toLowerCase())){
+    location.href="index.html?access=denied&module=presenca";
+    return false;
   }
 
   const mobileReadOnly = isMobileView();

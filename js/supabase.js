@@ -84,11 +84,21 @@ const SiloSupabase = {
     return Object.fromEntries((data||[]).map(r=>[String(r.module).toLowerCase(),String(r.permission).toLowerCase()]));
   },
   async getModulePermission(module,user){
-    const permissions=await this.getModulePermissions(user);
+    const u=user||await this.getUser();
+    if(!u) return "none";
+
+    // Administrador global sempre mantém acesso administrativo a todos os módulos.
+    try{
+      const {data,isAdminError}=await supabaseClient.rpc("is_global_admin");
+      if(!isAdminError && data===true) return "admin";
+    }catch(_){}
+
+    const permissions=await this.getModulePermissions(u);
     const value=permissions[String(module).toLowerCase()];
-    if(value) return value;
-    const profile=await this.getProfile(user);
-    return profile?.role==="admin" ? "admin" : "viewer";
+    // Sem acesso é uma permissão explícita "none". Quando ainda não existe
+    // uma configuração para o módulo, preservamos o comportamento legado de
+    // usuário comum com acesso de visualização.
+    return value || "viewer";
   },
   async getUser(){
     // Em mobile, especialmente Safari/iOS, a sessão persistida pode ainda
