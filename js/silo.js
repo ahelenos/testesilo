@@ -1,8 +1,49 @@
-const APP_VERSION = "5.1.15";
+const APP_VERSION = "5.1.16";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
 const state={user:null,profile:null,permissions:{},settings:null,movements:[],deliveryHistory:[],month:""};
+
+const diagnostic = (() => {
+  const lines = [];
+  const maxLines = 180;
+  const safe = value => {
+    try {
+      if (value instanceof Error) return value.message || String(value);
+      if (typeof value === "string") return value;
+      return JSON.stringify(value);
+    } catch (_) { return String(value); }
+  };
+  const stamp = () => new Date().toLocaleTimeString("pt-BR",{hour12:false});
+  function log(label, value) {
+    const line = `[${stamp()}] ${label}${value===undefined?"":` ${safe(value)}`}`;
+    lines.push(line);
+    while(lines.length>maxLines) lines.shift();
+    const el=$("diagnosticLog");
+    if(el) {
+      el.textContent=lines.join("\n");
+      el.scrollTop=el.scrollHeight;
+    }
+    console.log("[SILO DIAGNOSTIC]", label, value===undefined?"":value);
+  }
+  function snapshot() {
+    const storage = {};
+    for(const name of ["localStorage","sessionStorage"]) {
+      try {
+        const s=window[name];
+        storage[name]={
+          available:!!s,
+          authKeyPresent:!!s?.getItem("controle-fabrica-auth"),
+          keys:s ? Object.keys(s).filter(k=>k.toLowerCase().includes("auth")||k.toLowerCase().includes("supabase")) : []
+        };
+      } catch(e) { storage[name]={available:false,error:String(e?.message||e)}; }
+    }
+    log("PAGE", {path:location.pathname,visibility:document.visibilityState,online:navigator.onLine,mobile:isMobile(),storage});
+  }
+  function text() { return lines.join("\n"); }
+  return {log,snapshot,text};
+})();
+
 const isAdmin=()=>state.profile?.role==="admin" || state.permissions?.silo==="admin";
 const isMobile=()=>window.matchMedia("(max-width: 650px)").matches;
 const canEdit=()=>isAdmin()&&!isMobile();
@@ -343,10 +384,14 @@ function toggleConcreteField(){
 }
 function resetForm(){$("movementId").value="";$("movementType").value="entrada";$("movementQuantity").value="";$("movementConcrete").value="";$("movementObservation").value="";setDateTime();$("cancelEdit").classList.add("hidden");toggleConcreteField()}
 async function refresh(){
+  diagnostic.log("REFRESH", "getSettings");
   state.month=normalizeMonth(state.month||monthNow());
   state.settings=await SiloSupabase.getSettings();
+  diagnostic.log("REFRESH", "getMovements");
   state.movements=await SiloSupabase.getMovements();
+  diagnostic.log("REFRESH", "getDeliveryHistory");
   state.deliveryHistory=await SiloSupabase.getDeliveryHistory();
+  diagnostic.log("REFRESH RESULT", {settings:!!state.settings,movements:state.movements.length,deliveryHistory:state.deliveryHistory.length});
   render();
   // No mobile Safari, garante uma segunda pintura após o layout inicial.
   requestAnimationFrame(()=>render());
@@ -369,7 +414,26 @@ function wait(ms){
   return new Promise(resolve=>setTimeout(resolve,ms));
 }
 
+
+try{
+  const authClient=window.supabaseClient;
+  if(authClient?.auth?.onAuthStateChange){
+    authClient.auth.onAuthStateChange((event,session)=>{
+      diagnostic.log(`AUTH EVENT ${event}`, {
+        hasSession:!!session,
+        hasUser:!!session?.user,
+        userId:session?.user?.id ? `${session.user.id.slice(0,8)}...` : null
+      });
+    });
+    diagnostic.log("AUTH LISTENER", "registrado");
+  }else{
+    diagnostic.log("AUTH LISTENER", "cliente Supabase/auth não disponível");
+  }
+}catch(e){diagnostic.log("AUTH LISTENER ERRO",e?.message||e)}
+
 async function waitForSiloSession(){
+  diagnostic.snapshot();
+  diagnostic.log("SESSION", "iniciando verificação da sessão");
   // O problema observado é exclusivo desta página. Em vez de considerar
   // um primeiro getSession() vazio como "deslogado", esperamos o evento
   // INITIAL_SESSION do próprio cliente Supabase. Isso evita que a tela
@@ -383,8 +447,10 @@ async function waitForSiloSession(){
   if(!client?.auth) throw new Error("Cliente de autenticação do Supabase não está disponível.");
 
   const immediate = await SiloSupabase.getSession();
+  diagnostic.log("SESSION immediate", {hasSession:!!immediate, hasUser:!!immediate?.user});
   if(immediate?.user){
     siloAuthReady = true;
+    diagnostic.log("SESSION", "usuário encontrado na leitura imediata");
     return immediate.user;
   }
 
@@ -395,6 +461,8 @@ async function waitForSiloSession(){
 
     const finish=(user,error)=>{
       if(finished)return;
+      diagnostic.log("SESSION finish", error ? {error:String(error?.message||error),hasUser:false} : {hasUser:!!user});
+
       finished=true;
       if(timer)clearTimeout(timer);
       try{subscription?.unsubscribe?.();}catch(_){}
@@ -406,6 +474,7 @@ async function waitForSiloSession(){
     };
 
     const {data} = client.auth.onAuthStateChange((event,session)=>{
+      diagnostic.log("SESSION listener event", {event,hasSession:!!session,hasUser:!!session?.user});
       if(event==="INITIAL_SESSION" || event==="SIGNED_IN" || event==="TOKEN_REFRESHED"){
         if(session?.user) finish(session.user);
         else if(event==="INITIAL_SESSION") finish(null);
@@ -439,10 +508,14 @@ async function boot(){
   if(siloBootPromise) return siloBootPromise;
 
   siloBootPromise=(async()=>{
+    diagnostic.log("BOOT", "iniciando");
     try{
       state.user=await waitForSiloSession();
+      diagnostic.log("BOOT user", {hasUser:!!state.user,userId:state.user?.id ? `${state.user.id.slice(0,8)}...` : null});
+
 
       if(!state.user){
+        diagnostic.log("BOOT RESULT", "sessão não encontrada -> tela de login");
         $("loginScreen").classList.remove("hidden");
         $("appScreen").classList.add("hidden");
         return;
@@ -450,18 +523,25 @@ async function boot(){
 
       // A partir daqui a autenticação já foi confirmada. Qualquer erro
       // posterior NÃO deve ser convertido silenciosamente em "faça login".
+      diagnostic.log("PROFILE", "carregando");
       state.profile=await SiloSupabase.getProfile(state.user);
+      diagnostic.log("PROFILE RESULT", {found:!!state.profile,role:state.profile?.role||null});
       if(!state.profile){
         throw new Error("Perfil do usuário não foi encontrado para a sessão autenticada.");
       }
 
+      diagnostic.log("PERMISSIONS", "carregando");
       state.permissions=await SiloSupabase.getModulePermissions(state.user);
+      diagnostic.log("PERMISSIONS RESULT", state.permissions);
 
       $("loginScreen").classList.add("hidden");
       $("appScreen").classList.remove("hidden");
       $("userEmail").textContent=state.user.email||"";
+      diagnostic.log("REFRESH", "carregando dados do Silo");
       await refresh();
+      diagnostic.log("BOOT", "concluído com sucesso");
     }catch(x){
+      diagnostic.log("BOOT ERROR", {message:x?.message||String(x),name:x?.name||null,stack:x?.stack||null});
       console.error("Inicialização do Controle de Silo:",x);
 
       // Se já temos um usuário autenticado, mantemos a aplicação visível
@@ -489,6 +569,23 @@ async function boot(){
 
   return siloBootPromise;
 }
+
+
+$("diagnosticBtn")?.addEventListener("click",()=>{
+  $("diagnosticPanel")?.classList.toggle("hidden");
+  diagnostic.snapshot();
+});
+$("diagnosticCopyBtn")?.addEventListener("click",async()=>{
+  const value=diagnostic.text();
+  try{
+    await navigator.clipboard.writeText(value);
+    $("diagnosticCopyBtn").textContent="Copiado ✓";
+    setTimeout(()=>$("diagnosticCopyBtn").textContent="Copiar",1200);
+  }catch(_){
+    $("diagnosticCopyBtn").textContent="Selecione e copie";
+  }
+});
+diagnostic.snapshot();
 
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginError").textContent="";try{await SiloSupabase.signIn($("loginEmail").value.trim(),$("loginPassword").value);await boot()}catch(x){$("loginError").textContent=translateAuthError(x?.message||"Falha no login.")}});
 $("logoutBtn").addEventListener("click",async()=>{try{await SiloSupabase.signOut()}finally{location.reload()}});
