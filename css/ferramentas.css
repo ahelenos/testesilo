@@ -40,7 +40,7 @@
 .user-email{display:block!important;font-size:10px!important;line-height:1.2!important;letter-spacing:.02em!important;color:#94a3b8!important;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 
 /* Correção de layout da listagem de ferramentas
-   Mantém a lógica da V5.1.13 e impede que cards com textos longos
+   Mantém a lógica da V5.1.14 e impede que cards com textos longos
    ultrapassem a largura do painel. */
 .tool-grid,
 .record-grid{
@@ -106,7 +106,7 @@
 }
 
 
-/* V5.1.13 - Cabeçalho mobile simplificado e consistente */
+/* V5.1.14 - Cabeçalho mobile simplificado e consistente */
 @media (max-width:650px){
   header,
   .app-header{

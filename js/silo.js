@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.13";
+const APP_VERSION = "5.1.14";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -362,11 +362,34 @@ function translateAuthError(message){
   return m;
 }
 
+async function waitForSiloSession(){
+  // O Silo é aberto com frequência a partir da navegação mobile.
+  // Em alguns navegadores móveis a sessão persistida termina de ser
+  // hidratada depois do primeiro getUser(). Não mostramos o login
+  // antes de dar tempo para essa hidratação concluir.
+  for(let attempt=0; attempt<12; attempt++){
+    try{
+      const session = await SiloSupabase.getSession();
+      if(session?.user) return session.user;
+
+      const user = await SiloSupabase.getUser();
+      if(user) return user;
+    }catch(error){
+      const message=String(error?.message||"").toLowerCase();
+      if(!message.includes("auth session missing")) throw error;
+    }
+
+    await new Promise(resolve=>setTimeout(resolve,250));
+  }
+  return null;
+}
+
 async function boot(){
   try{
-    state.user=await SiloSupabase.getUser();
+    state.user=await waitForSiloSession();
 
     // Login automático desativado: o usuário deve informar suas próprias credenciais.
+    // O login só aparece depois de a sessão persistida ter tido tempo para hidratar.
     if(!state.user){
       $("loginScreen").classList.remove("hidden");
       $("appScreen").classList.add("hidden");
@@ -437,10 +460,24 @@ $("settingsForm").addEventListener("submit",async e=>{e.preventDefault();if(!can
  if(critical>Number($("siloCapacity").value))throw Error("O estoque crítico não pode ser maior que a capacidade do silo.");
  await SiloSupabase.saveSettings($("siloName").value.trim(),Number($("siloCapacity").value),minimum,critical,$("siloNextDelivery").value);await refresh()}catch(x){$("settingsError").textContent=x.message||"Erro ao salvar."}});
 window.addEventListener("pageshow",()=>{
-  if(!document.getElementById("appScreen").classList.contains("hidden")) refresh().catch(console.error);
+  if(!document.getElementById("appScreen").classList.contains("hidden")){
+    refresh().catch(console.error);
+  }else{
+    boot().catch(error=>{
+      console.error("Revalidação da sessão do Controle de Silo:",error);
+    });
+  }
 });
 document.addEventListener("visibilitychange",()=>{
-  if(!document.hidden && !document.getElementById("appScreen").classList.contains("hidden")) refresh().catch(console.error);
+  if(document.hidden) return;
+
+  if(!document.getElementById("appScreen").classList.contains("hidden")){
+    refresh().catch(console.error);
+  }else{
+    boot().catch(error=>{
+      console.error("Revalidação da sessão do Controle de Silo:",error);
+    });
+  }
 });
 window.addEventListener("resize",()=>{
   if(!document.getElementById("appScreen").classList.contains("hidden")){
