@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.16";
+const APP_VERSION = "5.1.17";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -43,6 +43,26 @@ const diagnostic = (() => {
   function text() { return lines.join("\n"); }
   return {log,snapshot,text};
 })();
+window.addEventListener("error", event => {
+  try {
+    diagnostic.log("GLOBAL JS ERROR", {
+      message: event?.message || "Erro JavaScript",
+      source: event?.filename || null,
+      line: event?.lineno || null,
+      column: event?.colno || null
+    });
+  } catch (_) {}
+});
+window.addEventListener("unhandledrejection", event => {
+  try {
+    const reason = event?.reason;
+    diagnostic.log("UNHANDLED PROMISE", {
+      message: reason?.message || String(reason || "Promise rejeitada"),
+      name: reason?.name || null,
+      stack: reason?.stack || null
+    });
+  } catch (_) {}
+});
 
 const isAdmin=()=>state.profile?.role==="admin" || state.permissions?.silo==="admin";
 const isMobile=()=>window.matchMedia("(max-width: 650px)").matches;
@@ -609,6 +629,7 @@ document.addEventListener("click",e=>{
  const btn=e.target.closest(".btn-delete-delivery");
  if(btn) deleteDeliveryRecord(btn.dataset.deliveryId);
 });
+diagnostic.log("INIT", "event listeners principais registrados");
 $("cementDeliveredBtn").addEventListener("click",async()=>{
  if(!canEdit()||!state.settings?.next_delivery_date)return;
  const raw=prompt("Quantos kg de cimento foram entregues?");
@@ -661,5 +682,21 @@ window.addEventListener("resize",()=>{
     drawConsumptionChart();
   }
 });
-state.month=normalizeMonth(monthNow());setDateTime();toggleConcreteField();boot().catch(x=>{$("loginError").textContent=x.message||"Erro ao iniciar.";console.error(x)});
+try{
+  diagnostic.log("INIT", "antes de setDateTime");
+  state.month=normalizeMonth(monthNow());
+  setDateTime();
+  diagnostic.log("INIT", "setDateTime OK");
+  toggleConcreteField();
+  diagnostic.log("INIT", "toggleConcreteField OK");
+  diagnostic.log("PRE-BOOT", "chamando boot()");
+  boot().catch(x=>{
+    diagnostic.log("BOOT OUTER ERROR", {message:x?.message||String(x),stack:x?.stack||null});
+    $("loginError").textContent=x.message||"Erro ao iniciar.";
+    console.error(x);
+  });
+}catch(x){
+  diagnostic.log("INIT ERROR", {message:x?.message||String(x),name:x?.name||null,stack:x?.stack||null});
+  console.error("Inicialização síncrona do Controle de Silo:",x);
+}
 })();
