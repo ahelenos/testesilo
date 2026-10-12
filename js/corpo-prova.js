@@ -60,10 +60,11 @@ function render(){
   const cps=state.corpos.filter(c=>c.moldagem_id===m.id);
   const results=state.rompimentos.filter(r=>cps.some(c=>c.id===r.corpo_prova_id)).sort((a,b)=>String(b.data_rompimento).localeCompare(String(a.data_rompimento)));
   const last=results[0];
-  return `<tr><td>${brDate(m.data_moldagem)}</td><td>${escapeHtml(typeName(m))}</td><td>${escapeHtml(m.identificacao||"—")}</td><td>${cps.length}</td><td>${last?`${mpav(last.resistencia_mpa)} <small>(${brDate(last.data_rompimento)})</small>`:"—"}</td><td><button class="btn secondary cp-open" data-id="${m.id}">Abrir</button></td></tr>`
+  return `<tr><td>${brDate(m.data_moldagem)}</td><td>${escapeHtml(typeName(m))}</td><td>${escapeHtml(m.identificacao||"—")}</td><td>${cps.length}</td><td>${last?`${mpav(last.resistencia_mpa)} <small>(${brDate(last.data_rompimento)})</small>`:"—"}</td><td><div class="cp-row-actions"><button class="btn secondary cp-open" data-id="${m.id}">Abrir</button>${isAdmin()?`<button class="btn danger cp-delete-moldagem" data-id="${m.id}">Excluir</button>`:""}</div></td></tr>`
  }).join("");
  $("emptyState").classList.toggle("hidden",rows.length>0);
  document.querySelectorAll(".cp-open").forEach(b=>b.addEventListener("click",()=>openDetail(b.dataset.id)));
+ document.querySelectorAll(".cp-delete-moldagem").forEach(b=>b.addEventListener("click",()=>deleteMoldagem(b.dataset.id)));
 }
 function refreshTypeOptions(){
  const active=state.tipos.filter(t=>t.ativo);
@@ -96,28 +97,79 @@ function renderDetail(){
  const currentType=state.tipos.find(t=>t.id===m.tipo_peca_id)?.nome || m.tipo_peca || "Tipo removido";
  $("detailTitle").textContent=`${currentType} · ${brDate(m.data_moldagem)}`;
  $("detailSubtitle").textContent=[m.identificacao,m.observacoes].filter(Boolean).join(" — ");
- let out=`<div class="cp-detail-toolbar">${isAdmin()?'<button id="addTestDirectBtn" class="btn primary">+ Registrar rompimento</button>':""}</div>`;
+ let out=`<div class="cp-detail-toolbar">${isAdmin()?'<button id="addTestDirectBtn" class="btn primary">+ Registrar rompimento</button><button id="deleteMoldagemDetailBtn" class="btn danger">Excluir moldagem e resultados</button>':""}</div>`;
  if(!cps.length)out+='<div class="cp-empty">Nenhum rompimento registrado nesta moldagem.</div>';
  const allTests=state.rompimentos.filter(r=>cps.some(c=>c.id===r.corpo_prova_id)).sort((a,b)=>String(a.data_rompimento).localeCompare(String(b.data_rompimento)));
  if(allTests.length){
-   out+='<div class="cp-table-wrap"><table class="cp-table"><thead><tr><th>Corpo de prova</th><th>Data</th><th>Idade (dias)</th><th>Resistência</th><th>Tipo de ruptura</th><th>Observações</th></tr></thead><tbody>';
+   out+=`<div class="cp-table-wrap"><table class="cp-table"><thead><tr><th>Corpo de prova</th><th>Data</th><th>Idade (dias)</th><th>Resistência</th><th>Tipo de ruptura</th><th>Observações</th>${isAdmin()?'<th>Ações</th>':""}</tr></thead><tbody>`;
    for(const r of allTests){
      const cp=cps.find(c=>c.id===r.corpo_prova_id);
      const age=Math.floor((new Date(`${r.data_rompimento}T00:00:00`)-new Date(`${m.data_moldagem}T00:00:00`))/86400000);
      const labels={A:"Cônica e cônica afastada do capeamento",B:"Cônica e bipartida / múltiplas partições",C:"Colunar com formação de cones",D:"Cônica e cisalhada",E:"Cisalhada",F:"Fraturas no topo e/ou na base abaixo do capeamento",G:"Fraturas próximas ao topo"};
      const ruptureLabel=r.tipo_ruptura?`${r.tipo_ruptura} — ${labels[r.tipo_ruptura]||""}`:"Não informado";
-     out+=`<tr><td>${escapeHtml(cp?.codigo||"CP")}</td><td>${brDate(r.data_rompimento)}</td><td>${age}</td><td><strong>${mpav(r.resistencia_mpa)}</strong></td><td>${escapeHtml(ruptureLabel)}</td><td>${escapeHtml(r.observacoes||"—")}</td></tr>`;
+     out+=`<tr><td>${escapeHtml(cp?.codigo||"CP")}</td><td>${brDate(r.data_rompimento)}</td><td>${age}</td><td><strong>${mpav(r.resistencia_mpa)}</strong></td><td>${escapeHtml(ruptureLabel)}</td><td>${escapeHtml(r.observacoes||"—")}</td>${isAdmin()?`<td><button type="button" class="btn danger cp-delete-rompimento" data-id="${r.id}">Excluir</button></td>`:""}</tr>`;
    }
    out+='</tbody></table></div>';
    if(allTests.length>=2)out+=`<div class="cp-chart"><div class="cp-chart-title">Evolução da resistência</div>${renderChart(allTests,m.data_moldagem)}</div>`;
  }
  $("detailContent").innerHTML=out;
+ $("deleteMoldagemDetailBtn")?.addEventListener("click",()=>deleteMoldagem(m.id));
+ document.querySelectorAll(".cp-delete-rompimento").forEach(b=>b.addEventListener("click",()=>deleteRompimento(b.dataset.id)));
  $("addTestDirectBtn")?.addEventListener("click",()=>{
    state.selectedCp=null;
    $("rompimentoCpLabel").textContent="O sistema identificará o corpo de prova automaticamente";
    $("rompimentoForm").reset();$("dataRompimento").value=today();$("rompimentoError").textContent="";
    $("rompimentoDialog").showModal()
  });
+}
+async function deleteRompimento(id){
+ if(!isAdmin())return;
+ const r=state.rompimentos.find(x=>x.id===id);
+ if(!r)return;
+ const cp=state.corpos.find(x=>x.id===r.corpo_prova_id);
+ if(!confirm(`Excluir o rompimento de ${cp?.codigo||"corpo de prova"} registrado em ${brDate(r.data_rompimento)} com resistência de ${mpav(r.resistencia_mpa)}?\n\nEsta ação não pode ser desfeita.`))return;
+ try{
+  loading("Excluindo rompimento...");
+  const {error:rompError}=await supabaseClient.from("cp_rompimentos").delete().eq("id",id);
+  if(rompError)throw rompError;
+  // Cada CP criado pelo fluxo atual representa um único ensaio; remove o CP
+  // automaticamente criado junto com o resultado para não deixar órfãos.
+  if(cp){
+   const {error:cpError}=await supabaseClient.from("cp_corpos_prova").delete().eq("id",cp.id);
+   if(cpError)throw cpError;
+  }
+  message("Rompimento excluído.","success");
+  await loadData();
+  if(state.selectedMoldagem && state.moldagens.some(m=>m.id===state.selectedMoldagem.id))renderDetail();
+ }catch(e){console.error(e);message(e.message||"Não foi possível excluir o rompimento.","error")}
+ finally{hideLoading()}
+}
+async function deleteMoldagem(id){
+ if(!isAdmin())return;
+ const mold=state.moldagens.find(m=>m.id===id);
+ if(!mold)return;
+ const cps=state.corpos.filter(c=>c.moldagem_id===id);
+ const cpIds=cps.map(c=>c.id);
+ const results=state.rompimentos.filter(r=>cpIds.includes(r.corpo_prova_id));
+ const type=state.tipos.find(t=>t.id===mold.tipo_peca_id)?.nome||mold.tipo_peca||"Peça";
+ const description=`${type} — moldagem de ${brDate(mold.data_moldagem)}`;
+ if(!confirm(`Excluir definitivamente a moldagem ${description}?\n\nSerão excluídos também ${cps.length} corpo(s) de prova e ${results.length} rompimento(s) associado(s), incluindo resultados e observações.\n\nEsta ação não pode ser desfeita.`))return;
+ try{
+  loading("Excluindo moldagem e resultados...");
+  if(cpIds.length){
+   const {error:rompError}=await supabaseClient.from("cp_rompimentos").delete().in("corpo_prova_id",cpIds);
+   if(rompError)throw rompError;
+   const {error:cpError}=await supabaseClient.from("cp_corpos_prova").delete().in("id",cpIds);
+   if(cpError)throw cpError;
+  }
+  const {error:moldError}=await supabaseClient.from("cp_moldagens").delete().eq("id",id);
+  if(moldError)throw moldError;
+  if($("detailDialog").open && state.selectedMoldagem?.id===id)$("detailDialog").close();
+  state.selectedMoldagem=null;
+  message("Moldagem e registros associados excluídos.","success");
+  await loadData();
+ }catch(e){console.error(e);message(e.message||"Não foi possível excluir a moldagem. Verifique as políticas de acesso ao banco.","error")}
+ finally{hideLoading()}
 }
 function renderChart(tests,moldDate){
  const vals=tests.map(t=>({age:Math.max(0,Math.floor((new Date(`${t.data_rompimento}T00:00:00`)-new Date(`${moldDate}T00:00:00`))/86400000)),mpa:Number(t.resistencia_mpa)})).sort((a,b)=>a.age-b.age);

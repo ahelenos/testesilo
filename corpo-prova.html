@@ -4,13 +4,13 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0b1220">
 <title>Controle de Corpo de Prova — Gestão de Fábrica</title>
-<link rel="stylesheet" href="css/style.css?v=5.1.28"><link rel="stylesheet" href="css/loading.css?v=5.1.28"><link rel="stylesheet" href="css/corpo-prova.css?v=5.1.30">
+<link rel="stylesheet" href="css/style.css?v=5.1.28"><link rel="stylesheet" href="css/loading.css?v=5.1.28"><link rel="stylesheet" href="css/corpo-prova.css?v=5.1.31">
 </head>
 <body>
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true"><div class="global-loading-card" role="status"><span class="loading-spinner"></span><strong id="globalLoadingText">Carregando...</strong><span>Aguarde, estamos processando a solicitação.</span></div></div>
 <div id="loginScreen" class="login-screen"><div class="login-box"><img class="vigas-login-logo" src="assets/vigas-preto.png" alt="VIGAS"><div class="login-divider"></div><span class="eyebrow">GESTÃO DE FÁBRICA</span><h1>Controle de Corpo de Prova</h1><p>Entre com seu usuário da Gestão de Fábrica.</p><form id="loginForm"><label>E-mail</label><input id="loginEmail" type="email" autocomplete="username" required><label>Senha</label><input id="loginPassword" type="password" autocomplete="current-password" required><button class="btn primary">Entrar</button><div id="loginError" class="error"></div></form></div></div>
 <div id="appScreen" class="hidden">
-<header><div class="brand"><img class="vigas-header-logo" src="assets/vigas-amarelo.png" alt="VIGAS"><div class="brand-text"><strong>Gestão de Fábrica</strong><span id="userRole"></span><span id="userEmail" class="user-email"></span></div></div><div class="header-actions"><span class="home-version">V5.1.30</span><button id="logoutBtn" class="btn ghost" type="button">Sair</button></div></header>
+<header><div class="brand"><img class="vigas-header-logo" src="assets/vigas-amarelo.png" alt="VIGAS"><div class="brand-text"><strong>Gestão de Fábrica</strong><span id="userRole"></span><span id="userEmail" class="user-email"></span></div></div><div class="header-actions"><a class="btn ghost cp-header-home" href="index.html" aria-label="Voltar para a Central da fábrica">← Central</a><span class="home-version">V5.1.31</span><button id="logoutBtn" class="btn ghost" type="button">Sair</button></div></header>
 <main class="cp-main">
 <div class="cp-top"><div><a href="index.html" class="cp-back">← Central da fábrica</a><div class="eyebrow">QUALIDADE · CONCRETO</div><h1>Controle de Corpo de Prova</h1><p>Registre moldagens e acompanhe a resistência do concreto ao longo do tempo.</p></div><div class="cp-top-actions"><button id="manageTypesBtn" class="btn secondary hidden" type="button">Tipos de peças</button><button id="newMoldagemBtn" class="btn primary hidden" type="button">+ Nova moldagem</button></div></div>
 <div id="cpMessage" class="cp-message" role="status"></div>
@@ -36,5 +36,5 @@
   <p class="cp-rupture-guide-note">As imagens são ilustrativas. Consulte a norma técnica aplicável para classificação formal do ensaio.</p>
   <div class="cp-actions"><button type="button" class="btn secondary" data-close="ruptureGuideDialog">Fechar consulta</button></div>
 </dialog>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/supabase.js?v=5.1.28"></script><script src="js/corpo-prova.js?v=5.1.30"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/supabase.js?v=5.1.28"></script><script src="js/corpo-prova.js?v=5.1.31"></script>
 </body></html>
