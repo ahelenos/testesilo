@@ -1,4 +1,4 @@
-﻿(() => {
+(() => {
 "use strict";
 const $=id=>document.getElementById(id);
 const state={user:null,profile:null,permission:"none",moldagens:[],corpos:[],rompimentos:[],tipos:[],selectedMoldagem:null,selectedCp:null};
@@ -7,6 +7,13 @@ const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
 const brDate=v=>v?new Date(`${v}T00:00:00`).toLocaleDateString("pt-BR"):"—";
 const mpav=v=>Number(v).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+" MPa";
+const pressKN=v=>Number.isFinite(Number(v))&&v!==null&&v!==""?(Number(v)*7854/1019):null;
+const knv=v=>{const n=pressKN(v);return n===null?"—":n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+" kN"};
+function updatePressPreview(){
+ const raw=$("resistencia").value;
+ const value=raw===""?null:pressKN(raw);
+ $("valorPrensaPreview").textContent=value===null||!Number.isFinite(value)?"—":value.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+" kN";
+}
 function message(text,type=""){const el=$("cpMessage");el.textContent=text;el.className="cp-message "+type}
 function loading(text){$("globalLoadingText").textContent=text;$("globalLoading").classList.remove("hidden")}
 function hideLoading(){$("globalLoading").classList.add("hidden")}
@@ -60,7 +67,7 @@ function render(){
   const cps=state.corpos.filter(c=>c.moldagem_id===m.id);
   const results=state.rompimentos.filter(r=>cps.some(c=>c.id===r.corpo_prova_id)).sort((a,b)=>String(b.data_rompimento).localeCompare(String(a.data_rompimento)));
   const last=results[0];
-  return `<tr><td>${brDate(m.data_moldagem)}</td><td>${escapeHtml(typeName(m))}</td><td>${escapeHtml(m.identificacao||"—")}</td><td>${cps.length}</td><td>${last?`${mpav(last.resistencia_mpa)} <small>(${brDate(last.data_rompimento)})</small>`:"—"}</td><td><div class="cp-row-actions"><button class="btn secondary cp-open" data-id="${m.id}">Abrir</button>${isAdmin()?`<button class="btn danger cp-delete-moldagem" data-id="${m.id}">Excluir</button>`:""}</div></td></tr>`
+  return `<tr><td>${brDate(m.data_moldagem)}</td><td>${escapeHtml(typeName(m))}</td><td>${escapeHtml(m.identificacao||"—")}</td><td>${cps.length}</td><td>${last?`${mpav(last.resistencia_mpa)} <small>Prensa: ${knv(last.resistencia_mpa)}<br>(${brDate(last.data_rompimento)})</small>`:"—"}</td><td><div class="cp-row-actions"><button class="btn secondary cp-open" data-id="${m.id}">Abrir</button>${isAdmin()?`<button class="btn danger cp-delete-moldagem" data-id="${m.id}">Excluir</button>`:""}</div></td></tr>`
  }).join("");
  $("emptyState").classList.toggle("hidden",rows.length>0);
  document.querySelectorAll(".cp-open").forEach(b=>b.addEventListener("click",()=>openDetail(b.dataset.id)));
@@ -101,13 +108,13 @@ function renderDetail(){
  if(!cps.length)out+='<div class="cp-empty">Nenhum rompimento registrado nesta moldagem.</div>';
  const allTests=state.rompimentos.filter(r=>cps.some(c=>c.id===r.corpo_prova_id)).sort((a,b)=>String(a.data_rompimento).localeCompare(String(b.data_rompimento)));
  if(allTests.length){
-   out+=`<div class="cp-table-wrap"><table class="cp-table"><thead><tr><th>Corpo de prova</th><th>Data</th><th>Idade (dias)</th><th>Resistência</th><th>Tipo de ruptura</th><th>Observações</th>${isAdmin()?'<th>Ações</th>':""}</tr></thead><tbody>`;
+   out+=`<div class="cp-table-wrap"><table class="cp-table"><thead><tr><th>Corpo de prova</th><th>Data</th><th>Idade (dias)</th><th>Resistência</th><th>Valor da prensa (kN)</th><th>Tipo de ruptura</th><th>Observações</th>${isAdmin()?'<th>Ações</th>':""}</tr></thead><tbody>`;
    for(const r of allTests){
      const cp=cps.find(c=>c.id===r.corpo_prova_id);
      const age=Math.floor((new Date(`${r.data_rompimento}T00:00:00`)-new Date(`${m.data_moldagem}T00:00:00`))/86400000);
      const labels={A:"Cônica e cônica afastada do capeamento",B:"Cônica e bipartida / múltiplas partições",C:"Colunar com formação de cones",D:"Cônica e cisalhada",E:"Cisalhada",F:"Fraturas no topo e/ou na base abaixo do capeamento",G:"Fraturas próximas ao topo"};
      const ruptureLabel=r.tipo_ruptura?`${r.tipo_ruptura} — ${labels[r.tipo_ruptura]||""}`:"Não informado";
-     out+=`<tr><td>${escapeHtml(cp?.codigo||"CP")}</td><td>${brDate(r.data_rompimento)}</td><td>${age}</td><td><strong>${mpav(r.resistencia_mpa)}</strong></td><td>${escapeHtml(ruptureLabel)}</td><td>${escapeHtml(r.observacoes||"—")}</td>${isAdmin()?`<td><button type="button" class="btn danger cp-delete-rompimento" data-id="${r.id}">Excluir</button></td>`:""}</tr>`;
+     out+=`<tr><td>${escapeHtml(cp?.codigo||"CP")}</td><td>${brDate(r.data_rompimento)}</td><td>${age}</td><td><strong>${mpav(r.resistencia_mpa)}</strong></td><td><strong>${knv(r.resistencia_mpa)}</strong></td><td>${escapeHtml(ruptureLabel)}</td><td>${escapeHtml(r.observacoes||"—")}</td>${isAdmin()?`<td><button type="button" class="btn danger cp-delete-rompimento" data-id="${r.id}">Excluir</button></td>`:""}</tr>`;
    }
    out+='</tbody></table></div>';
    if(allTests.length>=2)out+=`<div class="cp-chart"><div class="cp-chart-title">Evolução da resistência</div>${renderChart(allTests,m.data_moldagem)}</div>`;
@@ -118,7 +125,7 @@ function renderDetail(){
  $("addTestDirectBtn")?.addEventListener("click",()=>{
    state.selectedCp=null;
    $("rompimentoCpLabel").textContent="O sistema identificará o corpo de prova automaticamente";
-   $("rompimentoForm").reset();$("dataRompimento").value=today();$("rompimentoError").textContent="";
+   $("rompimentoForm").reset();$("dataRompimento").value=today();$("rompimentoError").textContent="";updatePressPreview();
    $("rompimentoDialog").showModal()
  });
 }
@@ -269,6 +276,7 @@ $("newMoldagemBtn").addEventListener("click",openMoldagem);
 $("manageTypesBtn").addEventListener("click",openTypes);
 $("typeForm").addEventListener("submit",saveType);
 $("viewRuptureTypesBtn").addEventListener("click",()=>$("ruptureGuideDialog").showModal());
+$("resistencia").addEventListener("input",updatePressPreview);
 $("cancelTypeEdit").addEventListener("click",resetTypeForm);
 $("moldagemForm").addEventListener("submit",createMoldagem);$("rompimentoForm").addEventListener("submit",createRompimento);
 $("searchInput").addEventListener("input",render);$("tipoFilter").addEventListener("change",render);
