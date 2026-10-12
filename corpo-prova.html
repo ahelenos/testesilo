@@ -4,18 +4,18 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0b1220">
 <title>Controle de Corpo de Prova — Gestão de Fábrica</title>
-<link rel="stylesheet" href="css/style.css?v=5.1.28"><link rel="stylesheet" href="css/loading.css?v=5.1.28"><link rel="stylesheet" href="css/corpo-prova.css?v=5.1.32">
+<link rel="stylesheet" href="css/style.css?v=5.1.33"><link rel="stylesheet" href="css/loading.css?v=5.1.33"><link rel="stylesheet" href="css/corpo-prova.css?v=5.1.32">
 </head>
 <body>
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true"><div class="global-loading-card" role="status"><span class="loading-spinner"></span><strong id="globalLoadingText">Carregando...</strong><span>Aguarde, estamos processando a solicitação.</span></div></div>
 <div id="loginScreen" class="login-screen"><div class="login-box"><img class="vigas-login-logo" src="assets/vigas-preto.png" alt="VIGAS"><div class="login-divider"></div><span class="eyebrow">GESTÃO DE FÁBRICA</span><h1>Controle de Corpo de Prova</h1><p>Entre com seu usuário da Gestão de Fábrica.</p><form id="loginForm"><label>E-mail</label><input id="loginEmail" type="email" autocomplete="username" required><label>Senha</label><input id="loginPassword" type="password" autocomplete="current-password" required><button class="btn primary">Entrar</button><div id="loginError" class="error"></div></form></div></div>
 <div id="appScreen" class="hidden">
-<header><div class="brand"><img class="vigas-header-logo" src="assets/vigas-amarelo.png" alt="VIGAS"><div class="brand-text"><strong>Gestão de Fábrica</strong><span id="userRole"></span><span id="userEmail" class="user-email"></span></div></div><div class="header-actions"><a class="btn ghost cp-header-home" href="index.html" aria-label="Voltar para a Central da fábrica">← Central</a><span class="home-version">V5.1.32</span><button id="logoutBtn" class="btn ghost" type="button">Sair</button></div></header>
+<header><div class="brand"><img class="vigas-header-logo" src="assets/vigas-amarelo.png" alt="VIGAS"><div class="brand-text"><strong>Gestão de Fábrica</strong><span id="userRole"></span><span id="userEmail" class="user-email"></span></div></div><div class="header-actions"><a class="btn ghost cp-header-home" href="index.html" aria-label="Voltar para a Central da fábrica">← Central</a><span class="home-version">V5.1.33</span><button id="logoutBtn" class="btn ghost" type="button">Sair</button></div></header>
 <main class="cp-main">
 <div class="cp-top"><div><a href="index.html" class="cp-back">← Central da fábrica</a><div class="eyebrow">QUALIDADE · CONCRETO</div><h1>Controle de Corpo de Prova</h1><p>Registre moldagens e acompanhe a resistência do concreto ao longo do tempo.</p></div><div class="cp-top-actions"><button id="manageTypesBtn" class="btn secondary hidden" type="button">Tipos de peças</button><button id="newMoldagemBtn" class="btn primary hidden" type="button">+ Nova moldagem</button></div></div>
 <div id="cpMessage" class="cp-message" role="status"></div>
 <section class="cp-kpis"><article><span>Moldagens cadastradas</span><strong id="kpiMoldagens">0</strong></article><article><span>Corpos de prova</span><strong id="kpiCps">0</strong></article><article><span>Rompimentos registrados</span><strong id="kpiRompimentos">0</strong></article><article><span>Última resistência registrada</span><strong id="kpiUltima">—</strong></article></section>
-<section class="cp-panel"><div class="cp-panel-head"><div><span class="eyebrow">HISTÓRICO</span><h2>Moldagens e resultados</h2></div><div class="cp-filters"><input id="searchInput" placeholder="Buscar peça ou identificação"><select id="tipoFilter"><option value="">Todos os tipos</option></select></div></div>
+<section class="cp-panel"><div class="cp-panel-head"><div><span class="eyebrow">HISTÓRICO</span><h2>Moldagens e resultados</h2></div><div class="cp-filters"><input id="searchInput" placeholder="Buscar data, peça ou identificação"><select id="tipoFilter"><option value="">Todos os tipos</option></select></div></div>
 <div class="cp-table-wrap"><table class="cp-table"><thead><tr><th>Moldagem</th><th>Peça</th><th>Identificação</th><th>Corpos de prova</th><th>Último resultado</th><th></th></tr></thead><tbody id="moldagensBody"></tbody></table></div><div id="emptyState" class="cp-empty hidden">Nenhuma moldagem cadastrada.</div></section>
 </main></div>
 <dialog id="moldagemDialog" class="cp-dialog"><form id="moldagemForm"><div class="cp-dialog-head"><div><span class="eyebrow">NOVO REGISTRO</span><h2>Nova moldagem</h2></div><button type="button" class="cp-close" data-close="moldagemDialog">×</button></div><label for="tipoPeca">Tipo de peça</label><select id="tipoPeca" required><option value="">Carregando tipos...</option></select><label for="dataMoldagem">Data da moldagem</label><input id="dataMoldagem" type="date" required><label for="identificacao">Identificação da concretagem/lote</label><input id="identificacao" maxlength="120" placeholder="Ex.: Pilar eixo A — concretagem da manhã"><label for="observacoes">Observações</label><textarea id="observacoes" rows="3" placeholder="Informações opcionais"></textarea><div class="cp-form-error" id="moldagemError"></div><div class="cp-actions"><button type="button" class="btn secondary" data-close="moldagemDialog">Cancelar</button><button class="btn primary">Salvar moldagem</button></div></form></dialog>
@@ -26,6 +26,14 @@
 <div class="cp-press-value" aria-live="polite"><span>Valor da prensa (kN)</span><strong id="valorPrensaPreview">—</strong><small>Cálculo automático: (Resistência × 7854) ÷ 1019</small></div>
 <label for="tipoRuptura">Tipo de ruptura (ABNT NBR 5739:2018 — opcional)</label><select id="tipoRuptura"><option value="">Não informado</option><option value="A">Tipo A — Cônica e cônica afastada do capeamento</option><option value="B">Tipo B — Cônica e bipartida / múltiplas partições</option><option value="C">Tipo C — Colunar com formação de cones</option><option value="D">Tipo D — Cônica e cisalhada</option><option value="E">Tipo E — Cisalhada</option><option value="F">Tipo F — Fraturas no topo e/ou na base abaixo do capeamento</option><option value="G">Tipo G — Fraturas próximas ao topo</option></select>
 <button type="button" id="viewRuptureTypesBtn" class="btn secondary cp-view-rupture-types"><span aria-hidden="true">▧</span> Ver tipos de ruptura</button><label for="rompimentoObs">Observações do ensaio</label><textarea id="rompimentoObs" rows="2"></textarea><div class="cp-form-error" id="rompimentoError"></div><div class="cp-actions"><button type="button" class="btn secondary" data-close="rompimentoDialog">Cancelar</button><button class="btn primary">Salvar rompimento</button></div></form></dialog>
+<dialog id="moldagemGraphDialog" class="cp-dialog cp-moldagem-graph-dialog" aria-labelledby="moldagemGraphTitle">
+  <div class="cp-dialog-head">
+    <div><span class="eyebrow">ANÁLISE DE RESISTÊNCIA</span><h2 id="moldagemGraphTitle">Ganho de resistência</h2><p id="moldagemGraphSubtitle"></p></div>
+    <button type="button" class="cp-close" data-close="moldagemGraphDialog" aria-label="Fechar">×</button>
+  </div>
+  <div id="moldagemGraphContent"></div>
+  <div class="cp-actions"><button type="button" class="btn secondary" data-close="moldagemGraphDialog">Fechar gráfico</button></div>
+</dialog>
 <dialog id="ruptureGuideDialog" class="cp-dialog cp-rupture-guide-dialog" aria-labelledby="ruptureGuideTitle">
   <div class="cp-dialog-head">
     <div><span class="eyebrow">CONSULTA TÉCNICA</span><h2 id="ruptureGuideTitle">Tipos de ruptura</h2><p>Classificação ilustrativa — ABNT NBR 5739:2018, Anexo A.</p></div>
@@ -37,5 +45,5 @@
   <p class="cp-rupture-guide-note">As imagens são ilustrativas. Consulte a norma técnica aplicável para classificação formal do ensaio.</p>
   <div class="cp-actions"><button type="button" class="btn secondary" data-close="ruptureGuideDialog">Fechar consulta</button></div>
 </dialog>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/supabase.js?v=5.1.28"></script><script src="js/corpo-prova.js?v=5.1.32"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/supabase.js?v=5.1.33"></script><script src="js/corpo-prova.js?v=5.1.33"></script>
 </body></html>

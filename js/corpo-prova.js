@@ -62,15 +62,22 @@ function render(){
  $("kpiUltima").textContent=latest?mpav(latest.resistencia_mpa):"—";
  const q=$("searchInput").value.trim().toLowerCase(),tipo=$("tipoFilter").value;
  const typeName=m=>state.tipos.find(t=>t.id===m.tipo_peca_id)?.nome || m.tipo_peca || "Tipo removido";
- const rows=state.moldagens.filter(m=>(!tipo||m.tipo_peca_id===tipo)&&(!q||`${typeName(m)} ${m.tipo_outro||""} ${m.identificacao||""}`.toLowerCase().includes(q)));
+ const rows=state.moldagens.filter(m=>{
+  const dateISO=String(m.data_moldagem||"").toLowerCase();
+  const dateBR=brDate(m.data_moldagem).toLowerCase();
+  const dateShort=dateBR.slice(0,5);
+  const haystack=`${typeName(m)} ${m.tipo_outro||""} ${m.identificacao||""} ${dateISO} ${dateBR} ${dateShort}`.toLowerCase();
+  return (!tipo||m.tipo_peca_id===tipo)&&(!q||haystack.includes(q));
+ });
  $("moldagensBody").innerHTML=rows.map(m=>{
   const cps=state.corpos.filter(c=>c.moldagem_id===m.id);
   const results=state.rompimentos.filter(r=>cps.some(c=>c.id===r.corpo_prova_id)).sort((a,b)=>String(b.data_rompimento).localeCompare(String(a.data_rompimento)));
   const last=results[0];
-  return `<tr><td>${brDate(m.data_moldagem)}</td><td>${escapeHtml(typeName(m))}</td><td>${escapeHtml(m.identificacao||"—")}</td><td>${cps.length}</td><td>${last?`${mpav(last.resistencia_mpa)} <small>Prensa: ${knv(last.resistencia_mpa)}<br>(${brDate(last.data_rompimento)})</small>`:"—"}</td><td><div class="cp-row-actions"><button class="btn secondary cp-open" data-id="${m.id}">Abrir</button>${isAdmin()?`<button class="btn danger cp-delete-moldagem" data-id="${m.id}">Excluir</button>`:""}</div></td></tr>`
+  return `<tr><td>${brDate(m.data_moldagem)}</td><td>${escapeHtml(typeName(m))}</td><td>${escapeHtml(m.identificacao||"—")}</td><td>${cps.length}</td><td>${last?`${mpav(last.resistencia_mpa)} <small>Prensa: ${knv(last.resistencia_mpa)}<br>(${brDate(last.data_rompimento)})</small>`:"—"}</td><td><div class="cp-row-actions"><button class="btn secondary cp-open" data-id="${m.id}">Abrir</button><button class="btn secondary cp-graph" data-id="${m.id}">Gráfico</button>${isAdmin()?`<button class="btn danger cp-delete-moldagem" data-id="${m.id}">Excluir</button>`:""}</div></td></tr>`
  }).join("");
  $("emptyState").classList.toggle("hidden",rows.length>0);
  document.querySelectorAll(".cp-open").forEach(b=>b.addEventListener("click",()=>openDetail(b.dataset.id)));
+ document.querySelectorAll(".cp-graph").forEach(b=>b.addEventListener("click",()=>openMoldagemGraph(b.dataset.id)));
  document.querySelectorAll(".cp-delete-moldagem").forEach(b=>b.addEventListener("click",()=>deleteMoldagem(b.dataset.id)));
 }
 function refreshTypeOptions(){
@@ -177,6 +184,23 @@ async function deleteMoldagem(id){
   await loadData();
  }catch(e){console.error(e);message(e.message||"Não foi possível excluir a moldagem. Verifique as políticas de acesso ao banco.","error")}
  finally{hideLoading()}
+}
+function openMoldagemGraph(id){
+ const mold=state.moldagens.find(m=>m.id===id);if(!mold)return;
+ const cps=state.corpos.filter(c=>c.moldagem_id===mold.id);
+ const tests=state.rompimentos.filter(r=>cps.some(c=>c.id===r.corpo_prova_id))
+   .sort((a,b)=>String(a.data_rompimento).localeCompare(String(b.data_rompimento)));
+ const type=state.tipos.find(t=>t.id===mold.tipo_peca_id)?.nome||mold.tipo_peca||"Peça";
+ $("moldagemGraphTitle").textContent=`Ganho de resistência — ${type}`;
+ $("moldagemGraphSubtitle").textContent=`Moldagem em ${brDate(mold.data_moldagem)}${mold.identificacao?" · "+mold.identificacao:""}`;
+ const graphBody=$("moldagemGraphContent");
+ if(!tests.length){
+   graphBody.innerHTML='<div class="cp-empty">Ainda não há rompimentos registrados nesta moldagem para montar o gráfico.</div>';
+ }else{
+   const ordered=tests.map(r=>({...r,age:Math.max(0,Math.floor((new Date(`${r.data_rompimento}T00:00:00`)-new Date(`${mold.data_moldagem}T00:00:00`))/86400000))})).sort((a,b)=>a.age-b.age);
+   graphBody.innerHTML=`<div class="cp-graph-summary"><div><span>Rompimentos</span><strong>${tests.length}</strong></div><div><span>Maior resistência</span><strong>${mpav(Math.max(...tests.map(t=>Number(t.resistencia_mpa))) )}</strong></div><div><span>Última idade</span><strong>${ordered[ordered.length-1].age} dias</strong></div></div><div class="cp-chart"><div class="cp-chart-title">Dias × Resistência (MPa)</div>${renderChart(tests,mold.data_moldagem)}</div><div class="cp-table-wrap"><table class="cp-table"><thead><tr><th>Data do rompimento</th><th>Idade (dias)</th><th>Resistência</th><th>Valor da prensa</th></tr></thead><tbody>${ordered.map(r=>`<tr><td>${brDate(r.data_rompimento)}</td><td>${r.age}</td><td><strong>${mpav(r.resistencia_mpa)}</strong></td><td>${knv(r.resistencia_mpa)}</td></tr>`).join("")}</tbody></table></div>`;
+ }
+ $("moldagemGraphDialog").showModal();
 }
 function renderChart(tests,moldDate){
  const vals=tests.map(t=>({age:Math.max(0,Math.floor((new Date(`${t.data_rompimento}T00:00:00`)-new Date(`${moldDate}T00:00:00`))/86400000)),mpa:Number(t.resistencia_mpa)})).sort((a,b)=>a.age-b.age);
