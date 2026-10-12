@@ -216,6 +216,7 @@ $("logoutBtn").addEventListener("click",async()=>{await SiloSupabase.signOut();l
 $("newMoldagemBtn").addEventListener("click",openMoldagem);
 $("manageTypesBtn").addEventListener("click",openTypes);
 $("typeForm").addEventListener("submit",saveType);
+$("viewRuptureTypesBtn").addEventListener("click",()=>$("ruptureGuideDialog").showModal());
 $("cancelTypeEdit").addEventListener("click",resetTypeForm);
 $("moldagemForm").addEventListener("submit",createMoldagem);$("rompimentoForm").addEventListener("submit",createRompimento);
 $("searchInput").addEventListener("input",render);$("tipoFilter").addEventListener("change",render);
