@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
 "use strict";
 const APP_VERSION = "5.1.14";
 const $=id=>document.getElementById(id);

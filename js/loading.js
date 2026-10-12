@@ -1,4 +1,4 @@
-/* =========================================================
+﻿/* =========================================================
    LOADING GLOBAL — V5.1.1
    Mostra um indicador enquanto operações de rede estão
    sendo processadas. Funciona em todas as telas.

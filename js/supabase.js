@@ -1,4 +1,4 @@
-const SUPABASE_URL = "https://takxmkchlaayctrultbp.supabase.co";
+﻿const SUPABASE_URL = "https://takxmkchlaayctrultbp.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_QCVGtc5sySA-R1Gr3hSbag_JuY-k1aU";
 
 if (!window.supabase || typeof window.supabase.createClient !== "function") {

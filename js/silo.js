@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.24";
+﻿const APP_VERSION = "5.1.24";
 (() => {
 "use strict";
 try {
