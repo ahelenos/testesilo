@@ -203,10 +203,35 @@ function openMoldagemGraph(id){
  $("moldagemGraphDialog").showModal();
 }
 function renderChart(tests,moldDate){
- const vals=tests.map(t=>({age:Math.max(0,Math.floor((new Date(`${t.data_rompimento}T00:00:00`)-new Date(`${moldDate}T00:00:00`))/86400000)),mpa:Number(t.resistencia_mpa)})).sort((a,b)=>a.age-b.age);
- const max=Math.max(...vals.map(v=>v.mpa),1),w=560,h=180,p=28;
- const pts=vals.map(v=>`${p+v.age/(Math.max(...vals.map(x=>x.age),1))*(w-p*2)},${h-p-v.mpa/max*(h-p*2)}`).join(" ");
- return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Curva de resistência por idade"><line x1="${p}" y1="${h-p}" x2="${w-p}" y2="${h-p}" stroke="#cbd5e1"/><line x1="${p}" y1="${p}" x2="${p}" y2="${h-p}" stroke="#cbd5e1"/><polyline points="${pts}" fill="none" stroke="#0e8a91" stroke-width="3" stroke-linejoin="round"/>${vals.map(v=>{const x=p+v.age/(Math.max(...vals.map(x=>x.age),1))*(w-p*2),y=h-p-v.mpa/max*(h-p*2);return `<circle cx="${x}" cy="${y}" r="4" fill="#0e8a91"><title>${v.age} dias: ${v.mpa} MPa</title></circle>`}).join("")}<text x="${w/2}" y="${h-4}" font-size="11" text-anchor="middle" fill="#64748b">Idade do concreto (dias)</text><text x="12" y="${h/2}" font-size="11" text-anchor="middle" fill="#64748b" transform="rotate(-90 12 ${h/2})">MPa</text></svg>`;
+ const vals=tests.map(t=>({
+   age:Math.max(0,Math.floor((new Date(`${t.data_rompimento}T00:00:00`)-new Date(`${moldDate}T00:00:00`))/86400000)),
+   mpa:Number(t.resistencia_mpa)
+ })).filter(v=>Number.isFinite(v.age)&&Number.isFinite(v.mpa)&&v.mpa>=0).sort((a,b)=>a.age-b.age);
+ if(!vals.length)return `<div class="cp-chart-empty">Ainda não há resultados válidos para montar o gráfico.</div>`;
+ const maxAge=Math.max(...vals.map(v=>v.age),1);
+ const rawMax=Math.max(...vals.map(v=>v.mpa),1);
+ const step=rawMax<=10?2:rawMax<=25?5:rawMax<=50?10:rawMax<=100?20:50;
+ const yMax=Math.ceil(rawMax/step)*step || step;
+ const w=760,h=350,left=66,right=26,top=26,bottom=62;
+ const plotW=w-left-right,plotH=h-top-bottom;
+ const x=age=>left+(age/maxAge)*plotW;
+ const y=mpa=>top+plotH-(mpa/yMax)*plotH;
+ const xTicks=Array.from({length:6},(_,i)=>Math.round(maxAge*i/5));
+ const yTicks=Array.from({length:Math.round(yMax/step)+1},(_,i)=>i*step);
+ const gridY=yTicks.map(v=>`<line x1="${left}" y1="${y(v)}" x2="${w-right}" y2="${y(v)}" class="${v===0?'cp-axis-zero':'cp-chart-grid'}"/><text x="${left-12}" y="${y(v)+4}" text-anchor="end" class="cp-chart-tick">${v}</text>`).join("");
+ const gridX=xTicks.map(v=>`<line x1="${x(v)}" y1="${top}" x2="${x(v)}" y2="${top+plotH}" class="${v===0?'cp-axis-zero':'cp-chart-grid'}"/><text x="${x(v)}" y="${top+plotH+23}" text-anchor="middle" class="cp-chart-tick">${v}</text>`).join("");
+ // A curva sempre parte da origem (0 dias, 0 MPa), mesmo quando o primeiro ensaio ocorre depois.
+ const pts=[[0,0],...vals.map(v=>[v.age,v.mpa])].map(([age,mpa])=>`${x(age)},${y(mpa)}`).join(" ");
+ const circles=vals.map(v=>`<circle cx="${x(v.age)}" cy="${y(v.mpa)}" r="5" class="cp-chart-point"><title>${v.age} dias: ${v.mpa.toLocaleString("pt-BR",{maximumFractionDigits:2})} MPa</title></circle><text x="${x(v.age)}" y="${Math.max(top+12,y(v.mpa)-12)}" text-anchor="middle" class="cp-chart-point-label">${v.mpa.toLocaleString("pt-BR",{maximumFractionDigits:2})}</text>`).join("");
+ return `<div class="cp-chart-plot"><svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Curva de ganho de resistência. Eixo horizontal: idade do concreto em dias, iniciando em zero. Eixo vertical: resistência em MPa, iniciando em zero.">
+ <defs><linearGradient id="cpChartArea" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#0e8a91" stop-opacity=".22"/><stop offset="100%" stop-color="#0e8a91" stop-opacity=".015"/></linearGradient></defs>
+ ${gridY}${gridX}
+ <polygon points="${x(0)},${y(0)} ${vals.map(v=>`${x(v.age)},${y(v.mpa)}`).join(" ")} ${x(vals[vals.length-1].age)},${y(0)}" fill="url(#cpChartArea)" />
+ <polyline points="${pts}" class="cp-chart-line"/>
+ ${circles}
+ <text x="${left+plotW/2}" y="${h-13}" text-anchor="middle" class="cp-chart-axis-label">Idade do concreto (dias)</text>
+ <text x="18" y="${top+plotH/2}" text-anchor="middle" class="cp-chart-axis-label" transform="rotate(-90 18 ${top+plotH/2})">Resistência (MPa)</text>
+ </svg></div>`;
 }
 async function createRompimento(e){
  e.preventDefault();if(!isAdmin()||!state.selectedMoldagem)return;
