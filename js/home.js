@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.14";
+const APP_VERSION = "5.1.27";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -60,11 +60,22 @@ async function boot(){
       ["silo","siloModuleCard"],
       ["manutencao","maintenanceModuleCard"],
       ["ferramentas","toolsModuleCard"],
-      ["presenca","presenceModuleCard"]
+      ["presenca","presenceModuleCard"],
+      ["corpo_prova","corpoProvaModuleCard"]
     ];
     for(const [module,cardId] of moduleCards){
       try{
-        const permission = await SiloSupabase.getModulePermission(module,user);
+        let permission;
+        if(module === "corpo_prova"){
+          const {data:isGlobalAdmin,error:adminCheckError}=await supabaseClient.rpc("is_global_admin");
+          if(!adminCheckError && isGlobalAdmin===true) permission="admin";
+          else {
+            const permissions=await SiloSupabase.getModulePermissions(user);
+            permission=String(permissions.corpo_prova||"none").toLowerCase();
+          }
+        }else{
+          permission = await SiloSupabase.getModulePermission(module,user);
+        }
         if(["viewer","admin"].includes(String(permission).toLowerCase())){
           $(cardId)?.classList.remove("hidden");
         }

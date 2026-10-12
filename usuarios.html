@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0b1220">
-  <link rel="icon" type="image/x-icon" href="./favicon.ico?v=5.1.26">
-  <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico?v=5.1.26">
+  <link rel="icon" type="image/x-icon" href="./favicon.ico?v=5.1.27">
+  <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico?v=5.1.27">
   <title>Usuários · Gestão de Fábrica</title>
-  <link rel="stylesheet" href="css/style.css?v=5.1.26">
-  <link rel="stylesheet" href="css/usuarios.css?v=5.1.26">
-  <link rel="stylesheet" href="css/loading.css?v=5.1.26">
+  <link rel="stylesheet" href="css/style.css?v=5.1.27">
+  <link rel="stylesheet" href="css/usuarios.css?v=5.1.27">
+  <link rel="stylesheet" href="css/loading.css?v=5.1.27">
 </head>
 <body class="users-page">
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -21,7 +21,7 @@
 </div>
 <header class="app-header">
   <div class="brand">
-    <img class="vigas-header-logo" src="assets/vigas-amarelo.png?v=5.1.26" alt="VIGAS Engenharia em Pré-Moldados">
+    <img class="vigas-header-logo" src="assets/vigas-amarelo.png?v=5.1.27" alt="VIGAS Engenharia em Pré-Moldados">
     <div class="brand-text">
       <strong>Gestão de Fábrica</strong>
       <span>GERENCIAMENTO DE USUÁRIOS</span>
@@ -80,6 +80,7 @@
             <th>Manutenção</th>
             <th>Ferramentas</th>
             <th>Controle de Presença</th>
+            <th>Corpo de Prova</th>
             <th></th>
           </tr>
         </thead>
@@ -170,6 +171,14 @@
             <option value="admin">Administrar</option>
           </select>
         </div>
+        <div>
+          <label for="newCorpoProva">Controle de Corpo de Prova</label>
+          <select id="newCorpoProva">
+            <option value="none">Sem acesso</option>
+            <option value="viewer">Visualizar</option>
+            <option value="admin">Administrar</option>
+          </select>
+        </div>
       </div>
     </fieldset>
 
@@ -249,6 +258,14 @@
             <option value="admin">Administrar</option>
           </select>
         </div>
+        <div>
+          <label for="editCorpoProva">Controle de Corpo de Prova</label>
+          <select id="editCorpoProva">
+            <option value="none">Sem acesso</option>
+            <option value="viewer">Visualizar</option>
+            <option value="admin">Administrar</option>
+          </select>
+        </div>
       </div>
     </fieldset>
 
@@ -309,8 +326,8 @@
 <footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V5.1.24</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js?v=5.1.26"></script>
-<script src="js/loading.js?v=5.1.26"></script>
-<script src="js/usuarios.js?v=5.1.26"></script>
+<script src="js/supabase.js?v=5.1.27"></script>
+<script src="js/loading.js?v=5.1.27"></script>
+<script src="js/usuarios.js?v=5.1.27"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 
-const APP_VERSION = "5.1.26";
+const APP_VERSION = "5.1.27";
 
 (() => {
 "use strict";
@@ -55,7 +55,8 @@ function normalizeUser(row){
     silo: row.silo_permission || "none",
     manutencao: row.manutencao_permission || "none",
     ferramentas: row.ferramentas_permission || "none",
-    presenca: row.presenca_permission || "none"
+    presenca: row.presenca_permission || "none",
+    corpo_prova: row.corpo_prova_permission || "none"
   };
 }
 
@@ -84,6 +85,7 @@ function renderUsers(){
       <td>${pill(permissionText(u.manutencao),u.manutencao==="admin"?"access-admin":(u.manutencao==="viewer"?"access-viewer":"access-none"))}</td>
       <td>${pill(permissionText(u.ferramentas),u.ferramentas==="admin"?"access-admin":(u.ferramentas==="viewer"?"access-viewer":"access-none"))}</td>
       <td>${pill(permissionText(u.presenca),u.presenca==="admin"?"access-admin":(u.presenca==="viewer"?"access-viewer":"access-none"))}</td>
+      <td>${pill(permissionText(u.corpo_prova),u.corpo_prova==="admin"?"access-admin":(u.corpo_prova==="viewer"?"access-viewer":"access-none"))}</td>
       <td>
         <div class="row-actions">
           <button class="row-action edit-user" data-id="${u.id}" type="button">Editar</button>
@@ -131,7 +133,8 @@ async function loadUsers(){
         silo: modulePermissions.silo ?? user.silo,
         manutencao: modulePermissions.manutencao ?? user.manutencao,
         ferramentas: modulePermissions.ferramentas ?? user.ferramentas,
-        presenca: modulePermissions.presenca ?? user.presenca
+        presenca: modulePermissions.presenca ?? user.presenca,
+        corpo_prova: modulePermissions.corpo_prova ?? user.corpo_prova
       };
     });
 
@@ -181,6 +184,7 @@ function openEditor(id){
   $("editManutencao").value=selectedUser.manutencao;
   $("editFerramentas").value=selectedUser.ferramentas;
   $("editPresenca").value=selectedUser.presenca;
+  $("editCorpoProva").value=selectedUser.corpo_prova;
   $("editError").textContent="";
   $("editUserDialog").showModal();
 }
@@ -190,7 +194,8 @@ async function applyModulePermissions(userId, permissions){
     ["silo",permissions.silo_permission],
     ["manutencao",permissions.manutencao_permission],
     ["ferramentas",permissions.ferramentas_permission],
-    ["presenca",permissions.presenca_permission]
+    ["presenca",permissions.presenca_permission],
+    ["corpo_prova",permissions.corpo_prova_permission]
   ];
 
   for(const [module,permission] of entries){
@@ -224,13 +229,14 @@ async function saveEditor(){
     silo_permission:$("editSilo").value==="none"?"viewer":$("editSilo").value,
     manutencao_permission:$("editManutencao").value==="none"?"viewer":$("editManutencao").value,
     ferramentas_permission:$("editFerramentas").value==="none"?"viewer":$("editFerramentas").value,
-    presenca_permission:$("editPresenca").value==="none"?"viewer":$("editPresenca").value
+    presenca_permission:$("editPresenca").value==="none"?"viewer":$("editPresenca").value,
   };
   const requestedPermissions={
     silo_permission:$("editSilo").value,
     manutencao_permission:$("editManutencao").value,
     ferramentas_permission:$("editFerramentas").value,
-    presenca_permission:$("editPresenca").value
+    presenca_permission:$("editPresenca").value,
+    corpo_prova_permission:$("editCorpoProva").value
   };
 
   try{
@@ -257,6 +263,7 @@ function openNewUser(){
   $("newManutencao").value="viewer";
   $("newFerramentas").value="viewer";
   $("newPresenca").value="viewer";
+  $("newCorpoProva").value="none";
   $("newUserError").textContent="";
   $("newUserDialog").showModal();
 }
@@ -283,7 +290,8 @@ async function createUser(){
       silo_permission:$("newSilo").value,
       manutencao_permission:$("newManutencao").value,
       ferramentas_permission:$("newFerramentas").value,
-      presenca_permission:$("newPresenca").value
+      presenca_permission:$("newPresenca").value,
+      corpo_prova_permission:$("newCorpoProva").value
     };
 
     await SiloSupabase.adminUserManagement("create_user",{
@@ -294,7 +302,7 @@ async function createUser(){
       silo_permission:$("newSilo").value==="none"?"viewer":$("newSilo").value,
       manutencao_permission:$("newManutencao").value==="none"?"viewer":$("newManutencao").value,
       ferramentas_permission:$("newFerramentas").value==="none"?"viewer":$("newFerramentas").value,
-      presenca_permission:$("newPresenca").value==="none"?"viewer":$("newPresenca").value
+      presenca_permission:$("newPresenca").value==="none"?"viewer":$("newPresenca").value,
     });
 
     // Localiza o usuário recém-criado pelo e-mail e remove as permissões
