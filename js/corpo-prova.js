@@ -96,23 +96,28 @@ function renderDetail(){
  const currentType=state.tipos.find(t=>t.id===m.tipo_peca_id)?.nome || m.tipo_peca || "Tipo removido";
  $("detailTitle").textContent=`${currentType} · ${brDate(m.data_moldagem)}`;
  $("detailSubtitle").textContent=[m.identificacao,m.observacoes].filter(Boolean).join(" — ");
- let out=`<div class="cp-detail-toolbar">${isAdmin()?'<button id="addCpBtn" class="btn primary">+ Adicionar corpo de prova</button>':""}</div>`;
- if(!cps.length)out+='<div class="cp-empty">Nenhum corpo de prova cadastrado nesta moldagem.</div>';
- for(const cp of cps){
-  const tests=state.rompimentos.filter(r=>r.corpo_prova_id===cp.id).sort((a,b)=>String(a.data_rompimento).localeCompare(String(b.data_rompimento)));
-  out+=`<article class="cp-body-card"><div class="cp-body-head"><div><strong>${escapeHtml(cp.codigo)}</strong><small>${escapeHtml(cp.observacoes||"Sem observações")}</small></div>${isAdmin()?`<button class="btn secondary add-test" data-id="${cp.id}" data-code="${escapeHtml(cp.codigo)}">+ Registrar rompimento</button>`:""}</div>`;
-  if(!tests.length)out+='<p class="cp-no-test">Nenhum rompimento registrado.</p>';
-  else{
-   out+='<div class="cp-table-wrap"><table class="cp-table"><thead><tr><th>Data</th><th>Idade (dias)</th><th>Resistência</th><th>Observações</th></tr></thead><tbody>';
-   for(const r of tests){const age=Math.floor((new Date(`${r.data_rompimento}T00:00:00`)-new Date(`${m.data_moldagem}T00:00:00`))/86400000);out+=`<tr><td>${brDate(r.data_rompimento)}</td><td>${age}</td><td><strong>${mpav(r.resistencia_mpa)}</strong></td><td>${escapeHtml(r.observacoes||"—")}</td></tr>`}
+ let out=`<div class="cp-detail-toolbar">${isAdmin()?'<button id="addTestDirectBtn" class="btn primary">+ Registrar rompimento</button>':""}</div>`;
+ if(!cps.length)out+='<div class="cp-empty">Nenhum rompimento registrado nesta moldagem.</div>';
+ const allTests=state.rompimentos.filter(r=>cps.some(c=>c.id===r.corpo_prova_id)).sort((a,b)=>String(a.data_rompimento).localeCompare(String(b.data_rompimento)));
+ if(allTests.length){
+   out+='<div class="cp-table-wrap"><table class="cp-table"><thead><tr><th>Corpo de prova</th><th>Data</th><th>Idade (dias)</th><th>Resistência</th><th>Tipo de ruptura</th><th>Observações</th></tr></thead><tbody>';
+   for(const r of allTests){
+     const cp=cps.find(c=>c.id===r.corpo_prova_id);
+     const age=Math.floor((new Date(`${r.data_rompimento}T00:00:00`)-new Date(`${m.data_moldagem}T00:00:00`))/86400000);
+     const labels={A:"Cônica e cônica afastada do capeamento",B:"Cônica e bipartida / múltiplas partições",C:"Colunar com formação de cones",D:"Cônica e cisalhada",E:"Cisalhada",F:"Fraturas no topo e/ou na base abaixo do capeamento",G:"Fraturas próximas ao topo"};
+     const ruptureLabel=r.tipo_ruptura?`${r.tipo_ruptura} — ${labels[r.tipo_ruptura]||""}`:"Não informado";
+     out+=`<tr><td>${escapeHtml(cp?.codigo||"CP")}</td><td>${brDate(r.data_rompimento)}</td><td>${age}</td><td><strong>${mpav(r.resistencia_mpa)}</strong></td><td>${escapeHtml(ruptureLabel)}</td><td>${escapeHtml(r.observacoes||"—")}</td></tr>`;
+   }
    out+='</tbody></table></div>';
-   if(tests.length>=2)out+=`<div class="cp-chart"><div class="cp-chart-title">Evolução da resistência</div>${renderChart(tests,m.data_moldagem)}</div>`;
-  }
-  out+='</article>';
+   if(allTests.length>=2)out+=`<div class="cp-chart"><div class="cp-chart-title">Evolução da resistência</div>${renderChart(allTests,m.data_moldagem)}</div>`;
  }
  $("detailContent").innerHTML=out;
- $("addCpBtn")?.addEventListener("click",()=>{$("cpForm").reset();$("cpError").textContent="";$("cpDialog").showModal()});
- document.querySelectorAll(".add-test").forEach(b=>b.addEventListener("click",()=>{state.selectedCp=b.dataset.id;$("rompimentoCpLabel").textContent=`Corpo de prova ${b.dataset.code}`;$("rompimentoForm").reset();$("dataRompimento").value=today();$("rompimentoError").textContent="";$("rompimentoDialog").showModal()}));
+ $("addTestDirectBtn")?.addEventListener("click",()=>{
+   state.selectedCp=null;
+   $("rompimentoCpLabel").textContent="O sistema identificará o corpo de prova automaticamente";
+   $("rompimentoForm").reset();$("dataRompimento").value=today();$("rompimentoError").textContent="";
+   $("rompimentoDialog").showModal()
+ });
 }
 function renderChart(tests,moldDate){
  const vals=tests.map(t=>({age:Math.max(0,Math.floor((new Date(`${t.data_rompimento}T00:00:00`)-new Date(`${moldDate}T00:00:00`))/86400000)),mpa:Number(t.resistencia_mpa)})).sort((a,b)=>a.age-b.age);
@@ -120,18 +125,49 @@ function renderChart(tests,moldDate){
  const pts=vals.map(v=>`${p+v.age/(Math.max(...vals.map(x=>x.age),1))*(w-p*2)},${h-p-v.mpa/max*(h-p*2)}`).join(" ");
  return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Curva de resistência por idade"><line x1="${p}" y1="${h-p}" x2="${w-p}" y2="${h-p}" stroke="#cbd5e1"/><line x1="${p}" y1="${p}" x2="${p}" y2="${h-p}" stroke="#cbd5e1"/><polyline points="${pts}" fill="none" stroke="#0e8a91" stroke-width="3" stroke-linejoin="round"/>${vals.map(v=>{const x=p+v.age/(Math.max(...vals.map(x=>x.age),1))*(w-p*2),y=h-p-v.mpa/max*(h-p*2);return `<circle cx="${x}" cy="${y}" r="4" fill="#0e8a91"><title>${v.age} dias: ${v.mpa} MPa</title></circle>`}).join("")}<text x="${w/2}" y="${h-4}" font-size="11" text-anchor="middle" fill="#64748b">Idade do concreto (dias)</text><text x="12" y="${h/2}" font-size="11" text-anchor="middle" fill="#64748b" transform="rotate(-90 12 ${h/2})">MPa</text></svg>`;
 }
-async function createCp(e){
- e.preventDefault();if(!isAdmin()||!state.selectedMoldagem)return;
- try{loading("Salvando corpo de prova...");const {error}=await supabaseClient.from("cp_corpos_prova").insert({moldagem_id:state.selectedMoldagem.id,codigo:$("cpCodigo").value.trim(),observacoes:$("cpObs").value.trim()||null,created_by:state.user.id});if(error)throw error;$("cpDialog").close();message("Corpo de prova adicionado.","success");await loadData();renderDetail()}
- catch(e){$("cpError").textContent=e.message||"Não foi possível salvar o corpo de prova."}finally{hideLoading()}
-}
 async function createRompimento(e){
- e.preventDefault();if(!isAdmin()||!state.selectedCp)return;
- const data=$("dataRompimento").value,res=Number(String($("resistencia").value).replace(",","."));const cp=state.corpos.find(c=>c.id===state.selectedCp);const mold=state.moldagens.find(m=>m.id===cp?.moldagem_id);
- if(!mold||data<mold.data_moldagem){$("rompimentoError").textContent="A data do rompimento não pode ser anterior à moldagem.";return}
- if(state.rompimentos.some(r=>r.corpo_prova_id===state.selectedCp)){$("rompimentoError").textContent="Este corpo de prova já possui um rompimento. Cadastre outro corpo de prova para um novo ensaio.";return}
- try{loading("Salvando rompimento...");const {error}=await supabaseClient.from("cp_rompimentos").insert({corpo_prova_id:state.selectedCp,data_rompimento:data,resistencia_mpa:res,observacoes:$("rompimentoObs").value.trim()||null,created_by:state.user.id});if(error)throw error;$("rompimentoDialog").close();message("Rompimento registrado.","success");await loadData();renderDetail()}
- catch(e){$("rompimentoError").textContent=e.message||"Não foi possível registrar o rompimento."}finally{hideLoading()}
+ e.preventDefault();if(!isAdmin()||!state.selectedMoldagem)return;
+ const data=$("dataRompimento").value,res=Number(String($("resistencia").value).replace(",",".")),mold=state.selectedMoldagem;
+ if(data<mold.data_moldagem){$("rompimentoError").textContent="A data do rompimento não pode ser anterior à moldagem.";return}
+ if(!Number.isFinite(res)||res<=0){$("rompimentoError").textContent="Informe uma resistência válida em MPa.";return}
+ let cpId=state.selectedCp,createdCpId=null;
+ try{
+  loading("Salvando rompimento...");
+  if(cpId){
+    if(state.rompimentos.some(r=>r.corpo_prova_id===cpId)){
+      $("rompimentoError").textContent="Este corpo de prova já possui um rompimento. Cada corpo de prova é rompido uma única vez.";
+      return;
+    }
+  } else {
+    const existing=state.corpos.filter(c=>c.moldagem_id===mold.id);
+    const nextNum=existing.reduce((max,c)=>{
+      const match=String(c.codigo||"").match(/^(?:CP-?)?(\d+)$/i);
+      return match?Math.max(max,Number(match[1])):max;
+    },0)+1;
+    const code=`CP-${String(nextNum).padStart(3,"0")}`;
+    const {data:created,error:cpError}=await supabaseClient.from("cp_corpos_prova").insert({
+      moldagem_id:mold.id,codigo:code,observacoes:null,created_by:state.user.id
+    }).select("id").single();
+    if(cpError)throw cpError;
+    cpId=created.id;createdCpId=created.id;
+  }
+  const payload={
+    corpo_prova_id:cpId,
+    data_rompimento:data,
+    resistencia_mpa:res,
+    tipo_ruptura:$("tipoRuptura").value||null,
+    observacoes:$("rompimentoObs").value.trim()||null,
+    created_by:state.user.id
+  };
+  const {error}=await supabaseClient.from("cp_rompimentos").insert(payload);
+  if(error){
+    if(createdCpId) await supabaseClient.from("cp_corpos_prova").delete().eq("id",createdCpId);
+    throw error;
+  }
+  $("rompimentoDialog").close();message("Rompimento registrado. A identificação do corpo de prova foi gerada automaticamente.","success");
+  await loadData();renderDetail();
+ }catch(e){$("rompimentoError").textContent=e.message||"Não foi possível registrar o rompimento."}
+ finally{hideLoading()}
 }
 function openTypes(){
  if(!isAdmin())return;
@@ -181,7 +217,7 @@ $("newMoldagemBtn").addEventListener("click",openMoldagem);
 $("manageTypesBtn").addEventListener("click",openTypes);
 $("typeForm").addEventListener("submit",saveType);
 $("cancelTypeEdit").addEventListener("click",resetTypeForm);
-$("moldagemForm").addEventListener("submit",createMoldagem);$("cpForm").addEventListener("submit",createCp);$("rompimentoForm").addEventListener("submit",createRompimento);
+$("moldagemForm").addEventListener("submit",createMoldagem);$("rompimentoForm").addEventListener("submit",createRompimento);
 $("searchInput").addEventListener("input",render);$("tipoFilter").addEventListener("change",render);
 document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>$(b.dataset.close).close()));
 $("tipoPeca").addEventListener("change",()=>$("tipoOutro").disabled=$("tipoPeca").value!=="Outro");
