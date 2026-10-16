@@ -772,3 +772,40 @@
   .fm-report-metrics{grid-template-columns:repeat(4,1fr)}
   .fm-report-table{font-size:9px}
 }
+
+
+/* =========================================================
+   Ajuste visual do seletor de período
+========================================================= */
+.fm-toolbar-main{
+  align-items:center;
+}
+
+.fm-toolbar-main > div:first-child{
+  min-width:170px;
+}
+
+.fm-toolbar input[type="month"]{
+  width:180px;
+  min-width:180px;
+  height:42px;
+  box-sizing:border-box;
+}
+
+#currentMonthLabel{
+  display:block;
+  white-space:nowrap;
+  text-transform:capitalize;
+}
+
+@media (max-width:650px){
+  .fm-toolbar input[type="month"]{
+    width:100%;
+    min-width:0;
+  }
+
+  .fm-toolbar-main > div:first-child{
+    min-width:0;
+    width:100%;
+  }
+}

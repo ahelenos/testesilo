@@ -145,10 +145,25 @@ function updateAttendanceRow(date,input){
   renderAttendanceKpi();
 }
 function renderAttendanceKpi(){
-  const vals=state.attendance.map(r=>Math.max(0,Number(r.quantidade_importada||0)+Number(r.alteracoes||0))).filter(v=>v>0);
-  const total=vals.reduce((a,b)=>a+b,0), avg=vals.length?total/vals.length:0;
-  $("kpiFuncionarios").textContent=vals.length?fmtNum(avg,1):"0,0";
-  $("kpiDias").textContent=`${fmtInt(vals.length)} ${vals.length===1?"dia":"dias"} trabalhados`;
+  const vals = state.attendance
+    .map(r =>
+      Math.max(
+        0,
+        Number(r.quantidade_importada || 0) + Number(r.alteracoes || 0)
+      )
+    )
+    .filter(v => v > 0);
+
+  const total = vals.reduce((a, b) => a + b, 0);
+
+  // Média de funcionários por dia: sempre arredondada para baixo.
+  const avg = vals.length
+    ? Math.floor(total / vals.length)
+    : 0;
+
+  $("kpiFuncionarios").textContent = fmtInt(avg);
+  $("kpiDias").textContent =
+    `${fmtInt(vals.length)} ${vals.length === 1 ? "dia" : "dias"} trabalhados`;
 }
 async function loadPresenceBaseline(){
   const {data,error}=await sb.rpc("obter_presencas_fechamento_mes",{p_mes:`${state.month}-01`});
