@@ -893,7 +893,7 @@
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
   gap:10px;
-  margin:10px 0 2px;
+  margin:10px 0 4px;
 }
 .fm-evolution-summary-card{
   position:relative;
@@ -934,14 +934,26 @@
   color:#98a2b3;
   font-size:9px;
 }
+
 .fm-chart-scroll{
   width:100%;
   overflow:hidden;
-  margin-top:4px;
+  margin-top:10px;
+  border-radius:12px;
+}
+.fm-chart-scroll svg{
+  width:100%;
+  height:auto;
+  display:block;
+}
+.fm-chart .month-band{
+  fill:#f8fafc;
+  stroke:#eef2f6;
+  stroke-width:1;
 }
 .fm-chart .bar{
-  opacity:.92;
-  transition:opacity .15s ease,transform .15s ease;
+  opacity:.94;
+  transition:opacity .15s ease,filter .15s ease;
 }
 .fm-chart .bar.l0{fill:#2563eb}
 .fm-chart .bar.l1{fill:#16a34a}
@@ -950,27 +962,30 @@
 .fm-chart .bar-group:hover .bar,
 .fm-chart .bar-group:focus .bar{
   opacity:1;
+  filter:brightness(.96);
 }
 .fm-chart .bar-group:focus{
   outline:none;
 }
 .fm-chart .bar-value{
-  fill:#475467;
-  font-size:9px;
+  fill:#344054;
+  font-size:10px;
   font-weight:800;
 }
 .fm-chart .bar-group:hover .bar-value,
 .fm-chart .bar-group:focus .bar-value{
   fill:#101828;
 }
+
 @media (max-width:760px){
   .fm-evolution-summary{
     grid-template-columns:repeat(2,minmax(0,1fr));
   }
   .fm-chart-scroll{
     overflow-x:auto;
+    padding-bottom:4px;
   }
   .fm-chart-scroll svg{
-    min-width:900px;
+    min-width:980px;
   }
 }

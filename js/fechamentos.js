@@ -320,22 +320,23 @@ function renderEvolutionChart(rows){
   const periodEl=$("evolutionChartPeriod");
   if(periodEl)periodEl.textContent=periodLabel;
 
-  /*
-   * Gráfico de colunas agrupadas.
-   * A ideia é comparar os 4 volumes no mesmo mês sem sobreposição.
-   * Meses sem fechamento ficam sem barras, em vez de serem tratados como zero.
-   */
-  const W=1160,H=470,p={l:66,r:28,t:62,b:76},w=W-p.l-p.r,h=H-p.t-p.b;
-  const allValues=data.flatMap(d=>series.map(s=>d.row ? Number(d.row[s.key]||0) : null))
+  // Gráfico gerencial de colunas agrupadas:
+  // cada mês é um grupo e cada série possui sua própria barra.
+  // Assim os quatro volumes podem ser comparados sem sobreposição.
+  const W=1240,H=390,p={l:64,r:26,t:42,b:58},w=W-p.l-p.r,h=H-p.t-p.b;
+
+  const allValues=data
+    .flatMap(d=>series.map(s=>d.row ? Number(d.row[s.key]||0) : null))
     .filter(v=>Number.isFinite(v) && v>=0);
+
   const rawMax=Math.max(...allValues,1);
-  const max=Math.max(10,Math.ceil(rawMax*1.12/10)*10);
+  const max=Math.max(10,Math.ceil(rawMax*1.15/10)*10);
   const step=max/5;
 
   const xStep=w/data.length;
-  const groupWidth=Math.min(70,xStep*0.72);
-  const gap=5;
-  const barWidth=Math.max(8,(groupWidth-gap*(series.length-1))/series.length);
+  const groupWidth=Math.min(88,xStep*0.76);
+  const gap=4;
+  const barWidth=Math.max(11,(groupWidth-gap*(series.length-1))/series.length);
 
   const xGroup=i=>p.l+xStep*i+xStep/2-groupWidth/2;
   const y=v=>p.t+h-(v/max)*h;
@@ -343,33 +344,41 @@ function renderEvolutionChart(rows){
   const grid=Array.from({length:6},(_,i)=>{
     const v=step*(5-i);
     const yy=y(v);
-    return `<line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" class="grid"/>
+    return `
+      <line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" class="grid"/>
       <text x="${p.l-12}" y="${yy+4}" text-anchor="end" class="axis">${fmtNum(v,0)}</text>`;
+  }).join("");
+
+  const monthBands=data.map((d,i)=>{
+    if(!d.row)return "";
+    const gx=xGroup(i)-8;
+    return `<rect x="${gx.toFixed(2)}" y="${p.t}" width="${(groupWidth+16).toFixed(2)}" height="${h}" rx="10" class="month-band"/>`;
   }).join("");
 
   const xlabels=data.map((d,i)=>{
     const active=d.row ? " active" : "";
-    return `<text x="${xGroup(i)+groupWidth/2}" y="${H-38}" text-anchor="middle" class="axis xaxis${active}">${d.label}</text>`;
+    return `<text x="${(xGroup(i)+groupWidth/2).toFixed(2)}" y="${H-25}" text-anchor="middle" class="axis xaxis${active}">${d.label}</text>`;
   }).join("");
 
   const bars=[];
   data.forEach((d,i)=>{
     series.forEach((s,si)=>{
       if(!d.row)return;
+
       const value=Number(d.row[s.key]||0);
       if(!Number.isFinite(value))return;
 
       const bx=xGroup(i)+si*(barWidth+gap);
       const by=y(value);
-      const bh=Math.max(2,p.t+h-by);
+      const bh=Math.max(3,p.t+h-by);
 
-      // Valor somente no topo da barra. Não usamos "balões" sobrepostos.
-      const labelY=Math.max(p.t+12,by-8);
+      // Rótulo limpo acima da própria barra.
+      const labelY=Math.max(p.t+15,by-8);
 
       bars.push(`
         <g class="bar-group" tabindex="0" aria-label="${esc(s.label)} em ${esc(d.label)}: ${fmtNum(value,2)} m³">
           <title>${esc(s.label)} · ${esc(d.label)}: ${fmtNum(value,2)} m³</title>
-          <rect x="${bx.toFixed(2)}" y="${by.toFixed(2)}" width="${barWidth.toFixed(2)}" height="${bh.toFixed(2)}" rx="5" class="bar ${s.cls}"/>
+          <rect x="${bx.toFixed(2)}" y="${by.toFixed(2)}" width="${barWidth.toFixed(2)}" height="${bh.toFixed(2)}" rx="4" class="bar ${s.cls}"/>
           <text x="${(bx+barWidth/2).toFixed(2)}" y="${labelY.toFixed(2)}" text-anchor="middle" class="bar-value">${fmtNum(value,0)}</text>
         </g>`);
     });
@@ -379,8 +388,6 @@ function renderEvolutionChart(rows){
     `<span><i class="legend-dot ${s.dot}"></i>${esc(s.label)}</span>`
   ).join("");
 
-  // Resumo do último mês disponível para facilitar a leitura mesmo quando
-  // existem poucos fechamentos cadastrados.
   const latestIndex=[...data].map((d,i)=>d.row?i:-1).filter(i=>i>=0).pop();
   const latest=data[latestIndex];
   const latestCards=series.map(s=>{
@@ -398,6 +405,7 @@ function renderEvolutionChart(rows){
     <div class="fm-chart-scroll">
       <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolução dos volumes dos últimos 12 meses">
         ${grid}
+        ${monthBands}
         <line x1="${p.l}" y1="${p.t+h}" x2="${W-p.r}" y2="${p.t+h}" class="axis-line"/>
         ${bars.join("")}
         ${xlabels}
