@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.38";
+const APP_VERSION = "5.1.40";
 
 (() => {
 "use strict";
@@ -296,22 +296,25 @@ function renderEvolutionChart(rows){
   const anchor = state.month || currentMonth();
   const keys = Array.from({length:12},(_,i)=>monthKeyOffset(anchor,i-11));
   const byMonth = new Map(rows.map(r=>[String(r.mes).slice(0,7),r]));
-  const data = keys.map(key=>({
+  const allData = keys.map(key=>({
     key,
     label:monthShortLabel(key),
     row:byMonth.get(key)||null
   }));
 
   const series=[
-    {key:"producao_total_m3",label:"Produção total",cls:"l0",dot:"d0"},
-    {key:"maquiagem_m3",label:"Maquiagem",cls:"l1",dot:"d1"},
-    {key:"expedicao_m3",label:"Logística",cls:"l2",dot:"d2"},
-    {key:"projetado_m3",label:"Projetos",cls:"l3",dot:"d3"}
+    {key:"producao_total_m3",label:"Produção total",cls:"b0",dot:"d0"},
+    {key:"maquiagem_m3",label:"Maquiagem",cls:"b1",dot:"d1"},
+    {key:"expedicao_m3",label:"Logística",cls:"b2",dot:"d2"},
+    {key:"projetado_m3",label:"Projetos",cls:"b3",dot:"d3"}
   ];
 
-  const hasAny=data.some(d=>d.row);
-  if(!hasAny){
-    container.innerHTML=`<div class="fm-chart-empty">Salve fechamentos mensais para visualizar a evolução.</div>`;
+  const activeData=allData.filter(d=>d.row);
+  if(!activeData.length){
+    container.innerHTML=`<div class="fm-chart-empty">
+      <strong>Nenhum fechamento no período</strong>
+      <span>Salve os fechamentos mensais para visualizar a evolução.</span>
+    </div>`;
     return;
   }
 
@@ -320,76 +323,98 @@ function renderEvolutionChart(rows){
   const periodEl=$("evolutionChartPeriod");
   if(periodEl)periodEl.textContent=periodLabel;
 
-  // Gráfico gerencial de colunas agrupadas:
-  // cada mês é um grupo e cada série possui sua própria barra.
-  // Assim os quatro volumes podem ser comparados sem sobreposição.
-  const W=1240,H=390,p={l:64,r:26,t:42,b:58},w=W-p.l-p.r,h=H-p.t-p.b;
+  /*
+   * Abordagem gerencial:
+   * - mantemos a janela de 12 meses;
+   * - meses sem fechamento não ocupam espaço no gráfico;
+   * - cada mês com fechamento vira um grupo de 4 barras;
+   * - valores ficam diretamente sobre as barras;
+   * - o mês mais recente recebe destaque visual.
+   *
+   * Isso evita o problema de um único fechamento ficar perdido no
+   * meio de um gráfico enorme, mantendo a leitura de evolução mensal.
+   */
+  const data=activeData;
+  const W=1240;
+  const H=430;
+  const p={l:72,r:28,t:72,b:64};
+  const w=W-p.l-p.r;
+  const h=H-p.t-p.b;
 
-  const allValues=data
-    .flatMap(d=>series.map(s=>d.row ? Number(d.row[s.key]||0) : null))
-    .filter(v=>Number.isFinite(v) && v>=0);
+  const allValues=data.flatMap(d=>
+    series.map(s=>Number(d.row?.[s.key]||0))
+  ).filter(v=>Number.isFinite(v)&&v>=0);
 
   const rawMax=Math.max(...allValues,1);
-  const max=Math.max(10,Math.ceil(rawMax*1.15/10)*10);
+  const magnitude=rawMax>=1000?100:rawMax>=100?50:10;
+  const max=Math.max(magnitude,Math.ceil(rawMax*1.12/magnitude)*magnitude);
   const step=max/5;
 
-  const xStep=w/data.length;
-  const groupWidth=Math.min(88,xStep*0.76);
-  const gap=4;
-  const barWidth=Math.max(11,(groupWidth-gap*(series.length-1))/series.length);
+  const groupStep=w/data.length;
+  const groupWidth=Math.min(210,groupStep*0.74);
+  const gap=8;
+  const barWidth=Math.max(24,(groupWidth-gap*(series.length-1))/series.length);
 
-  const xGroup=i=>p.l+xStep*i+xStep/2-groupWidth/2;
+  const xGroup=i=>p.l+groupStep*i+groupStep/2-groupWidth/2;
   const y=v=>p.t+h-(v/max)*h;
 
   const grid=Array.from({length:6},(_,i)=>{
     const v=step*(5-i);
     const yy=y(v);
     return `
-      <line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" class="grid"/>
-      <text x="${p.l-12}" y="${yy+4}" text-anchor="end" class="axis">${fmtNum(v,0)}</text>`;
+      <line x1="${p.l}" y1="${yy.toFixed(2)}" x2="${W-p.r}" y2="${yy.toFixed(2)}" class="grid"/>
+      <text x="${p.l-14}" y="${(yy+4).toFixed(2)}" text-anchor="end" class="axis">${fmtNum(v,0)}</text>`;
   }).join("");
 
-  const monthBands=data.map((d,i)=>{
-    if(!d.row)return "";
-    const gx=xGroup(i)-8;
-    return `<rect x="${gx.toFixed(2)}" y="${p.t}" width="${(groupWidth+16).toFixed(2)}" height="${h}" rx="10" class="month-band"/>`;
-  }).join("");
-
-  const xlabels=data.map((d,i)=>{
-    const active=d.row ? " active" : "";
-    return `<text x="${(xGroup(i)+groupWidth/2).toFixed(2)}" y="${H-25}" text-anchor="middle" class="axis xaxis${active}">${d.label}</text>`;
+  const monthCards=data.map((d,i)=>{
+    const gx=xGroup(i)-16;
+    const isLatest=i===data.length-1;
+    return `<rect x="${gx.toFixed(2)}" y="${p.t-18}" width="${(groupWidth+32).toFixed(2)}"
+      height="${(h+36).toFixed(2)}" rx="14"
+      class="month-band${isLatest?" latest":""}"/>`;
   }).join("");
 
   const bars=[];
   data.forEach((d,i)=>{
     series.forEach((s,si)=>{
-      if(!d.row)return;
-
-      const value=Number(d.row[s.key]||0);
+      const value=Number(d.row?.[s.key]||0);
       if(!Number.isFinite(value))return;
 
       const bx=xGroup(i)+si*(barWidth+gap);
       const by=y(value);
-      const bh=Math.max(3,p.t+h-by);
-
-      // Rótulo limpo acima da própria barra.
-      const labelY=Math.max(p.t+15,by-8);
+      const bh=Math.max(4,p.t+h-by);
+      const labelY=Math.max(p.t+13,by-10-(si%2)*2);
 
       bars.push(`
-        <g class="bar-group" tabindex="0" aria-label="${esc(s.label)} em ${esc(d.label)}: ${fmtNum(value,2)} m³">
+        <g class="bar-group" tabindex="0"
+           aria-label="${esc(s.label)} em ${esc(d.label)}: ${fmtNum(value,2)} m³">
           <title>${esc(s.label)} · ${esc(d.label)}: ${fmtNum(value,2)} m³</title>
-          <rect x="${bx.toFixed(2)}" y="${by.toFixed(2)}" width="${barWidth.toFixed(2)}" height="${bh.toFixed(2)}" rx="4" class="bar ${s.cls}"/>
-          <text x="${(bx+barWidth/2).toFixed(2)}" y="${labelY.toFixed(2)}" text-anchor="middle" class="bar-value">${fmtNum(value,0)}</text>
+          <rect x="${bx.toFixed(2)}" y="${by.toFixed(2)}"
+                width="${barWidth.toFixed(2)}" height="${bh.toFixed(2)}"
+                rx="7" class="bar ${s.cls}"/>
+          <text x="${(bx+barWidth/2).toFixed(2)}"
+                y="${labelY.toFixed(2)}"
+                text-anchor="middle"
+                class="bar-value">${fmtNum(value,0)}</text>
         </g>`);
     });
   });
+
+  const xlabels=data.map((d,i)=>{
+    const active=i===data.length-1;
+    return `
+      <text x="${(xGroup(i)+groupWidth/2).toFixed(2)}"
+            y="${H-31}" text-anchor="middle"
+            class="axis xaxis${active?" active":""}">
+        ${d.label}
+      </text>`;
+  }).join("");
 
   const legend=series.map(s=>
     `<span><i class="legend-dot ${s.dot}"></i>${esc(s.label)}</span>`
   ).join("");
 
-  const latestIndex=[...data].map((d,i)=>d.row?i:-1).filter(i=>i>=0).pop();
-  const latest=data[latestIndex];
+  const latest=data[data.length-1];
   const latestCards=series.map(s=>{
     const value=latest?.row ? Number(latest.row[s.key]||0) : null;
     return `<div class="fm-evolution-summary-card ${s.cls}">
@@ -399,19 +424,31 @@ function renderEvolutionChart(rows){
     </div>`;
   }).join("");
 
+  const countLabel=`${data.length} ${data.length===1?"fechamento":"fechamentos"} no período`;
+
   container.innerHTML=`
+    <div class="fm-chart-meta">
+      <span class="fm-chart-count">${countLabel}</span>
+      <span class="fm-chart-note">m³ · valores mensais</span>
+    </div>
     <div class="fm-chart-legend">${legend}</div>
     <div class="fm-evolution-summary">${latestCards}</div>
     <div class="fm-chart-scroll">
-      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolução dos volumes dos últimos 12 meses">
+      <svg viewBox="0 0 ${W} ${H}" role="img"
+           aria-label="Evolução dos volumes dos últimos 12 meses">
         ${grid}
-        ${monthBands}
+        ${monthCards}
         <line x1="${p.l}" y1="${p.t+h}" x2="${W-p.r}" y2="${p.t+h}" class="axis-line"/>
         ${bars.join("")}
         ${xlabels}
       </svg>
+    </div>
+    <div class="fm-chart-footnote">
+      <span>Período analisado: ${esc(periodLabel)}</span>
+      <span>Somente meses com fechamento aparecem nas colunas.</span>
     </div>`;
 }
+
 function renderCharts(){
   const rows=[...state.history].sort((a,b)=>String(a.mes).localeCompare(String(b.mes)));
   renderEvolutionChart(rows);
