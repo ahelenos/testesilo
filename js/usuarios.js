@@ -1,5 +1,5 @@
 
-const APP_VERSION = "5.1.36";
+const APP_VERSION = "5.1.37";
 
 (() => {
 "use strict";
