@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.37";
+const APP_VERSION = "5.1.38";
 
 (() => {
 "use strict";
@@ -309,72 +309,6 @@ function renderEvolutionChart(rows){
     {key:"projetado_m3",label:"Projetos",cls:"l3",dot:"d3"}
   ];
 
-  const W=1120,H=420,p={l:72,r:34,t:54,b:62},w=W-p.l-p.r,h=H-p.t-p.b;
-  const values=data.flatMap(d=>series.map(s=>d.row ? Number(d.row[s.key]||0) : 0));
-  const max=Math.max(...values,1);
-  const step=max/4;
-  const x=i=>p.l+(data.length===1?w/2:w*(i/(data.length-1)));
-  const y=v=>p.t+h-(v/max)*h;
-
-  const grid=Array.from({length:5},(_,i)=>{
-    const v=step*(4-i);
-    const yy=y(v);
-    return `<line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" class="grid"/>
-      <text x="${p.l-12}" y="${yy+4}" text-anchor="end" class="axis">${fmtNum(v,0)}</text>`;
-  }).join("");
-
-  const xlabels=data.map((d,i)=>{
-    const active=d.row ? " active" : "";
-    return `<text x="${x(i)}" y="${H-26}" text-anchor="middle" class="axis xaxis${active}">${d.label}</text>`;
-  }).join("");
-
-  const paths=series.map((s,si)=>{
-    const points=[];
-    const segments=[];
-    let segment=[];
-
-    data.forEach((d,i)=>{
-      if(!d.row){
-        if(segment.length)segments.push(segment);
-        segment=[];
-        return;
-      }
-      const value=Number(d.row[s.key]||0);
-      segment.push([x(i),y(value),value,d]);
-    });
-    if(segment.length)segments.push(segment);
-
-    const polylines=segments.map(seg=>{
-      if(seg.length<2)return "";
-      return `<polyline points="${seg.map(pt=>`${pt[0]},${pt[1]}`).join(" ")}" class="line ${s.cls}"/>`;
-    }).join("");
-
-    const area=segments.map(seg=>{
-      if(seg.length<2)return "";
-      const first=seg[0], last=seg[seg.length-1];
-      const base=y(0);
-      const path=`M ${first[0]} ${base} L ${seg.map(pt=>`${pt[0]} ${pt[1]}`).join(" L ")} L ${last[0]} ${base} Z`;
-      return `<path d="${path}" class="area ${s.cls}"/>`;
-    }).join("");
-
-    // Only emphasize the most recent available value instead of placing
-    // a large marker on every point.
-    const latest = [...segments].reverse().find(seg=>seg.length)?.slice(-1)[0];
-    const marker = latest
-      ? `<circle cx="${latest[0]}" cy="${latest[1]}" r="6" class="last-dot ${s.dot}"/>
-         <g class="value-badge ${s.dot}">
-           <rect x="${latest[0]-34}" y="${latest[1]-31}" width="68" height="22" rx="11"/>
-           <text x="${latest[0]}" y="${latest[1]-16}" text-anchor="middle">${fmtNum(latest[2],0)} m³</text>
-         </g>`
-      : "";
-
-    return `${area}${polylines}${marker}`;
-  }).join("");
-
-  const legend=series.map(s=>
-    `<span><i class="legend-dot ${s.dot}"></i>${esc(s.label)}</span>`
-  ).join("");
-
   const hasAny=data.some(d=>d.row);
   if(!hasAny){
     container.innerHTML=`<div class="fm-chart-empty">Salve fechamentos mensais para visualizar a evolução.</div>`;
@@ -386,22 +320,90 @@ function renderEvolutionChart(rows){
   const periodEl=$("evolutionChartPeriod");
   if(periodEl)periodEl.textContent=periodLabel;
 
+  /*
+   * Gráfico de colunas agrupadas.
+   * A ideia é comparar os 4 volumes no mesmo mês sem sobreposição.
+   * Meses sem fechamento ficam sem barras, em vez de serem tratados como zero.
+   */
+  const W=1160,H=470,p={l:66,r:28,t:62,b:76},w=W-p.l-p.r,h=H-p.t-p.b;
+  const allValues=data.flatMap(d=>series.map(s=>d.row ? Number(d.row[s.key]||0) : null))
+    .filter(v=>Number.isFinite(v) && v>=0);
+  const rawMax=Math.max(...allValues,1);
+  const max=Math.max(10,Math.ceil(rawMax*1.12/10)*10);
+  const step=max/5;
+
+  const xStep=w/data.length;
+  const groupWidth=Math.min(70,xStep*0.72);
+  const gap=5;
+  const barWidth=Math.max(8,(groupWidth-gap*(series.length-1))/series.length);
+
+  const xGroup=i=>p.l+xStep*i+xStep/2-groupWidth/2;
+  const y=v=>p.t+h-(v/max)*h;
+
+  const grid=Array.from({length:6},(_,i)=>{
+    const v=step*(5-i);
+    const yy=y(v);
+    return `<line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" class="grid"/>
+      <text x="${p.l-12}" y="${yy+4}" text-anchor="end" class="axis">${fmtNum(v,0)}</text>`;
+  }).join("");
+
+  const xlabels=data.map((d,i)=>{
+    const active=d.row ? " active" : "";
+    return `<text x="${xGroup(i)+groupWidth/2}" y="${H-38}" text-anchor="middle" class="axis xaxis${active}">${d.label}</text>`;
+  }).join("");
+
+  const bars=[];
+  data.forEach((d,i)=>{
+    series.forEach((s,si)=>{
+      if(!d.row)return;
+      const value=Number(d.row[s.key]||0);
+      if(!Number.isFinite(value))return;
+
+      const bx=xGroup(i)+si*(barWidth+gap);
+      const by=y(value);
+      const bh=Math.max(2,p.t+h-by);
+
+      // Valor somente no topo da barra. Não usamos "balões" sobrepostos.
+      const labelY=Math.max(p.t+12,by-8);
+
+      bars.push(`
+        <g class="bar-group" tabindex="0" aria-label="${esc(s.label)} em ${esc(d.label)}: ${fmtNum(value,2)} m³">
+          <title>${esc(s.label)} · ${esc(d.label)}: ${fmtNum(value,2)} m³</title>
+          <rect x="${bx.toFixed(2)}" y="${by.toFixed(2)}" width="${barWidth.toFixed(2)}" height="${bh.toFixed(2)}" rx="5" class="bar ${s.cls}"/>
+          <text x="${(bx+barWidth/2).toFixed(2)}" y="${labelY.toFixed(2)}" text-anchor="middle" class="bar-value">${fmtNum(value,0)}</text>
+        </g>`);
+    });
+  });
+
+  const legend=series.map(s=>
+    `<span><i class="legend-dot ${s.dot}"></i>${esc(s.label)}</span>`
+  ).join("");
+
+  // Resumo do último mês disponível para facilitar a leitura mesmo quando
+  // existem poucos fechamentos cadastrados.
+  const latestIndex=[...data].map((d,i)=>d.row?i:-1).filter(i=>i>=0).pop();
+  const latest=data[latestIndex];
+  const latestCards=series.map(s=>{
+    const value=latest?.row ? Number(latest.row[s.key]||0) : null;
+    return `<div class="fm-evolution-summary-card ${s.cls}">
+      <span>${esc(s.label)}</span>
+      <strong>${value===null?"—":fmtM3(value)}</strong>
+      <small>${latest?esc(latest.label):""}</small>
+    </div>`;
+  }).join("");
+
   container.innerHTML=`
     <div class="fm-chart-legend">${legend}</div>
-    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolução dos volumes dos últimos 12 meses">
-      <defs>
-        <linearGradient id="evolutionFade" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stop-opacity=".16"/>
-          <stop offset="100%" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      ${grid}
-      <line x1="${p.l}" y1="${p.t+h}" x2="${W-p.r}" y2="${p.t+h}" class="axis-line"/>
-      ${paths}
-      ${xlabels}
-    </svg>`;
+    <div class="fm-evolution-summary">${latestCards}</div>
+    <div class="fm-chart-scroll">
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolução dos volumes dos últimos 12 meses">
+        ${grid}
+        <line x1="${p.l}" y1="${p.t+h}" x2="${W-p.r}" y2="${p.t+h}" class="axis-line"/>
+        ${bars.join("")}
+        ${xlabels}
+      </svg>
+    </div>`;
 }
-
 function renderCharts(){
   const rows=[...state.history].sort((a,b)=>String(a.mes).localeCompare(String(b.mes)));
   renderEvolutionChart(rows);
