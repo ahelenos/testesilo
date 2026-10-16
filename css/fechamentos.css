@@ -1192,3 +1192,140 @@
   }
 }
 
+
+/* =========================================================
+   V5.1.41 — Evolução simplificada da Produção Total
+   ========================================================= */
+.fm-production-summary{
+  display:grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  gap:12px;
+  margin:12px 0 16px;
+}
+.fm-production-kpi,
+.fm-production-average{
+  position:relative;
+  border:1px solid #e5eaf1;
+  border-radius:14px;
+  padding:13px 16px;
+  background:#fff;
+  overflow:hidden;
+}
+.fm-production-kpi::before,
+.fm-production-average::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:4px;
+}
+.fm-production-kpi::before{background:#2563eb}
+.fm-production-average::before{background:#f59e0b}
+.fm-production-kpi span,
+.fm-production-average span{
+  display:block;
+  color:#667085;
+  font-size:10px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.02em;
+}
+.fm-production-kpi strong,
+.fm-production-average strong{
+  display:block;
+  margin-top:4px;
+  color:#101828;
+  font-size:22px;
+  line-height:1.1;
+  letter-spacing:-.02em;
+}
+.fm-production-kpi small,
+.fm-production-average small{
+  display:block;
+  margin-top:4px;
+  color:#98a2b3;
+  font-size:9px;
+  font-weight:700;
+}
+.fm-prod-chart-wrap{
+  width:100%;
+  overflow-x:auto;
+  padding:2px 0 0;
+}
+.fm-prod-chart-wrap svg{
+  display:block;
+  width:100%;
+  min-width:680px;
+  height:auto;
+}
+.fm-prod-grid-line{
+  stroke:#e9edf3;
+  stroke-width:1;
+}
+.fm-prod-axis{
+  fill:#8290a5;
+  font-size:10px;
+  font-weight:650;
+}
+.fm-prod-axis-line{
+  stroke:#cbd5e1;
+  stroke-width:1.2;
+}
+.fm-prod-bar{
+  fill:#2563eb;
+  stroke:rgba(255,255,255,.9);
+  stroke-width:1.5;
+  transition:filter .15s ease, opacity .15s ease;
+}
+.fm-prod-bar.latest{
+  fill:#174ea6;
+}
+.fm-prod-bar-group:hover .fm-prod-bar,
+.fm-prod-bar-group:focus .fm-prod-bar{
+  filter:brightness(.94);
+}
+.fm-prod-bar-group:focus{
+  outline:none;
+}
+.fm-prod-value{
+  fill:#1d2939;
+  font-size:11px;
+  font-weight:850;
+  pointer-events:none;
+}
+.fm-prod-bar-group.latest .fm-prod-value{
+  fill:#0b3b82;
+}
+.fm-prod-xlabel{
+  fill:#667085;
+  font-size:10px;
+  font-weight:700;
+}
+.fm-prod-xlabel.latest{
+  fill:#101828;
+  font-weight:850;
+}
+.fm-prod-average-line{
+  stroke:#f59e0b;
+  stroke-width:2;
+  stroke-dasharray:7 5;
+}
+.fm-prod-average-label rect{
+  fill:#fff7ed;
+  stroke:#fed7aa;
+  stroke-width:1;
+}
+.fm-prod-average-label text{
+  fill:#b45309;
+  font-size:10px;
+  font-weight:850;
+}
+.fm-prod-footnote{
+  margin-top:7px;
+}
+@media (max-width:650px){
+  .fm-production-summary{
+    grid-template-columns:1fr;
+  }
+}
