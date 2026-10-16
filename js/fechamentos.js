@@ -289,20 +289,19 @@ function monthShortLabel(monthKey){
   return d.toLocaleDateString("pt-BR",{month:"short"}).replace(".","").slice(0,3).toLowerCase()+"/"+String(year).slice(-2);
 }
 
-function renderEvolutionChart(rows){
-  const container = $("productionChart");
+function renderMetricChart(containerId, rows, config){
+  const container = $(containerId);
   if(!container) return;
 
   const anchor = state.month || currentMonth();
   const keys = Array.from({length:12},(_,i)=>monthKeyOffset(anchor,i-11));
   const byMonth = new Map(rows.map(r => [String(r.mes).slice(0,7), r]));
 
-  // Somente meses com fechamento e produção total maior que zero.
   const data = keys
     .map(key => ({key, label:monthShortLabel(key), row:byMonth.get(key)||null}))
-    .filter(d => d.row && Number(d.row.producao_total_m3 || 0) > 0);
+    .filter(d => d.row && Number(config.value(d.row) || 0) > 0);
 
-  const periodEl = $("evolutionChartPeriod");
+  const periodEl = $(config.periodId);
   if(periodEl){
     periodEl.textContent = data.length
       ? `${monthLabel(data[0].key)} — ${monthLabel(data[data.length-1].key)}`
@@ -311,32 +310,30 @@ function renderEvolutionChart(rows){
 
   if(!data.length){
     container.innerHTML = `<div class="fm-chart-empty">
-      <strong>Nenhuma produção registrada no período</strong>
-      <span>Salve os fechamentos mensais com produção total para visualizar a evolução.</span>
+      <strong>Nenhum dado registrado no período</strong>
+      <span>Salve os fechamentos mensais para visualizar a evolução.</span>
     </div>`;
     return;
   }
 
-  const values = data.map(d => Number(d.row.producao_total_m3 || 0));
+  const values = data.map(d => Number(config.value(d.row) || 0));
   const average = values.reduce((sum,v)=>sum+v,0) / values.length;
   const latest = data[data.length-1];
-  const latestValue = Number(latest.row.producao_total_m3 || 0);
+  const latestValue = Number(config.value(latest.row) || 0);
 
-  // Área de desenho proporcional ao número de meses visíveis.
-  const W = Math.max(900, data.length * 110);
-  const H = 440;
-  const p = {l:82,r:42,t:64,b:72};
+  const W = Math.max(720, data.length * 88);
+  const H = 350;
+  const p = {l:58,r:28,t:48,b:54};
   const w = W-p.l-p.r;
   const h = H-p.t-p.b;
 
   const rawMax = Math.max(...values, average, 1);
-  const step = rawMax <= 100 ? 20 : rawMax <= 250 ? 50 : rawMax <= 500 ? 100 : 200;
+  const step = rawMax <= 50 ? 10 : rawMax <= 100 ? 20 : rawMax <= 250 ? 50 : rawMax <= 500 ? 100 : 200;
   const max = Math.max(step, Math.ceil(rawMax * 1.16 / step) * step);
   const tickStep = max / 5;
 
   const groupStep = w / data.length;
-  const barWidth = Math.min(58, groupStep * 0.48);
-
+  const barWidth = Math.min(54, groupStep * 0.52);
   const x = i => p.l + groupStep*i + groupStep/2;
   const y = value => p.t + h - (value/max)*h;
 
@@ -344,93 +341,126 @@ function renderEvolutionChart(rows){
     const value = tickStep * (5-i);
     const yy = y(value);
     return `
-      <line x1="${p.l}" y1="${yy.toFixed(2)}"
-            x2="${W-p.r}" y2="${yy.toFixed(2)}"
-            class="fm-prod-grid-line"/>
-      <text x="${p.l-14}" y="${(yy+4).toFixed(2)}"
-            text-anchor="end" class="fm-prod-axis">
-        ${fmtNum(value,0)}
-      </text>`;
+      <line x1="${p.l}" y1="${yy.toFixed(2)}" x2="${W-p.r}" y2="${yy.toFixed(2)}" class="fm-prod-grid-line"/>
+      <text x="${p.l-10}" y="${(yy+4).toFixed(2)}" text-anchor="end" class="fm-prod-axis">${fmtNum(value,0)}</text>`;
   }).join("");
 
   const bars = data.map((d,i)=>{
-    const value = Number(d.row.producao_total_m3 || 0);
+    const value = Number(config.value(d.row) || 0);
     const bx = x(i) - barWidth/2;
     const by = y(value);
     const bh = Math.max(2, p.t+h-by);
-    const labelY = Math.max(p.t+16, by-10);
+    const labelY = Math.max(p.t+15, by-9);
     const isLatest = i === data.length-1;
 
     return `
       <g class="fm-prod-bar-group${isLatest ? " latest" : ""}" tabindex="0">
-        <title>${esc(d.label)} — Produção total: ${fmtNum(value,2)} m³</title>
+        <title>${esc(d.label)} — ${esc(config.title)}: ${fmtNum(value,config.decimals ?? 2)} ${esc(config.unit)}</title>
         <rect x="${bx.toFixed(2)}" y="${by.toFixed(2)}"
               width="${barWidth.toFixed(2)}" height="${bh.toFixed(2)}"
-              rx="6" class="fm-prod-bar${isLatest ? " latest" : ""}"/>
+              rx="6" class="fm-prod-bar ${config.barClass || "blue"}${isLatest ? " latest" : ""}"/>
         <text x="${x(i).toFixed(2)}" y="${labelY.toFixed(2)}"
               text-anchor="middle" class="fm-prod-value">
-          ${fmtNum(value,0)}
+          ${fmtNum(value,config.valueDecimals ?? 0)}
         </text>
       </g>`;
   }).join("");
 
   const labels = data.map((d,i)=>{
     const isLatest = i === data.length-1;
-    return `
-      <text x="${x(i).toFixed(2)}" y="${H-34}"
-            text-anchor="middle"
-            class="fm-prod-xlabel${isLatest ? " latest" : ""}">
-        ${esc(d.label)}
-      </text>`;
+    return `<text x="${x(i).toFixed(2)}" y="${H-22}" text-anchor="middle"
+      class="fm-prod-xlabel${isLatest ? " latest" : ""}">${esc(d.label)}</text>`;
   }).join("");
 
   const averageY = y(average);
 
   container.innerHTML = `
-    <div class="fm-production-summary">
-      <div class="fm-production-kpi">
-        <span>Produção total</span>
-        <strong>${fmtM3(latestValue)}</strong>
+    <div class="fm-production-summary compact">
+      <div class="fm-production-kpi ${config.kpiClass || ""}">
+        <span>${esc(config.title)}</span>
+        <strong>${config.format(latestValue)}</strong>
         <small>${esc(latest.label)} · último fechamento</small>
       </div>
       <div class="fm-production-average">
         <span>Média do período</span>
-        <strong>${fmtM3(average)}</strong>
-        <small>${data.length} ${data.length===1 ? "mês" : "meses"} com produção</small>
+        <strong>${config.format(average)}</strong>
+        <small>${data.length} ${data.length===1 ? "mês" : "meses"} com dados</small>
       </div>
     </div>
 
-    <div class="fm-prod-chart-wrap">
+    <div class="fm-prod-chart-wrap compact-chart">
       <svg viewBox="0 0 ${W} ${H}" role="img"
-           aria-label="Evolução da produção total nos últimos 12 meses">
+           aria-label="Evolução de ${esc(config.title)} nos últimos 12 meses">
         ${grid}
-
-        <line x1="${p.l}" y1="${p.t+h}"
-              x2="${W-p.r}" y2="${p.t+h}"
-              class="fm-prod-axis-line"/>
-
-        <line x1="${p.l}" y1="${averageY.toFixed(2)}"
-              x2="${W-p.r}" y2="${averageY.toFixed(2)}"
-              class="fm-prod-average-line"/>
-
+        <line x1="${p.l}" y1="${p.t+h}" x2="${W-p.r}" y2="${p.t+h}" class="fm-prod-axis-line"/>
+        <line x1="${p.l}" y1="${averageY.toFixed(2)}" x2="${W-p.r}" y2="${averageY.toFixed(2)}" class="fm-prod-average-line"/>
         <g class="fm-prod-average-label">
-          <rect x="${W-p.r-154}" y="${(averageY-25).toFixed(2)}"
-                width="142" height="24" rx="12"/>
-          <text x="${W-p.r-83}" y="${(averageY-9).toFixed(2)}"
-                text-anchor="middle">
-            Média ${fmtNum(average,1)} m³
+          <rect x="${W-p.r-128}" y="${(averageY-23).toFixed(2)}" width="116" height="22" rx="11"/>
+          <text x="${W-p.r-70}" y="${(averageY-8).toFixed(2)}" text-anchor="middle">
+            Média ${config.format(average)}
           </text>
         </g>
-
         ${bars}
         ${labels}
       </svg>
-    </div>
-
-    <div class="fm-chart-footnote fm-prod-footnote">
-      <span>Produção total · m³</span>
-      <span>Meses com produção zero são ocultados.</span>
     </div>`;
+}
+
+function renderEvolutionChart(rows){
+  renderMetricChart("productionChart", rows, {
+    periodId:"evolutionChartPeriod",
+    title:"Produção total",
+    unit:"m³",
+    value:r=>r.producao_total_m3,
+    format:fmtM3,
+    decimals:2,
+    valueDecimals:0,
+    barClass:"blue"
+  });
+
+  renderMetricChart("makeupChart", rows, {
+    periodId:"makeupChartPeriod",
+    title:"Maquiagem",
+    unit:"m³",
+    value:r=>r.maquiagem_m3,
+    format:fmtM3,
+    decimals:2,
+    valueDecimals:0,
+    barClass:"green"
+  });
+
+  renderMetricChart("logisticsChart", rows, {
+    periodId:"logisticsChartPeriod",
+    title:"Expedição",
+    unit:"m³",
+    value:r=>r.expedicao_m3,
+    format:fmtM3,
+    decimals:2,
+    valueDecimals:0,
+    barClass:"orange"
+  });
+
+  renderMetricChart("projectsChart", rows, {
+    periodId:"projectsChartPeriod",
+    title:"Projetado",
+    unit:"m³",
+    value:r=>r.projetado_m3,
+    format:fmtM3,
+    decimals:2,
+    valueDecimals:0,
+    barClass:"purple"
+  });
+
+  renderMetricChart("consolesChart", rows, {
+    periodId:"consolesChartPeriod",
+    title:"Consoles",
+    unit:"consoles",
+    value:r=>r.consoles_consoles_qtd,
+    format:v=>`${fmtInt(v)} consoles`,
+    decimals:0,
+    valueDecimals:0,
+    barClass:"teal"
+  });
 }
 
 function renderCharts(){

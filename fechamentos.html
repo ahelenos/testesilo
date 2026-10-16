@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0b1220">
-<link rel="icon" type="image/x-icon" href="./favicon.ico?v=5.1.40">
+<link rel="icon" type="image/x-icon" href="./favicon.ico?v=5.1.42">
 <title>Fechamentos de Mês · Gestão de Fábrica</title>
-<link rel="stylesheet" href="css/style.css?v=5.1.40">
-<link rel="stylesheet" href="css/loading.css?v=5.1.40">
-<link rel="stylesheet" href="css/fechamentos.css?v=5.1.41">
+<link rel="stylesheet" href="css/style.css?v=5.1.42">
+<link rel="stylesheet" href="css/loading.css?v=5.1.42">
+<link rel="stylesheet" href="css/fechamentos.css?v=5.1.42">
 </head>
 <body>
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -48,7 +48,7 @@
   </div>
   <div class="header-actions">
     <a class="btn ghost" href="index.html" aria-label="Voltar para a Central da fábrica">← Central</a>
-    <span class="home-version">V5.1.40</span>
+    <span class="home-version">V5.1.42</span>
     <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
   </div>
 </header>
@@ -226,17 +226,65 @@
         <h2>Indicadores mensais</h2>
       </div>
     </div>
-    <div class="fm-charts-grid fm-charts-grid-single">
-      <div class="fm-chart-card fm-evolution-card">
+    <div class="fm-charts-grid">
+      <div class="fm-chart-card fm-evolution-card fm-chart-wide">
         <div class="fm-chart-card-head">
           <div>
-            <span class="fm-chart-kicker">ÚLTIMOS 12 MESES</span>
+            <span class="fm-chart-kicker">PRODUÇÃO · ÚLTIMOS 12 MESES</span>
             <h3>Evolução da produção total</h3>
-            <p>Produção total · últimos 12 meses · média do período.</p>
+            <p>Volume produzido em m³ · meses sem produção são ocultados.</p>
           </div>
           <div class="fm-chart-period" id="evolutionChartPeriod">—</div>
         </div>
         <div id="productionChart" class="fm-chart fm-evolution-chart"></div>
+      </div>
+
+      <div class="fm-chart-card">
+        <div class="fm-chart-card-head">
+          <div>
+            <span class="fm-chart-kicker">MAQUIAGEM</span>
+            <h3>Evolução da maquiagem</h3>
+            <p>Volume em m³ · média do período.</p>
+          </div>
+          <div class="fm-chart-period" id="makeupChartPeriod">—</div>
+        </div>
+        <div id="makeupChart" class="fm-chart"></div>
+      </div>
+
+      <div class="fm-chart-card">
+        <div class="fm-chart-card-head">
+          <div>
+            <span class="fm-chart-kicker">LOGÍSTICA</span>
+            <h3>Evolução da expedição</h3>
+            <p>Volume expedido em m³ · média do período.</p>
+          </div>
+          <div class="fm-chart-period" id="logisticsChartPeriod">—</div>
+        </div>
+        <div id="logisticsChart" class="fm-chart"></div>
+      </div>
+
+      <div class="fm-chart-card">
+        <div class="fm-chart-card-head">
+          <div>
+            <span class="fm-chart-kicker">PROJETOS</span>
+            <h3>Evolução do projetado</h3>
+            <p>Volume projetado em m³ · média do período.</p>
+          </div>
+          <div class="fm-chart-period" id="projectsChartPeriod">—</div>
+        </div>
+        <div id="projectsChart" class="fm-chart"></div>
+      </div>
+
+      <div class="fm-chart-card">
+        <div class="fm-chart-card-head">
+          <div>
+            <span class="fm-chart-kicker">CONSOLES</span>
+            <h3>Evolução dos consoles</h3>
+            <p>Quantidade de consoles · média do período.</p>
+          </div>
+          <div class="fm-chart-period" id="consolesChartPeriod">—</div>
+        </div>
+        <div id="consolesChart" class="fm-chart"></div>
       </div>
     </div>
   </section>
@@ -272,8 +320,8 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js?v=5.1.40"></script>
-<script src="js/loading.js?v=5.1.40"></script>
-<script src="js/fechamentos.js?v=5.1.41"></script>
+<script src="js/supabase.js?v=5.1.42"></script>
+<script src="js/loading.js?v=5.1.42"></script>
+<script src="js/fechamentos.js?v=5.1.42"></script>
 </body>
 </html>
