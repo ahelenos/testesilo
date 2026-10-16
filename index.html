@@ -1,14 +1,14 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0b1220">
-  <link rel="icon" type="image/x-icon" href="./favicon.ico?v=5.1.28">
-  <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico?v=5.1.28">
+  <link rel="icon" type="image/x-icon" href="./favicon.ico?v=5.1.35">
+  <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico?v=5.1.35">
   <title>Gestão de Fábrica</title>
-  <link rel="stylesheet" href="css/style.css?v=5.1.28">
-  <link rel="stylesheet" href="css/loading.css?v=5.1.28">
+  <link rel="stylesheet" href="css/style.css?v=5.1.35">
+  <link rel="stylesheet" href="css/loading.css?v=5.1.35">
 </head>
 <body class="factory-home">
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -21,7 +21,7 @@
 
 <div id="loginScreen" class="login-screen">
   <div class="login-box">
-    <img class="vigas-login-logo" src="assets/vigas-preto.png?v=5.1.28" alt="VIGAS Engenharia em Pré-Moldados">
+    <img class="vigas-login-logo" src="assets/vigas-preto.png?v=5.1.35" alt="VIGAS Engenharia em Pré-Moldados">
     <div class="login-divider"></div>
     <span class="eyebrow">GESTÃO DE FÁBRICA</span>
     <h1>Gestão de Fábrica</h1>
@@ -34,21 +34,21 @@
       <button class="btn primary">Entrar</button>
       <div id="loginError" class="error"></div>
     </form>
-    <div class="system-meta"><span>V5.1.28</span><span>Desenvolvido por Eng. Adilson Heleno da Silva</span></div>
+    <div class="system-meta"><span>V5.1.35</span><span>Desenvolvido por Eng. Adilson Heleno da Silva</span></div>
   </div>
 </div>
 
 <div id="appScreen" class="hidden">
   <header>
     <div class="brand">
-      <img class="vigas-header-logo" src="assets/vigas-amarelo.png?v=5.1.28" alt="VIGAS Engenharia em Pré-Moldados">
+      <img class="vigas-header-logo" src="assets/vigas-amarelo.png?v=5.1.35" alt="VIGAS Engenharia em Pré-Moldados">
       <div class="brand-text">
         <strong>Gestão de Fábrica</strong>
         <span id="userRole"></span><span id="userEmail" class="user-email"></span>
       </div>
     </div>
     <div class="header-actions">
-      <span class="home-version">V5.1.28</span>
+      <span class="home-version">V5.1.35</span>
       <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
     </div>
   </header>
@@ -58,7 +58,7 @@
       <div>
         <div class="dashboard-heading">
           <span class="eyebrow">GESTÃO DE FÁBRICA</span>
-          <span class="version-badge">V5.1.28</span>
+          <span class="version-badge">V5.1.35</span>
         </div>
         <h1>Central da fábrica</h1>
         <p>Acesse os módulos para acompanhar e administrar as rotinas da fábrica.</p>
@@ -116,6 +116,16 @@
         <span class="module-arrow">→</span>
       </a>
 
+      <a class="module-card module-fechamentos hidden" href="fechamentos.html" id="fechamentosModuleCard">
+        <div class="module-icon">📊</div>
+        <div class="module-content">
+          <span class="module-eyebrow">GESTÃO · PRODUÇÃO</span>
+          <h2>Fechamentos de Mês</h2>
+          <p>Consolide produção, recusas, maquiagem, consoles, expedição, projetos e presença mensal.</p>
+        </div>
+        <span class="module-arrow">→</span>
+      </a>
+
       <a class="module-card module-users admin-module hidden" href="usuarios.html" id="usersModuleCard">
         <div class="module-icon">👥</div>
         <div class="module-content">
@@ -136,12 +146,12 @@
     </section>
   </main>
 
-  <footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V5.1.28</footer>
+  <footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V5.1.35</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js?v=5.1.28"></script>
-<script src="js/loading.js?v=5.1.28"></script>
-<script src="js/home.js?v=5.1.28"></script>
+<script src="js/supabase.js?v=5.1.35"></script>
+<script src="js/loading.js?v=5.1.35"></script>
+<script src="js/home.js?v=5.1.35"></script>
 </body>
 </html>

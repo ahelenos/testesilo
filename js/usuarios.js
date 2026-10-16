@@ -1,5 +1,5 @@
-﻿
-const APP_VERSION = "5.1.28";
+
+const APP_VERSION = "5.1.35";
 
 (() => {
 "use strict";
@@ -56,7 +56,8 @@ function normalizeUser(row){
     manutencao: row.manutencao_permission || "none",
     ferramentas: row.ferramentas_permission || "none",
     presenca: row.presenca_permission || "none",
-    corpo_prova: row.corpo_prova_permission || "none"
+    corpo_prova: row.corpo_prova_permission || "none",
+    fechamentos_mes: row.fechamentos_mes_permission || "none"
   };
 }
 
@@ -86,6 +87,7 @@ function renderUsers(){
       <td>${pill(permissionText(u.ferramentas),u.ferramentas==="admin"?"access-admin":(u.ferramentas==="viewer"?"access-viewer":"access-none"))}</td>
       <td>${pill(permissionText(u.presenca),u.presenca==="admin"?"access-admin":(u.presenca==="viewer"?"access-viewer":"access-none"))}</td>
       <td>${pill(permissionText(u.corpo_prova),u.corpo_prova==="admin"?"access-admin":(u.corpo_prova==="viewer"?"access-viewer":"access-none"))}</td>
+      <td>${pill(permissionText(u.fechamentos_mes),u.fechamentos_mes==="admin"?"access-admin":(u.fechamentos_mes==="viewer"?"access-viewer":"access-none"))}</td>
       <td>
         <div class="row-actions">
           <button class="row-action edit-user" data-id="${u.id}" type="button">Editar</button>
@@ -134,7 +136,8 @@ async function loadUsers(){
         manutencao: modulePermissions.manutencao ?? user.manutencao,
         ferramentas: modulePermissions.ferramentas ?? user.ferramentas,
         presenca: modulePermissions.presenca ?? user.presenca,
-        corpo_prova: modulePermissions.corpo_prova ?? user.corpo_prova
+        corpo_prova: modulePermissions.corpo_prova ?? user.corpo_prova,
+        fechamentos_mes: modulePermissions.fechamentos_mes ?? user.fechamentos_mes
       };
     });
 
@@ -185,6 +188,7 @@ function openEditor(id){
   $("editFerramentas").value=selectedUser.ferramentas;
   $("editPresenca").value=selectedUser.presenca;
   $("editCorpoProva").value=selectedUser.corpo_prova;
+  $("editFechamentosMes").value=selectedUser.fechamentos_mes;
   $("editError").textContent="";
   $("editUserDialog").showModal();
 }
@@ -195,7 +199,8 @@ async function applyModulePermissions(userId, permissions){
     ["manutencao",permissions.manutencao_permission],
     ["ferramentas",permissions.ferramentas_permission],
     ["presenca",permissions.presenca_permission],
-    ["corpo_prova",permissions.corpo_prova_permission]
+    ["corpo_prova",permissions.corpo_prova_permission],
+    ["fechamentos_mes",permissions.fechamentos_mes_permission]
   ];
 
   for(const [module,permission] of entries){
@@ -236,7 +241,8 @@ async function saveEditor(){
     manutencao_permission:$("editManutencao").value,
     ferramentas_permission:$("editFerramentas").value,
     presenca_permission:$("editPresenca").value,
-    corpo_prova_permission:$("editCorpoProva").value
+    corpo_prova_permission:$("editCorpoProva").value,
+    fechamentos_mes_permission:$("editFechamentosMes").value
   };
 
   try{
@@ -264,6 +270,7 @@ function openNewUser(){
   $("newFerramentas").value="viewer";
   $("newPresenca").value="viewer";
   $("newCorpoProva").value="none";
+  $("newFechamentosMes").value="none";
   $("newUserError").textContent="";
   $("newUserDialog").showModal();
 }
@@ -291,7 +298,8 @@ async function createUser(){
       manutencao_permission:$("newManutencao").value,
       ferramentas_permission:$("newFerramentas").value,
       presenca_permission:$("newPresenca").value,
-      corpo_prova_permission:$("newCorpoProva").value
+      corpo_prova_permission:$("newCorpoProva").value,
+      fechamentos_mes_permission:$("newFechamentosMes").value
     };
 
     await SiloSupabase.adminUserManagement("create_user",{

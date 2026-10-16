@@ -1,4 +1,4 @@
-﻿const APP_VERSION = "5.1.28";
+const APP_VERSION = "5.1.35";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -61,17 +61,18 @@ async function boot(){
       ["manutencao","maintenanceModuleCard"],
       ["ferramentas","toolsModuleCard"],
       ["presenca","presenceModuleCard"],
-      ["corpo_prova","corpoProvaModuleCard"]
+      ["corpo_prova","corpoProvaModuleCard"],
+      ["fechamentos_mes","fechamentosModuleCard"]
     ];
     for(const [module,cardId] of moduleCards){
       try{
         let permission;
-        if(module === "corpo_prova"){
+        if(module === "corpo_prova" || module === "fechamentos_mes"){
           const {data:isGlobalAdmin,error:adminCheckError}=await supabaseClient.rpc("is_global_admin");
           if(!adminCheckError && isGlobalAdmin===true) permission="admin";
           else {
             const permissions=await SiloSupabase.getModulePermissions(user);
-            permission=String(permissions.corpo_prova||"none").toLowerCase();
+            permission=String(permissions[module]||"none").toLowerCase();
           }
         }else{
           permission = await SiloSupabase.getModulePermission(module,user);

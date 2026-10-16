@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1220">
+<link rel="icon" type="image/x-icon" href="./favicon.ico?v=5.1.35">
+<title>Fechamentos de Mês · Gestão de Fábrica</title>
+<link rel="stylesheet" href="css/style.css?v=5.1.35">
+<link rel="stylesheet" href="css/loading.css?v=5.1.35">
+<link rel="stylesheet" href="css/fechamentos.css?v=5.1.35">
+</head>
+<body>
+<div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
+  <div class="global-loading-card" role="status">
+    <span class="loading-spinner" aria-hidden="true"></span>
+    <strong id="globalLoadingText">Carregando...</strong>
+    <span>Aguarde, estamos processando a solicitação.</span>
+  </div>
+</div>
+
+<div id="loginScreen" class="login-screen">
+  <div class="login-box">
+    <img class="vigas-login-logo" src="assets/vigas-preto.png" alt="VIGAS">
+    <div class="login-divider"></div>
+    <span class="eyebrow">GESTÃO DE FÁBRICA</span>
+    <h1>Fechamentos de Mês</h1>
+    <p>Consolide os indicadores da fábrica e a quantidade de funcionários presentes em cada dia do mês.</p>
+    <form id="loginForm">
+      <label for="loginEmail">E-mail</label>
+      <input id="loginEmail" type="email" autocomplete="username" required>
+      <label for="loginPassword">Senha</label>
+      <input id="loginPassword" type="password" autocomplete="current-password" required>
+      <button class="btn primary" type="submit">Entrar</button>
+      <div id="loginError" class="error"></div>
+    </form>
+  </div>
+</div>
+
+<div id="appScreen" class="hidden">
+<header>
+  <div class="brand">
+    <img class="vigas-header-logo" src="assets/vigas-amarelo.png" alt="VIGAS">
+    <div class="brand-text">
+      <strong>Gestão de Fábrica</strong>
+      <span id="userRole"></span><span id="userEmail" class="user-email"></span>
+    </div>
+  </div>
+  <div class="header-actions">
+    <a class="btn ghost" href="index.html" aria-label="Voltar para a Central da fábrica">← Central</a>
+    <span class="home-version">V5.1.35</span>
+    <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
+  </div>
+</header>
+
+<main class="fm-main">
+  <section class="fm-hero">
+    <div>
+      <a href="index.html" class="fm-back">← Central da fábrica</a>
+      <div class="eyebrow">GESTÃO · PRODUÇÃO</div>
+      <h1>Fechamentos de Mês</h1>
+      <p>Consolide os resultados da fábrica e acompanhe a presença diária dos funcionários.</p>
+    </div>
+    <div class="fm-hero-actions">
+      <button id="newClosingBtn" class="btn primary admin-only" type="button">+ Novo fechamento</button>
+    </div>
+  </section>
+
+  <div id="fmMessage" class="fm-message" role="status"></div>
+
+  <section class="fm-toolbar panel">
+    <div class="fm-toolbar-main">
+      <div>
+        <span class="eyebrow">PERÍODO</span>
+        <strong id="currentMonthLabel">—</strong>
+      </div>
+      <input id="monthPicker" type="month" aria-label="Selecionar mês">
+      <button id="refreshBtn" class="btn secondary" type="button">Atualizar</button>
+    </div>
+    <div class="fm-toolbar-note">A quantidade diária de funcionários é pré-preenchida pelo Controle de Presença considerando somente quem marcou manhã <strong>e</strong> tarde.</div>
+  </section>
+
+  <section class="fm-kpis">
+    <article class="fm-kpi">
+      <span>Produção total</span>
+      <strong id="kpiProducao">—</strong>
+      <small id="kpiProducaoQtd">—</small>
+    </article>
+    <article class="fm-kpi">
+      <span>Produção efetiva</span>
+      <strong id="kpiEfetiva">—</strong>
+      <small id="kpiEfetivaQtd">—</small>
+    </article>
+    <article class="fm-kpi">
+      <span>Expedição</span>
+      <strong id="kpiExpedicao">—</strong>
+      <small id="kpiExpedicaoQtd">—</small>
+    </article>
+    <article class="fm-kpi">
+      <span>Funcionários / dias</span>
+      <strong id="kpiFuncionarios">—</strong>
+      <small id="kpiDias">—</small>
+    </article>
+  </section>
+
+  <section class="fm-panel panel">
+    <div class="fm-panel-head">
+      <div>
+        <span class="eyebrow">FECHAMENTO</span>
+        <h2 id="formTitle">Dados do mês</h2>
+      </div>
+      <span id="closingStatus" class="fm-status">Nenhum fechamento salvo</span>
+    </div>
+
+    <form id="closingForm">
+      <fieldset class="fm-section">
+        <legend>Fábrica</legend>
+        <div class="fm-field-grid">
+          <div class="fm-field-group">
+            <label>Produção total</label>
+            <div class="fm-pair"><input id="producao_total_m3" type="number" step="0.001" min="0" placeholder="m³"><input id="producao_total_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
+          </div>
+          <div class="fm-field-group">
+            <label>Produção efetiva</label>
+            <div class="fm-pair"><input id="producao_efetiva_m3" type="number" step="0.001" min="0" placeholder="m³"><input id="producao_efetiva_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
+          </div>
+          <div class="fm-field-group">
+            <label>Recusas total</label>
+            <div class="fm-pair"><input id="recusas_total_m3" type="number" step="0.001" min="0" placeholder="m³"><input id="recusas_total_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
+          </div>
+          <div class="fm-field-group">
+            <label>Recusas da fábrica</label>
+            <div class="fm-pair"><input id="recusas_fabrica_m3" type="number" step="0.001" min="0" placeholder="m³"><input id="recusas_fabrica_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
+          </div>
+          <div class="fm-field-group">
+            <label>Outras recusas</label>
+            <div class="fm-pair"><input id="outras_recusas_m3" type="number" step="0.001" min="0" placeholder="m³"><input id="outras_recusas_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="fm-section">
+        <legend>Maquiagem</legend>
+        <div class="fm-field-grid fm-field-grid-small">
+          <div class="fm-field-group">
+            <label>Maquiagem</label>
+            <div class="fm-pair"><input id="maquiagem_m3" type="number" step="0.001" min="0" placeholder="m³"><input id="maquiagem_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="fm-section">
+        <legend>Consoles</legend>
+        <div class="fm-field-grid fm-field-grid-small">
+          <div class="fm-field-group">
+            <label>Consoles</label>
+            <div class="fm-pair"><input id="consoles_pecas_qtd" type="number" step="1" min="0" placeholder="Quantidade de peças"><input id="consoles_consoles_qtd" type="number" step="1" min="0" placeholder="Quantidade de consoles"></div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="fm-section">
+        <legend>Logística</legend>
+        <div class="fm-field-grid fm-field-grid-small">
+          <div class="fm-field-group">
+            <label>Expedição</label>
+            <div class="fm-pair"><input id="expedicao_m3" type="number" step="0.001" min="0" placeholder="m³"><input id="expedicao_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="fm-section">
+        <legend>Projetos</legend>
+        <div class="fm-field-grid fm-field-grid-small">
+          <div class="fm-field-group">
+            <label>Projetado</label>
+            <div class="fm-pair"><input id="projetado_m3" type="number" step="0.001" min="0" placeholder="m³"><input id="projetado_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="fm-section fm-attendance-section">
+        <legend>Funcionários que vieram trabalhar</legend>
+        <div class="fm-attendance-head">
+          <div>
+            <p>Pré-preenchido pelo <strong>Controle de Presença</strong>. A contagem considera o funcionário somente quando ele teve presença registrada no turno da manhã e no turno da tarde.</p>
+          </div>
+          <span class="fm-attendance-badge">Pré-preenchido</span>
+        </div>
+        <div class="fm-attendance-wrap">
+          <table class="fm-attendance-table">
+            <thead><tr><th>Data</th><th>Dia</th><th>Funcionários</th><th>Origem</th></tr></thead>
+            <tbody id="attendanceBody"></tbody>
+          </table>
+        </div>
+      </fieldset>
+
+      <div id="closingError" class="fm-form-error"></div>
+
+      <div class="fm-actions">
+        <button id="deleteClosingBtn" class="btn danger admin-only" type="button">Excluir fechamento</button>
+        <div class="fm-actions-right">
+          <button id="resetBtn" class="btn secondary admin-only" type="button">Desfazer alterações</button>
+          <button id="saveBtn" class="btn primary admin-only" type="submit">Salvar fechamento</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <section class="fm-panel panel">
+    <div class="fm-panel-head">
+      <div>
+        <span class="eyebrow">HISTÓRICO</span>
+        <h2>Fechamentos cadastrados</h2>
+      </div>
+    </div>
+    <div class="fm-table-wrap">
+      <table class="fm-history-table">
+        <thead>
+          <tr><th>Mês</th><th>Produção total</th><th>Produção efetiva</th><th>Expedição</th><th>Funcionários/dias</th><th></th></tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+    <div id="historyEmpty" class="fm-empty hidden">Nenhum fechamento cadastrado.</div>
+  </section>
+</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js?v=5.1.35"></script>
+<script src="js/loading.js?v=5.1.35"></script>
+<script src="js/fechamentos.js?v=5.1.35"></script>
+</body>
+</html>
