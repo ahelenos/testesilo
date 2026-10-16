@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.35";
+const APP_VERSION = "5.1.36";
 
 (() => {
 "use strict";
@@ -7,13 +7,8 @@ const $ = id => document.getElementById(id);
 const sb = window.supabaseClient;
 
 const state = {
-  user: null,
-  profile: null,
-  permission: "none",
-  month: "",
-  closing: null,
-  attendance: [],
-  presenceBaseline: []
+  user:null, profile:null, permission:"none", month:"",
+  closing:null, attendance:[], presenceBaseline:[], history:[]
 };
 
 const FIELD_IDS = [
@@ -28,542 +23,333 @@ const FIELD_IDS = [
   "projetado_m3","projetado_qtd"
 ];
 
+const INPUT_FIELDS = FIELD_IDS.filter(id=>!id.startsWith("producao_efetiva_") && !id.startsWith("outras_recusas_"));
 const INTEGER_FIELDS = [
-  "producao_total_qtd","producao_efetiva_qtd",
-  "recusas_total_qtd","recusas_fabrica_qtd","outras_recusas_qtd",
-  "maquiagem_qtd","consoles_pecas_qtd","consoles_consoles_qtd",
+  "producao_total_qtd","producao_efetiva_qtd","recusas_total_qtd","recusas_fabrica_qtd",
+  "outras_recusas_qtd","maquiagem_qtd","consoles_pecas_qtd","consoles_consoles_qtd",
   "expedicao_qtd","projetado_qtd"
 ];
 
-function esc(value){
-  return String(value ?? "").replace(/[&<>"']/g, ch => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  }[ch]));
+function esc(value){return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]));}
+function isAdmin(){return state.permission==="admin";}
+function currentMonth(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;}
+function monthLabel(month){
+  if(!month)return "—";
+  const [y,m]=month.split("-").map(Number);
+  return new Date(y,m-1,1).toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
 }
-
-function isAdmin(){
-  return state.permission === "admin";
-}
-
-function isoToday(){
-  const d = new Date();
+function previousMonth(month){
+  const [y,m]=month.split("-").map(Number);
+  const d=new Date(y,m-2,1);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
 }
-
-function monthLabel(month){
-  if(!month) return "—";
-  const [year,monthNumber] = month.split("-").map(Number);
-  return new Date(year,monthNumber-1,1).toLocaleDateString("pt-BR",{
-    month:"long",
-    year:"numeric"
-  });
-}
-
-function dateLabel(iso){
-  const d = new Date(`${iso}T00:00:00`);
-  return Number.isNaN(d.getTime())
-    ? iso
-    : d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
-}
-
-function weekdayLabel(iso){
-  const d = new Date(`${iso}T00:00:00`);
-  return Number.isNaN(d.getTime())
-    ? "—"
-    : d.toLocaleDateString("pt-BR",{weekday:"short"}).replace(".","");
-}
-
-function monthDays(month){
-  const [year,monthNumber] = month.split("-").map(Number);
-  const total = new Date(year,monthNumber,0).getDate();
-  return Array.from({length:total},(_,index) => {
-    const day = index + 1;
-    return `${year}-${String(monthNumber).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-  });
-}
-
-function fmtM3(value){
-  return `${Number(value||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})} m³`;
-}
-
-function fmtInt(value){
-  return Number(value||0).toLocaleString("pt-BR");
-}
-
-function setMessage(text="",type=""){
-  const el=$("fmMessage");
-  if(!el) return;
-  el.textContent=text;
-  el.className=`fm-message ${type}`;
-}
-
-function loading(text){
-  if(window.AppLoading?.show) window.AppLoading.show(text);
-}
-
-function doneLoading(){
-  if(window.AppLoading?.hide) window.AppLoading.hide();
-}
-
+function dateLabel(iso){const d=new Date(`${iso}T00:00:00`);return Number.isNaN(d.getTime())?iso:d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});}
+function weekdayLabel(iso){const d=new Date(`${iso}T00:00:00`);return Number.isNaN(d.getTime())?"—":d.toLocaleDateString("pt-BR",{weekday:"short"}).replace(".","");}
+function fmtM3(v){return `${Number(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:3})} m³`;}
+function fmtNum(v,d=1){return Number(v||0).toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d});}
+function fmtInt(v){return Number(v||0).toLocaleString("pt-BR");}
+function setMessage(text="",type=""){const el=$("fmMessage");if(el){el.textContent=text;el.className=`fm-message ${type}`;}}
+function loading(text){window.AppLoading?.show?.(text);}
+function doneLoading(){window.AppLoading?.hide?.();}
 function translateError(error){
-  const msg=String(error?.message||error||"");
-  const lower=msg.toLowerCase();
-  if(lower.includes("permission") || lower.includes("acesso permitido")){
-    return "Você não possui permissão para executar esta operação.";
-  }
-  if(lower.includes("módulo fechamentos") || lower.includes("modulo fechamentos")){
-    return "Você não possui acesso ao módulo Fechamentos de Mês.";
-  }
-  return msg || "Não foi possível concluir a operação.";
+  const msg=String(error?.message||error||""); const low=msg.toLowerCase();
+  if(low.includes("permission")||low.includes("acesso permitido"))return "Você não possui permissão para executar esta operação.";
+  if(low.includes("módulo fechamentos")||low.includes("modulo fechamentos"))return "Você não possui acesso ao módulo Fechamentos de Mês.";
+  return msg||"Não foi possível concluir a operação.";
+}
+function monthDays(month){
+  const [y,m]=month.split("-").map(Number), n=new Date(y,m,0).getDate();
+  return Array.from({length:n},(_,i)=>`${y}-${String(m).padStart(2,"0")}-${String(i+1).padStart(2,"0")}`);
+}
+
+function calculateDerived(){
+  const totalM3=Number($("producao_total_m3")?.value||0);
+  const totalQtd=Number($("producao_total_qtd")?.value||0);
+  const fabM3=Number($("recusas_fabrica_m3")?.value||0);
+  const fabQtd=Number($("recusas_fabrica_qtd")?.value||0);
+  const recTotalM3=Number($("recusas_total_m3")?.value||0);
+  const recTotalQtd=Number($("recusas_total_qtd")?.value||0);
+  const effectiveM3=totalM3-fabM3;
+  const effectiveQtd=totalQtd-fabQtd;
+  const otherM3=recTotalM3-fabM3;
+  const otherQtd=recTotalQtd-fabQtd;
+  $("producao_efetiva_m3").value=Number.isFinite(effectiveM3)?Math.max(0,effectiveM3):0;
+  $("producao_efetiva_qtd").value=Number.isFinite(effectiveQtd)?Math.max(0,effectiveQtd):0;
+  $("outras_recusas_m3").value=Number.isFinite(otherM3)?Math.max(0,otherM3):0;
+  $("outras_recusas_qtd").value=Number.isFinite(otherQtd)?Math.max(0,otherQtd):0;
+}
+function resetForm(){INPUT_FIELDS.forEach(id=>{const e=$(id);if(e)e.value="";});calculateDerived();}
+function fillForm(row){
+  FIELD_IDS.forEach(id=>{const e=$(id);if(e)e.value=row?.[id]??"";});
+  calculateDerived();
+}
+function readForm(){
+  calculateDerived();
+  const data={};
+  FIELD_IDS.forEach(id=>{const raw=String($(id)?.value??"").trim().replace(",",".");data[id]=raw===""?0:Number(raw);});
+  return data;
+}
+function validateData(data){
+  for(const id of FIELD_IDS)if(!Number.isFinite(data[id])||data[id]<0)throw new Error(`Informe um valor válido em "${labelFor(id)}".`);
+  if(data.producao_efetiva_m3<0 || data.producao_efetiva_qtd<0)throw new Error("A produção efetiva não pode ser negativa.");
+  if(data.outras_recusas_m3<0 || data.outras_recusas_qtd<0)throw new Error("As outras recusas não podem ser negativas.");
+  for(const id of INTEGER_FIELDS)if(!Number.isInteger(data[id]))throw new Error(`O campo "${labelFor(id)}" deve ser um número inteiro.`);
+}
+function labelFor(id){
+  return ({
+    producao_total_m3:"Produção total (m³)",producao_total_qtd:"Produção total (quantidade)",
+    producao_efetiva_m3:"Produção efetiva (m³)",producao_efetiva_qtd:"Produção efetiva (quantidade)",
+    recusas_total_m3:"Recusas total (m³)",recusas_total_qtd:"Recusas total (quantidade)",
+    recusas_fabrica_m3:"Recusas da fábrica (m³)",recusas_fabrica_qtd:"Recusas da fábrica (quantidade)",
+    outras_recusas_m3:"Outras recusas (m³)",outras_recusas_qtd:"Outras recusas (quantidade)",
+    maquiagem_m3:"Maquiagem (m³)",maquiagem_qtd:"Maquiagem (quantidade)",
+    consoles_pecas_qtd:"Consoles — peças",consoles_consoles_qtd:"Consoles — consoles",
+    expedicao_m3:"Expedição (m³)",expedicao_qtd:"Expedição (quantidade)",
+    projetado_m3:"Projetado (m³)",projetado_qtd:"Projetado (quantidade)"
+  })[id]||id;
 }
 
 function setFormDisabled(disabled){
-  document.querySelectorAll("#closingForm input,#closingForm button").forEach(el=>{
-    if(el.id==="deleteClosingBtn" || el.id==="resetBtn" || el.id==="saveBtn" || el.type==="submit"){
-      el.disabled = disabled;
-    }else if(el.id!=="monthPicker"){
-      el.disabled = disabled;
-    }
+  document.querySelectorAll("#closingForm input").forEach(el=>{
+    if(el.id==="monthPicker")return;
+    el.disabled=disabled || el.readOnly;
   });
-  $("monthPicker").disabled=false;
-  document.querySelectorAll(".admin-only").forEach(el=>{
-    el.classList.toggle("hidden",!isAdmin());
-  });
-}
-
-function resetForm(){
-  FIELD_IDS.forEach(id => {
-    const el=$(id);
-    if(el) el.value="";
-  });
-}
-
-function fillForm(row){
-  FIELD_IDS.forEach(id=>{
-    const el=$(id);
-    if(!el) return;
-    const value=row?.[id];
-    el.value = value === null || value === undefined ? "" : value;
-  });
-}
-
-function readForm(){
-  const data={};
-  FIELD_IDS.forEach(id=>{
-    const el=$(id);
-    const raw=String(el?.value??"").trim().replace(",",".");
-    data[id]=raw==="" ? 0 : Number(raw);
-  });
-  return data;
-}
-
-function validateData(data){
-  for(const id of FIELD_IDS){
-    if(!Number.isFinite(data[id]) || data[id] < 0){
-      throw new Error(`Informe um valor válido em "${labelFor(id)}".`);
-    }
-  }
-  for(const id of INTEGER_FIELDS){
-    if(!Number.isInteger(data[id])){
-      throw new Error(`O campo "${labelFor(id)}" deve ser um número inteiro.`);
-    }
-  }
-}
-
-function labelFor(id){
-  const labels={
-    producao_total_m3:"Produção total (m³)",
-    producao_total_qtd:"Produção total (quantidade)",
-    producao_efetiva_m3:"Produção efetiva (m³)",
-    producao_efetiva_qtd:"Produção efetiva (quantidade)",
-    recusas_total_m3:"Recusas total (m³)",
-    recusas_total_qtd:"Recusas total (quantidade)",
-    recusas_fabrica_m3:"Recusas da fábrica (m³)",
-    recusas_fabrica_qtd:"Recusas da fábrica (quantidade)",
-    outras_recusas_m3:"Outras recusas (m³)",
-    outras_recusas_qtd:"Outras recusas (quantidade)",
-    maquiagem_m3:"Maquiagem (m³)",
-    maquiagem_qtd:"Maquiagem (quantidade)",
-    consoles_pecas_qtd:"Consoles — peças",
-    consoles_consoles_qtd:"Consoles — consoles",
-    expedicao_m3:"Expedição (m³)",
-    expedicao_qtd:"Expedição (quantidade)",
-    projetado_m3:"Projetado (m³)",
-    projetado_qtd:"Projetado (quantidade)"
-  };
-  return labels[id]||id;
+  document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("hidden",!isAdmin()));
+  if($("monthPicker"))$("monthPicker").disabled=false;
 }
 
 function renderAttendance(){
-  const body=$("attendanceBody");
-  if(!body) return;
-
+  const body=$("attendanceBody"); if(!body)return;
   body.innerHTML=state.attendance.map(row=>{
-    const manual=row.atualizado_manualmente===true;
-    return `
-      <tr data-date="${esc(row.data)}">
-        <td>${esc(dateLabel(row.data))}</td>
-        <td class="weekday">${esc(weekdayLabel(row.data))}</td>
-        <td>
-          <input class="attendance-input" data-date="${esc(row.data)}" type="number" min="0" step="1" value="${Number(row.funcionarios||0)}" ${isAdmin()?"":"disabled"} aria-label="Funcionários em ${esc(dateLabel(row.data))}">
-        </td>
-        <td>
-          <span class="fm-origin ${manual?"manual":"presence"}">${manual?"Editado":"Presença"}</span>
-        </td>
-      </tr>
-    `;
+    const imported=Math.max(0,Number(row.quantidade_importada??row.funcionarios??0));
+    const alter=Number(row.alteracoes||0);
+    const effective=Math.max(0,imported+alter);
+    return `<tr data-date="${esc(row.data)}">
+      <td>${esc(dateLabel(row.data))}</td><td class="weekday">${esc(weekdayLabel(row.data))}</td>
+      <td><input class="attendance-imported" type="number" value="${imported}" disabled></td>
+      <td><input class="attendance-change" data-date="${esc(row.data)}" type="number" step="1" value="${alter}" ${isAdmin()?"":"disabled"}></td>
+      <td><input class="attendance-note" data-date="${esc(row.data)}" type="text" value="${esc(row.observacoes||"")}" placeholder="Opcional" ${isAdmin()?"":"disabled"}></td>
+      <td><strong class="effective-workers">${effective}</strong></td>
+    </tr>`;
   }).join("");
-
-  body.querySelectorAll(".attendance-input").forEach(input=>{
-    input.addEventListener("input",()=>{
-      const row=state.attendance.find(item=>item.data===input.dataset.date);
-      if(!row) return;
-      row.funcionarios=Math.max(0,Number.parseInt(input.value||"0",10)||0);
-      row.atualizado_manualmente=true;
-      const origin=input.closest("tr")?.querySelector(".fm-origin");
-      if(origin){
-        origin.textContent="Editado";
-        origin.className="fm-origin manual";
-      }
-      renderAttendanceKpi();
-    });
-  });
-}
-
-function renderAttendanceKpi(){
-  const total=state.attendance.reduce((sum,row)=>sum+Number(row.funcionarios||0),0);
-  const days=state.attendance.filter(row=>Number(row.funcionarios||0)>0).length;
-  $("kpiFuncionarios").textContent=fmtInt(total);
-  $("kpiDias").textContent=`${fmtInt(days)} ${days===1?"dia":"dias"} com presença`;
-}
-
-async function loadPresenceBaseline(){
-  const {data,error}=await sb.rpc("obter_presencas_fechamento_mes",{p_mes:`${state.month}-01`});
-  if(error) throw error;
-
-  state.presenceBaseline=(data||[]).map(row=>({
-    data:String(row.data).slice(0,10),
-    funcionarios:Number(row.funcionarios||0),
-    atualizado_manualmente:false
+  body.querySelectorAll(".attendance-change").forEach(input=>input.addEventListener("input",()=>updateAttendanceRow(input.dataset.date,input)));
+  body.querySelectorAll(".attendance-note").forEach(input=>input.addEventListener("input",()=>{
+    const row=state.attendance.find(r=>r.data===input.dataset.date); if(row)row.observacoes=input.value;
   }));
 }
-
-async function loadSavedAttendance(closingId){
-  if(!closingId) return null;
-
-  const {data,error}=await sb
-    .from("fechamentos_mes_presencas")
-    .select("data,funcionarios,atualizado_manualmente")
-    .eq("fechamento_id",closingId)
-    .order("data",{ascending:true});
-
-  if(error) throw error;
-  if(!data?.length) return null;
-
-  return data.map(row=>({
-    data:String(row.data).slice(0,10),
-    funcionarios:Number(row.funcionarios||0),
-    atualizado_manualmente:row.atualizado_manualmente===true
-  }));
-}
-
-async function loadClosing(){
-  const month=state.month;
-  $("currentMonthLabel").textContent=monthLabel(month);
-  $("formTitle").textContent=`Dados de ${monthLabel(month)}`;
-  $("monthPicker").value=month;
-  $("closingError").textContent="";
-
-  loading(`Carregando fechamento de ${monthLabel(month)}...`);
-
-  try{
-    await loadPresenceBaseline();
-
-    const {data,error}=await sb.rpc("obter_fechamento_mes",{p_mes:`${month}-01`});
-    if(error) throw error;
-
-    const row=Array.isArray(data)&&data.length ? data[0] : null;
-    state.closing=row;
-
-    if(row){
-      fillForm(row);
-      const saved=await loadSavedAttendance(row.id);
-      state.attendance=saved?.length ? saved : state.presenceBaseline.map(item=>({...item}));
-      $("closingStatus").textContent="Fechamento salvo";
-      $("closingStatus").className="fm-status saved";
-    }else{
-      resetForm();
-      state.attendance=state.presenceBaseline.map(item=>({...item}));
-      $("closingStatus").textContent="Novo fechamento";
-      $("closingStatus").className="fm-status new";
-    }
-
-    renderAttendance();
-    renderKpis();
-    updateHistorySelection();
-    setFormDisabled(!isAdmin());
-  }catch(error){
-    console.error(error);
-    setMessage(translateError(error),"error");
-    state.closing=null;
-    resetForm();
-    state.attendance=state.presenceBaseline||[];
-    renderAttendance();
-    renderKpis();
-  }finally{
-    doneLoading();
-  }
-}
-
-function renderKpis(){
-  const d=state.closing;
-  if(!d){
-    $("kpiProducao").textContent="—";
-    $("kpiProducaoQtd").textContent="Nenhum fechamento salvo";
-    $("kpiEfetiva").textContent="—";
-    $("kpiEfetivaQtd").textContent="—";
-    $("kpiExpedicao").textContent="—";
-    $("kpiExpedicaoQtd").textContent="—";
-    renderAttendanceKpi();
-    return;
-  }
-
-  $("kpiProducao").textContent=fmtM3(d.producao_total_m3);
-  $("kpiProducaoQtd").textContent=`${fmtInt(d.producao_total_qtd)} peças`;
-  $("kpiEfetiva").textContent=fmtM3(d.producao_efetiva_m3);
-  $("kpiEfetivaQtd").textContent=`${fmtInt(d.producao_efetiva_qtd)} peças`;
-  $("kpiExpedicao").textContent=fmtM3(d.expedicao_m3);
-  $("kpiExpedicaoQtd").textContent=`${fmtInt(d.expedicao_qtd)} peças`;
+function updateAttendanceRow(date,input){
+  const row=state.attendance.find(r=>r.data===date);if(!row)return;
+  row.alteracoes=Number.parseInt(input.value||"0",10)||0;
+  row.funcionarios=Math.max(0,Number(row.quantidade_importada||0)+row.alteracoes);
+  const tr=input.closest("tr"); if(tr)tr.querySelector(".effective-workers").textContent=fmtInt(row.funcionarios);
   renderAttendanceKpi();
 }
-
+function renderAttendanceKpi(){
+  const vals=state.attendance.map(r=>Math.max(0,Number(r.quantidade_importada||0)+Number(r.alteracoes||0))).filter(v=>v>0);
+  const total=vals.reduce((a,b)=>a+b,0), avg=vals.length?total/vals.length:0;
+  $("kpiFuncionarios").textContent=vals.length?fmtNum(avg,1):"0,0";
+  $("kpiDias").textContent=`${fmtInt(vals.length)} ${vals.length===1?"dia":"dias"} trabalhados`;
+}
+async function loadPresenceBaseline(){
+  const {data,error}=await sb.rpc("obter_presencas_fechamento_mes",{p_mes:`${state.month}-01`});
+  if(error)throw error;
+  state.presenceBaseline=(data||[]).map(r=>({data:String(r.data).slice(0,10),quantidade_importada:Number(r.funcionarios||0),alteracoes:0,observacoes:"",funcionarios:Number(r.funcionarios||0)}));
+}
+async function loadSavedAttendance(id){
+  if(!id)return null;
+  const {data,error}=await sb.from("fechamentos_mes_presencas").select("data,funcionarios,quantidade_importada,alteracoes,observacoes,atualizado_manualmente").eq("fechamento_id",id).order("data",{ascending:true});
+  if(error)throw error;if(!data?.length)return null;
+  return data.map(r=>({data:String(r.data).slice(0,10),quantidade_importada:Number(r.quantidade_importada??r.funcionarios??0),alteracoes:Number(r.alteracoes||0),observacoes:String(r.observacoes||""),funcionarios:Math.max(0,Number(r.quantidade_importada??r.funcionarios??0)+Number(r.alteracoes||0))}));
+}
+async function loadClosing(){
+  $("currentMonthLabel").textContent=monthLabel(state.month);$("formTitle").textContent=`Dados de ${monthLabel(state.month)}`;$("monthPicker").value=state.month;$("closingError").textContent="";
+  loading(`Carregando fechamento de ${monthLabel(state.month)}...`);
+  try{
+    await loadPresenceBaseline();
+    const {data,error}=await sb.rpc("obter_fechamento_mes",{p_mes:`${state.month}-01`});if(error)throw error;
+    const row=Array.isArray(data)&&data.length?data[0]:null;state.closing=row;
+    if(row){fillForm(row);const saved=await loadSavedAttendance(row.id);state.attendance=saved?.length?saved:state.presenceBaseline.map(r=>({...r}));$("closingStatus").textContent="Fechamento salvo";$("closingStatus").className="fm-status saved";}
+    else{resetForm();state.attendance=state.presenceBaseline.map(r=>({...r}));$("closingStatus").textContent="Novo fechamento";$("closingStatus").className="fm-status new";}
+    renderAttendance();renderKpis();setFormDisabled(!isAdmin());updateHistorySelection();renderComparison();renderCharts();
+  }catch(error){console.error(error);setMessage(translateError(error),"error");state.closing=null;resetForm();state.attendance=state.presenceBaseline||[];renderAttendance();renderKpis();}
+  finally{doneLoading();}
+}
+function renderKpis(){
+  const d=state.closing;
+  if(!d){$("kpiProducao").textContent="—";$("kpiProducaoQtd").textContent="Nenhum fechamento salvo";$("kpiEfetiva").textContent="—";$("kpiEfetivaQtd").textContent="—";$("kpiExpedicao").textContent="—";$("kpiExpedicaoQtd").textContent="—";renderAttendanceKpi();return;}
+  $("kpiProducao").textContent=fmtM3(d.producao_total_m3);$("kpiProducaoQtd").textContent=`${fmtInt(d.producao_total_qtd)} peças`;
+  $("kpiEfetiva").textContent=fmtM3(d.producao_efetiva_m3);$("kpiEfetivaQtd").textContent=`${fmtInt(d.producao_efetiva_qtd)} peças`;
+  $("kpiExpedicao").textContent=fmtM3(d.expedicao_m3);$("kpiExpedicaoQtd").textContent=`${fmtInt(d.expedicao_qtd)} peças`;
+  renderAttendanceKpi();
+}
 async function loadHistory(){
   try{
-    const {data,error}=await sb.rpc("listar_fechamentos_mes");
-    if(error) throw error;
-
-    const rows=data||[];
-    $("historyBody").innerHTML=rows.map(row=>`
-      <tr>
-        <td><strong>${esc(monthLabel(String(row.mes).slice(0,7)))}</strong></td>
-        <td>${esc(fmtM3(row.producao_total_m3))}<small>${fmtInt(row.producao_total_qtd)} peças</small></td>
-        <td>${esc(fmtM3(row.producao_efetiva_m3))}<small>${fmtInt(row.producao_efetiva_qtd)} peças</small></td>
-        <td>${esc(fmtM3(row.expedicao_m3))}<small>${fmtInt(row.expedicao_qtd)} peças</small></td>
-        <td>${fmtInt(row.funcionarios_dias_total)}<small>funcionários/dias</small></td>
-        <td><button class="btn secondary fm-open-history" data-month="${esc(String(row.mes).slice(0,7))}" type="button">Abrir</button></td>
-      </tr>
-    `).join("");
-
-    $("historyEmpty").classList.toggle("hidden",rows.length!==0);
-
-    document.querySelectorAll(".fm-open-history").forEach(btn=>{
-      btn.addEventListener("click",()=>{
-        state.month=btn.dataset.month;
-        loadClosing();
-        window.scrollTo({top:0,behavior:"smooth"});
-      });
-    });
-
-    updateHistorySelection();
-  }catch(error){
-    console.error(error);
-    setMessage(translateError(error),"error");
-  }
+    const {data,error}=await sb.rpc("listar_fechamentos_mes");if(error)throw error;
+    state.history=data||[];
+    $("historyBody").innerHTML=state.history.map(row=>`<tr>
+      <td><strong>${esc(monthLabel(String(row.mes).slice(0,7)))}</strong></td>
+      <td>${esc(fmtM3(row.producao_total_m3))}<small>${fmtInt(row.producao_total_qtd)} peças</small></td>
+      <td>${esc(fmtM3(row.producao_efetiva_m3))}<small>${fmtInt(row.producao_efetiva_qtd)} peças</small></td>
+      <td>${esc(fmtM3(row.expedicao_m3))}<small>${fmtInt(row.expedicao_qtd)} peças</small></td>
+      <td>${fmtNum(row.media_funcionarios_dia||0,1)}<small>${fmtInt(row.dias_trabalhados||0)} dias trabalhados</small></td>
+      <td><button class="btn secondary fm-open-history" data-month="${esc(String(row.mes).slice(0,7))}" type="button">Abrir</button></td>
+    </tr>`).join("");
+    $("historyEmpty").classList.toggle("hidden",state.history.length!==0);
+    document.querySelectorAll(".fm-open-history").forEach(btn=>btn.addEventListener("click",()=>{state.month=btn.dataset.month;loadClosing();window.scrollTo({top:0,behavior:"smooth"});}));
+    updateHistorySelection();renderComparison();renderCharts();
+  }catch(error){console.error(error);setMessage(translateError(error),"error");}
 }
+function updateHistorySelection(){document.querySelectorAll(".fm-open-history").forEach(btn=>btn.classList.toggle("primary",btn.dataset.month===state.month));}
 
-function updateHistorySelection(){
-  document.querySelectorAll(".fm-open-history").forEach(btn=>{
-    btn.classList.toggle("primary",btn.dataset.month===state.month);
-  });
-}
-
-function collectAttendance(){
-  return state.attendance.map(row=>({
-    data:row.data,
-    funcionarios:Math.max(0,Number.parseInt(row.funcionarios||0,10)||0),
-    atualizado_manualmente:row.atualizado_manualmente===true
-  }));
-}
-
+function collectAttendance(){return state.attendance.map(r=>({data:r.data,funcionarios:Math.max(0,Number(r.quantidade_importada||0)+Number(r.alteracoes||0)),quantidade_importada:Math.max(0,Number(r.quantidade_importada||0)),alteracoes:Number.parseInt(r.alteracoes||0,10)||0,observacoes:String(r.observacoes||""),atualizado_manualmente:Number(r.alteracoes||0)!==0||Boolean(r.observacoes)}));}
 async function saveClosing(event){
-  event?.preventDefault();
-  if(!isAdmin()) return;
-
-  const errorEl=$("closingError");
-  errorEl.textContent="";
-
+  event?.preventDefault();if(!isAdmin())return;
+  const errorEl=$("closingError");errorEl.textContent="";
   try{
-    const data=readForm();
-    validateData(data);
-
-    const attendance=collectAttendance();
-    if(attendance.some(row=>!row.data)){
-      throw new Error("Existe um dia de presença sem data.");
-    }
-
-    $("saveBtn").disabled=true;
-    loading("Salvando fechamento...");
-
-    const {data:result,error}=await sb.rpc("salvar_fechamento_mes",{
-      p_mes:`${state.month}-01`,
-      p_dados:data,
-      p_presencas:attendance
-    });
-
-    if(error) throw error;
-
-    setMessage("Fechamento salvo com sucesso.","success");
-    await loadClosing();
-    await loadHistory();
-
-    if(result){
-      $("closingStatus").textContent="Fechamento salvo";
-      $("closingStatus").className="fm-status saved";
-    }
-  }catch(error){
-    console.error(error);
-    errorEl.textContent=translateError(error);
-    setMessage("Não foi possível salvar o fechamento.","error");
-  }finally{
-    $("saveBtn").disabled=false;
-    doneLoading();
-  }
+    const data=readForm();validateData(data);const attendance=collectAttendance();
+    $("saveBtn").disabled=true;loading("Salvando fechamento...");
+    const {error}=await sb.rpc("salvar_fechamento_mes",{p_mes:`${state.month}-01`,p_dados:data,p_presencas:attendance});if(error)throw error;
+    setMessage("Fechamento salvo com sucesso.","success");await loadClosing();await loadHistory();
+  }catch(error){console.error(error);errorEl.textContent=translateError(error);setMessage("Não foi possível salvar o fechamento.","error");}
+  finally{$("saveBtn").disabled=false;doneLoading();}
 }
-
 async function deleteClosing(){
-  if(!isAdmin() || !state.closing?.id) return;
+  if(!isAdmin()||!state.closing?.id)return;
+  if(!confirm(`Excluir o fechamento de ${monthLabel(state.month)}?\n\nTodos os registros diários de funcionários também serão excluídos.`))return;
+  try{$("deleteClosingBtn").disabled=true;loading("Excluindo fechamento...");const {error}=await sb.rpc("excluir_fechamento_mes",{p_id:state.closing.id});if(error)throw error;setMessage("Fechamento excluído com sucesso.","success");await loadClosing();await loadHistory();}
+  catch(error){console.error(error);setMessage(translateError(error),"error");}finally{$("deleteClosingBtn").disabled=false;doneLoading();}
+}
+function resetChanges(){if(isAdmin())loadClosing();}
 
-  const label=monthLabel(state.month);
-  const confirmed=window.confirm(
-    `Excluir o fechamento de ${label}?\n\nTodos os registros diários de funcionários deste fechamento também serão excluídos.`
-  );
-  if(!confirmed) return;
-
-  try{
-    $("deleteClosingBtn").disabled=true;
-    loading("Excluindo fechamento...");
-
-    const {error}=await sb.rpc("excluir_fechamento_mes",{p_id:state.closing.id});
-    if(error) throw error;
-
-    setMessage("Fechamento excluído com sucesso.","success");
-    await loadClosing();
-    await loadHistory();
-  }catch(error){
-    console.error(error);
-    setMessage(translateError(error),"error");
-  }finally{
-    $("deleteClosingBtn").disabled=false;
-    doneLoading();
-  }
+function comparePct(current,previous){
+  current=Number(current||0);previous=Number(previous||0);
+  if(previous===0)return current===0?0:null;
+  return ((current-previous)/Math.abs(previous))*100;
+}
+function comparisonLabel(pct, higherBetter=true){
+  if(pct===null)return "Sem base anterior";
+  if(Math.abs(pct)<0.01)return "Manteve";
+  const improved=higherBetter?pct>0:pct<0;
+  return improved?"Melhorou":"Piorou";
+}
+function renderComparison(){
+  const grid=$("comparisonGrid"), label=$("comparisonLabel");if(!grid)return;
+  const prev=previousMonth(state.month), previous=state.history.find(r=>String(r.mes).slice(0,7)===prev);
+  label.textContent=`Comparado com ${monthLabel(prev)}`;
+  if(!state.closing){grid.innerHTML=`<div class="fm-empty">Salve o fechamento para visualizar o comparativo.</div>`;return;}
+  if(!previous){grid.innerHTML=`<div class="fm-empty">Ainda não existe fechamento de ${monthLabel(prev)} para comparação.</div>`;return;}
+  const items=[
+    ["Produção total",state.closing.producao_total_m3,previous.producao_total_m3,"m³",true],
+    ["Produção efetiva",state.closing.producao_efetiva_m3,previous.producao_efetiva_m3,"m³",true],
+    ["Recusas total",state.closing.recusas_total_m3,previous.recusas_total_m3,"m³",false],
+    ["Recusas da fábrica",state.closing.recusas_fabrica_m3,previous.recusas_fabrica_m3,"m³",false],
+    ["Expedição",state.closing.expedicao_m3,previous.expedicao_m3,"m³",true],
+    ["Maquiagem",state.closing.maquiagem_m3,previous.maquiagem_m3,"m³",true],
+    ["Projetado",state.closing.projetado_m3,previous.projetado_m3,"m³",true],
+    ["Média funcionários/dia",averageCurrent(),previous.media_funcionarios_dia||0,"func./dia",true]
+  ];
+  grid.innerHTML=items.map(([name,c,p,unit,higher])=>{
+    const pct=comparePct(c,p), label=comparisonLabel(pct,higher);
+    const cls=label==="Melhorou"?"better":label==="Piorou"?"worse":"neutral";
+    return `<article class="fm-compare-card ${cls}">
+      <span>${esc(name)}</span><strong>${pct===null?"—":`${pct>=0?"+":""}${fmtNum(pct,1)}%`}</strong>
+      <small>${esc(label)} · atual ${fmtNum(c,1)} ${unit} · anterior ${fmtNum(p,1)} ${unit}</small>
+    </article>`;
+  }).join("");
+}
+function averageCurrent(){
+  const vals=state.attendance.map(r=>Math.max(0,Number(r.quantidade_importada||0)+Number(r.alteracoes||0))).filter(v=>v>0);
+  return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
 }
 
-function newClosing(){
-  const month=state.month || isoToday();
-  state.month=month;
-  $("monthPicker").value=month;
-  loadClosing();
-  window.scrollTo({top:0,behavior:"smooth"});
+function svgChart(rows,series,ySuffix){
+  const W=720,H=300,p={l:58,r:24,t:28,b:48},w=W-p.l-p.r,h=H-p.t-p.b;
+  if(!rows.length)return `<div class="fm-chart-empty">Sem dados suficientes.</div>`;
+  const vals=rows.flatMap(r=>series.map(s=>Number(r[s.key]||0)));
+  const max=Math.max(...vals,1), min=0, x=i=>p.l+(rows.length===1?w/2:w*(i/(rows.length-1))), y=v=>p.t+h-(v-min)/(max-min)*h;
+  const grid=Array.from({length:5},(_,i)=>{const v=max*i/4,yy=y(v);return `<line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" class="grid"/><text x="${p.l-8}" y="${yy+4}" text-anchor="end" class="axis">${fmtNum(v,0)}</text>`;}).join("");
+  const xlabels=rows.map((r,i)=>`<text x="${x(i)}" y="${H-18}" text-anchor="middle" class="axis">${esc(monthLabel(String(r.mes).slice(0,7)).split(" ")[0].slice(0,3))}/${String(r.mes).slice(0,4)}</text>`).join("");
+  const paths=series.map((s,si)=>{
+    const pts=rows.map((r,i)=>`${x(i)},${y(Number(r[s.key]||0))}`).join(" ");
+    const circles=rows.map((r,i)=>`<circle cx="${x(i)}" cy="${y(Number(r[s.key]||0))}" r="4" class="dot d${si}"><title>${monthLabel(String(r.mes).slice(0,7))}: ${fmtNum(r[s.key]||0,2)} ${ySuffix}</title></circle>`).join("");
+    return `<polyline points="${pts}" class="line l${si}"/>${circles}`;
+  }).join("");
+  const legend=series.map((s,i)=>`<span><i class="legend-dot d${i}"></i>${esc(s.label)}</span>`).join("");
+  return `<div class="fm-chart-legend">${legend}</div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico de evolução">${grid}<line x1="${p.l}" y1="${p.t+h}" x2="${W-p.r}" y2="${p.t+h}" class="axis-line"/>${paths}${xlabels}</svg>`;
+}
+function renderCharts(){
+  const rows=[...state.history].sort((a,b)=>String(a.mes).localeCompare(String(b.mes))).slice(-12);
+  $("productionChart").innerHTML=svgChart(rows,[{key:"producao_total_m3",label:"Produção total"},{key:"producao_efetiva_m3",label:"Produção efetiva"}],"m³");
+  $("refusalChart").innerHTML=svgChart(rows,[{key:"recusas_total_m3",label:"Recusas total"},{key:"recusas_fabrica_m3",label:"Recusas da fábrica"}],"m³");
 }
 
-function resetChanges(){
-  if(!isAdmin()) return;
-  loadClosing();
+function reportMetrics(){
+  const d=state.closing||{};
+  return [
+    ["Produção total",fmtM3(d.producao_total_m3),fmtInt(d.producao_total_qtd)+" peças"],
+    ["Produção efetiva",fmtM3(d.producao_efetiva_m3),fmtInt(d.producao_efetiva_qtd)+" peças"],
+    ["Recusas total",fmtM3(d.recusas_total_m3),fmtInt(d.recusas_total_qtd)+" peças"],
+    ["Recusas da fábrica",fmtM3(d.recusas_fabrica_m3),fmtInt(d.recusas_fabrica_qtd)+" peças"],
+    ["Outras recusas",fmtM3(d.outras_recusas_m3),fmtInt(d.outras_recusas_qtd)+" peças"],
+    ["Maquiagem",fmtM3(d.maquiagem_m3),fmtInt(d.maquiagem_qtd)+" peças"],
+    ["Consoles",fmtInt(d.consoles_pecas_qtd)+" peças",fmtInt(d.consoles_consoles_qtd)+" consoles"],
+    ["Expedição",fmtM3(d.expedicao_m3),fmtInt(d.expedicao_qtd)+" peças"],
+    ["Projetado",fmtM3(d.projetado_m3),fmtInt(d.projetado_qtd)+" peças"],
+    ["Média funcionários/dia",fmtNum(averageCurrent(),1),`${fmtInt(state.attendance.filter(r=>(Number(r.quantidade_importada||0)+Number(r.alteracoes||0))>0).length)} dias trabalhados`]
+  ];
 }
+function renderReport(){
+  $("reportTitle").textContent=`Fechamento de ${monthLabel(state.month)}`;
+  const previous=state.history.find(r=>String(r.mes).slice(0,7)===previousMonth(state.month));
+  const metrics=reportMetrics();
+  const cards=metrics.map(([a,b,c])=>`<div class="fm-report-metric"><span>${esc(a)}</span><strong>${esc(b)}</strong><small>${esc(c)}</small></div>`).join("");
+  const att=state.attendance.map(r=>{
+    const imported=Number(r.quantidade_importada||0),alter=Number(r.alteracoes||0),eff=Math.max(0,imported+alter);
+    return `<tr><td>${esc(dateLabel(r.data))}</td><td>${esc(weekdayLabel(r.data))}</td><td>${imported}</td><td>${alter>0?"+":""}${alter}</td><td>${eff}</td><td>${esc(r.observacoes||"—")}</td></tr>`;
+  }).join("");
+  $("reportContent").innerHTML=`<div class="fm-report-header"><div><strong>Gestão de Fábrica</strong><span>Fechamento mensal · ${esc(monthLabel(state.month))}</span></div><span>${new Date().toLocaleDateString("pt-BR")}</span></div>
+  <div class="fm-report-metrics">${cards}</div>
+  <h3>Comparativo com ${esc(monthLabel(previousMonth(state.month)))}</h3>
+  <div class="fm-report-comparison">${previous?renderReportComparison(previous):`<p>Não há fechamento do mês anterior para comparação.</p>`}</div>
+  <h3>Funcionários que vieram trabalhar</h3>
+  <table class="fm-report-table"><thead><tr><th>Data</th><th>Dia</th><th>Quantidade Importada</th><th>Alterações</th><th>Trabalhadores Efetivos</th><th>Observações</th></tr></thead><tbody>${att}</tbody></table>`;
+}
+function renderReportComparison(previous){
+  const d=state.closing||{};
+  const items=[["Produção total",d.producao_total_m3,previous.producao_total_m3,true],["Produção efetiva",d.producao_efetiva_m3,previous.producao_efetiva_m3,true],["Recusas total",d.recusas_total_m3,previous.recusas_total_m3,false],["Recusas da fábrica",d.recusas_fabrica_m3,previous.recusas_fabrica_m3,false],["Expedição",d.expedicao_m3,previous.expedicao_m3,true],["Projetado",d.projetado_m3,previous.projetado_m3,true]];
+  return `<div class="fm-report-compare-grid">${items.map(([n,c,p,h])=>{const pct=comparePct(c,p),lab=comparisonLabel(pct,h);return `<div><strong>${esc(n)}</strong><span>${pct===null?"—":`${pct>=0?"+":""}${fmtNum(pct,1)}%`}</span><small>${lab}</small></div>`;}).join("")}</div>`;
+}
+function openReport(){renderReport();const d=$("reportDialog");if(d?.showModal)d.showModal();else d?.setAttribute("open","");}
+function printReport(){if(!$("reportDialog")?.open)openReport();else renderReport();setTimeout(()=>window.print(),120);}
 
 async function boot(){
   try{
     state.user=await SiloSupabase.getUser();
-    if(!state.user){
-      $("loginScreen").classList.remove("hidden");
-      $("appScreen").classList.add("hidden");
-      return;
-    }
-
-    state.profile=await SiloSupabase.getProfile(state.user);
-    if(!state.profile){
-      throw new Error("Perfil do usuário não foi encontrado para a sessão autenticada.");
-    }
-
-    if(state.profile.active===false){
-      await SiloSupabase.signOut();
-      location.href="index.html";
-      return;
-    }
-
-    const {data:isGlobalAdmin,error:adminError}=await sb.rpc("is_global_admin");
-    if(adminError) throw adminError;
-
-    if(isGlobalAdmin===true){
-      state.permission="admin";
-    }else{
-      const permissions=await SiloSupabase.getModulePermissions(state.user);
-      state.permission=String(permissions.fechamentos_mes||"none").toLowerCase();
-    }
-
-    if(!["viewer","admin"].includes(state.permission)){
-      location.href="index.html?access=denied&module=fechamentos_mes";
-      return;
-    }
-
-    $("userRole").textContent=isAdmin()?"ADMINISTRAR":"VISUALIZAÇÃO";
-    $("userEmail").textContent=state.user.email||"";
-    $("loginScreen").classList.add("hidden");
-    $("appScreen").classList.remove("hidden");
-
-    document.querySelectorAll(".admin-only").forEach(el=>{
-      el.classList.toggle("hidden",!isAdmin());
-    });
-
-    state.month=isoToday();
-    $("monthPicker").value=state.month;
-
-    await loadClosing();
-    await loadHistory();
-  }catch(error){
-    console.error("Fechamentos de Mês:",error);
-    $("loginError").textContent=translateError(error);
-    $("loginScreen").classList.remove("hidden");
-    $("appScreen").classList.add("hidden");
-  }
+    if(!state.user){$("loginScreen").classList.remove("hidden");$("appScreen").classList.add("hidden");return;}
+    state.profile=await SiloSupabase.getProfile(state.user);if(!state.profile)throw new Error("Perfil do usuário não foi encontrado para a sessão autenticada.");
+    if(state.profile.active===false){await SiloSupabase.signOut();location.href="index.html";return;}
+    const {data:isGlobalAdmin,error:adminError}=await sb.rpc("is_global_admin");if(adminError)throw adminError;
+    if(isGlobalAdmin===true)state.permission="admin";else{const permissions=await SiloSupabase.getModulePermissions(state.user);state.permission=String(permissions.fechamentos_mes||"none").toLowerCase();}
+    if(!["viewer","admin"].includes(state.permission)){location.href="index.html?access=denied&module=fechamentos_mes";return;}
+    $("userRole").textContent=isAdmin()?"ADMINISTRAR":"VISUALIZAÇÃO";$("userEmail").textContent=state.user.email||"";
+    $("loginScreen").classList.add("hidden");$("appScreen").classList.remove("hidden");
+    document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("hidden",!isAdmin()));
+    state.month=currentMonth();$("monthPicker").value=state.month;
+    await loadClosing();await loadHistory();
+  }catch(error){console.error(error);$("loginError").textContent=translateError(error);$("loginScreen").classList.remove("hidden");$("appScreen").classList.add("hidden");}
 }
 
-$("loginForm").addEventListener("submit",async event=>{
-  event.preventDefault();
-  $("loginError").textContent="";
-  try{
-    const result=await SiloSupabase.signIn(
-      $("loginEmail").value.trim(),
-      $("loginPassword").value
-    );
-    if(result?.error) throw result.error;
-    await boot();
-  }catch(error){
-    $("loginError").textContent=translateError(error);
-  }
-});
-
-$("monthPicker").addEventListener("change",()=>{
-  const value=$("monthPicker").value;
-  if(!value) return;
-  state.month=value;
-  loadClosing();
-});
-
-$("refreshBtn").addEventListener("click",async()=>{
-  await loadClosing();
-  await loadHistory();
-});
-
-$("newClosingBtn").addEventListener("click",newClosing);
+$("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginError").textContent="";try{const r=await SiloSupabase.signIn($("loginEmail").value.trim(),$("loginPassword").value);if(r?.error)throw r.error;await boot();}catch(error){$("loginError").textContent=translateError(error);}});
+$("monthPicker").addEventListener("change",()=>{const v=$("monthPicker").value;if(v){state.month=v;loadClosing();}});
+$("refreshBtn").addEventListener("click",async()=>{await loadClosing();await loadHistory();});
 $("resetBtn").addEventListener("click",resetChanges);
 $("deleteClosingBtn").addEventListener("click",deleteClosing);
 $("closingForm").addEventListener("submit",saveClosing);
-
-$("logoutBtn").addEventListener("click",async()=>{
-  try{await SiloSupabase.signOut();}
-  finally{location.href="index.html";}
-});
-
+$("reportBtn").addEventListener("click",openReport);
+$("reportPrintBtn").addEventListener("click",printReport);
+$("printBtn").addEventListener("click",printReport);
+$("closeReportBtn").addEventListener("click",()=>{$("reportDialog")?.close?.();});
+document.querySelectorAll("#closingForm input").forEach(input=>{if(input.id!=="producao_efetiva_m3"&&input.id!=="producao_efetiva_qtd"&&input.id!=="outras_recusas_m3"&&input.id!=="outras_recusas_qtd")input.addEventListener("input",()=>{calculateDerived();});});
+$("logoutBtn").addEventListener("click",async()=>{try{await SiloSupabase.signOut();}finally{location.href="index.html";}});
 boot();
 })();
