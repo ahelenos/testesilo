@@ -277,25 +277,134 @@ function averageCurrent(){
   return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
 }
 
-function svgChart(rows,series,ySuffix){
-  const W=720,H=300,p={l:58,r:24,t:28,b:48},w=W-p.l-p.r,h=H-p.t-p.b;
-  if(!rows.length)return `<div class="fm-chart-empty">Sem dados suficientes.</div>`;
-  const vals=rows.flatMap(r=>series.map(s=>Number(r[s.key]||0)));
-  const max=Math.max(...vals,1), min=0, x=i=>p.l+(rows.length===1?w/2:w*(i/(rows.length-1))), y=v=>p.t+h-(v-min)/(max-min)*h;
-  const grid=Array.from({length:5},(_,i)=>{const v=max*i/4,yy=y(v);return `<line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" class="grid"/><text x="${p.l-8}" y="${yy+4}" text-anchor="end" class="axis">${fmtNum(v,0)}</text>`;}).join("");
-  const xlabels=rows.map((r,i)=>`<text x="${x(i)}" y="${H-18}" text-anchor="middle" class="axis">${esc(monthLabel(String(r.mes).slice(0,7)).split(" ")[0].slice(0,3))}/${String(r.mes).slice(0,4)}</text>`).join("");
-  const paths=series.map((s,si)=>{
-    const pts=rows.map((r,i)=>`${x(i)},${y(Number(r[s.key]||0))}`).join(" ");
-    const circles=rows.map((r,i)=>`<circle cx="${x(i)}" cy="${y(Number(r[s.key]||0))}" r="4" class="dot d${si}"><title>${monthLabel(String(r.mes).slice(0,7))}: ${fmtNum(r[s.key]||0,2)} ${ySuffix}</title></circle>`).join("");
-    return `<polyline points="${pts}" class="line l${si}"/>${circles}`;
-  }).join("");
-  const legend=series.map((s,i)=>`<span><i class="legend-dot d${i}"></i>${esc(s.label)}</span>`).join("");
-  return `<div class="fm-chart-legend">${legend}</div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico de evolução">${grid}<line x1="${p.l}" y1="${p.t+h}" x2="${W-p.r}" y2="${p.t+h}" class="axis-line"/>${paths}${xlabels}</svg>`;
+function monthKeyOffset(monthKey, offset){
+  const [year, month] = String(monthKey || "").slice(0,7).split("-").map(Number);
+  const d = new Date(year || new Date().getFullYear(), (month || 1) - 1 + offset, 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
 }
+
+function monthShortLabel(monthKey){
+  const [year, month] = String(monthKey).slice(0,7).split("-").map(Number);
+  const d = new Date(year, (month || 1) - 1, 1);
+  return d.toLocaleDateString("pt-BR",{month:"short"}).replace(".","").slice(0,3).toLowerCase()+"/"+String(year).slice(-2);
+}
+
+function renderEvolutionChart(rows){
+  const container=$("productionChart");
+  if(!container)return;
+
+  const anchor = state.month || currentMonth();
+  const keys = Array.from({length:12},(_,i)=>monthKeyOffset(anchor,i-11));
+  const byMonth = new Map(rows.map(r=>[String(r.mes).slice(0,7),r]));
+  const data = keys.map(key=>({
+    key,
+    label:monthShortLabel(key),
+    row:byMonth.get(key)||null
+  }));
+
+  const series=[
+    {key:"producao_total_m3",label:"Produção total",cls:"l0",dot:"d0"},
+    {key:"maquiagem_m3",label:"Maquiagem",cls:"l1",dot:"d1"},
+    {key:"expedicao_m3",label:"Logística",cls:"l2",dot:"d2"},
+    {key:"projetado_m3",label:"Projetos",cls:"l3",dot:"d3"}
+  ];
+
+  const W=1120,H=420,p={l:72,r:34,t:54,b:62},w=W-p.l-p.r,h=H-p.t-p.b;
+  const values=data.flatMap(d=>series.map(s=>d.row ? Number(d.row[s.key]||0) : 0));
+  const max=Math.max(...values,1);
+  const step=max/4;
+  const x=i=>p.l+(data.length===1?w/2:w*(i/(data.length-1)));
+  const y=v=>p.t+h-(v/max)*h;
+
+  const grid=Array.from({length:5},(_,i)=>{
+    const v=step*(4-i);
+    const yy=y(v);
+    return `<line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" class="grid"/>
+      <text x="${p.l-12}" y="${yy+4}" text-anchor="end" class="axis">${fmtNum(v,0)}</text>`;
+  }).join("");
+
+  const xlabels=data.map((d,i)=>{
+    const active=d.row ? " active" : "";
+    return `<text x="${x(i)}" y="${H-26}" text-anchor="middle" class="axis xaxis${active}">${d.label}</text>`;
+  }).join("");
+
+  const paths=series.map((s,si)=>{
+    const points=[];
+    const segments=[];
+    let segment=[];
+
+    data.forEach((d,i)=>{
+      if(!d.row){
+        if(segment.length)segments.push(segment);
+        segment=[];
+        return;
+      }
+      const value=Number(d.row[s.key]||0);
+      segment.push([x(i),y(value),value,d]);
+    });
+    if(segment.length)segments.push(segment);
+
+    const polylines=segments.map(seg=>{
+      if(seg.length<2)return "";
+      return `<polyline points="${seg.map(pt=>`${pt[0]},${pt[1]}`).join(" ")}" class="line ${s.cls}"/>`;
+    }).join("");
+
+    const area=segments.map(seg=>{
+      if(seg.length<2)return "";
+      const first=seg[0], last=seg[seg.length-1];
+      const base=y(0);
+      const path=`M ${first[0]} ${base} L ${seg.map(pt=>`${pt[0]} ${pt[1]}`).join(" L ")} L ${last[0]} ${base} Z`;
+      return `<path d="${path}" class="area ${s.cls}"/>`;
+    }).join("");
+
+    // Only emphasize the most recent available value instead of placing
+    // a large marker on every point.
+    const latest = [...segments].reverse().find(seg=>seg.length)?.slice(-1)[0];
+    const marker = latest
+      ? `<circle cx="${latest[0]}" cy="${latest[1]}" r="6" class="last-dot ${s.dot}"/>
+         <g class="value-badge ${s.dot}">
+           <rect x="${latest[0]-34}" y="${latest[1]-31}" width="68" height="22" rx="11"/>
+           <text x="${latest[0]}" y="${latest[1]-16}" text-anchor="middle">${fmtNum(latest[2],0)} m³</text>
+         </g>`
+      : "";
+
+    return `${area}${polylines}${marker}`;
+  }).join("");
+
+  const legend=series.map(s=>
+    `<span><i class="legend-dot ${s.dot}"></i>${esc(s.label)}</span>`
+  ).join("");
+
+  const hasAny=data.some(d=>d.row);
+  if(!hasAny){
+    container.innerHTML=`<div class="fm-chart-empty">Salve fechamentos mensais para visualizar a evolução.</div>`;
+    return;
+  }
+
+  const firstKey=keys[0], lastKey=keys[keys.length-1];
+  const periodLabel=`${monthLabel(firstKey)} — ${monthLabel(lastKey)}`;
+  const periodEl=$("evolutionChartPeriod");
+  if(periodEl)periodEl.textContent=periodLabel;
+
+  container.innerHTML=`
+    <div class="fm-chart-legend">${legend}</div>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolução dos volumes dos últimos 12 meses">
+      <defs>
+        <linearGradient id="evolutionFade" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-opacity=".16"/>
+          <stop offset="100%" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      ${grid}
+      <line x1="${p.l}" y1="${p.t+h}" x2="${W-p.r}" y2="${p.t+h}" class="axis-line"/>
+      ${paths}
+      ${xlabels}
+    </svg>`;
+}
+
 function renderCharts(){
-  const rows=[...state.history].sort((a,b)=>String(a.mes).localeCompare(String(b.mes))).slice(-12);
-  $("productionChart").innerHTML=svgChart(rows,[{key:"producao_total_m3",label:"Produção total"},{key:"producao_efetiva_m3",label:"Produção efetiva"}],"m³");
-  $("refusalChart").innerHTML=svgChart(rows,[{key:"recusas_total_m3",label:"Recusas total"},{key:"recusas_fabrica_m3",label:"Recusas da fábrica"}],"m³");
+  const rows=[...state.history].sort((a,b)=>String(a.mes).localeCompare(String(b.mes)));
+  renderEvolutionChart(rows);
 }
 
 function reportMetrics(){

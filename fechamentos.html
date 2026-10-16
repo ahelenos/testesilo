@@ -8,7 +8,7 @@
 <title>Fechamentos de Mês · Gestão de Fábrica</title>
 <link rel="stylesheet" href="css/style.css?v=5.1.36">
 <link rel="stylesheet" href="css/loading.css?v=5.1.36">
-<link rel="stylesheet" href="css/fechamentos.css?v=5.1.36">
+<link rel="stylesheet" href="css/fechamentos.css?v=5.1.36-top">
 </head>
 <body>
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -226,9 +226,18 @@
         <h2>Indicadores mensais</h2>
       </div>
     </div>
-    <div class="fm-charts-grid">
-      <div class="fm-chart-card"><h3>Produção × Produção efetiva</h3><div id="productionChart" class="fm-chart"></div></div>
-      <div class="fm-chart-card"><h3>Recusas</h3><div id="refusalChart" class="fm-chart"></div></div>
+    <div class="fm-charts-grid fm-charts-grid-single">
+      <div class="fm-chart-card fm-evolution-card">
+        <div class="fm-chart-card-head">
+          <div>
+            <span class="fm-chart-kicker">ÚLTIMOS 12 MESES</span>
+            <h3>Evolução dos volumes da fábrica</h3>
+            <p>Produção total, maquiagem, logística e projetos.</p>
+          </div>
+          <div class="fm-chart-period" id="evolutionChartPeriod">—</div>
+        </div>
+        <div id="productionChart" class="fm-chart fm-evolution-chart"></div>
+      </div>
     </div>
   </section>
 
@@ -265,6 +274,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=5.1.36"></script>
 <script src="js/loading.js?v=5.1.36"></script>
-<script src="js/fechamentos.js?v=5.1.36"></script>
+<script src="js/fechamentos.js?v=5.1.36-top"></script>
 </body>
 </html>
