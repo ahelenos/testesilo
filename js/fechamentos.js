@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.40";
+const APP_VERSION = "5.1.44";
 
 (() => {
 "use strict";
@@ -201,6 +201,31 @@ async function loadHistory(){
   try{
     const {data,error}=await sb.rpc("listar_fechamentos_mes");if(error)throw error;
     state.history=data||[];
+
+    // A listagem historica nao inclui os campos de consoles.
+    // Busca os volumes pela RPC especifica sem comprometer os demais graficos.
+    try {
+      const {data: evolution, error: evolutionError} = await sb.rpc(
+        "obter_evolucao_fechamentos_mes",
+        {p_mes: `${state.month}-01`}
+      );
+      if (evolutionError) throw evolutionError;
+
+      const consolesByMonth = new Map(
+        (evolution || []).map(row => [String(row.mes).slice(0, 7), row])
+      );
+      state.history = state.history.map(row => {
+        const extra = consolesByMonth.get(String(row.mes).slice(0, 7));
+        return extra ? {
+          ...row,
+          consoles_pecas_qtd: extra.consoles_pecas_qtd,
+          consoles_consoles_qtd: extra.consoles_consoles_qtd
+        } : row;
+      });
+    } catch (evolutionError) {
+      console.warn("Nao foi possivel consultar a evolucao dos consoles:", evolutionError);
+    }
+
     $("historyBody").innerHTML=state.history.map(row=>`<tr>
       <td><strong>${esc(monthLabel(String(row.mes).slice(0,7)))}</strong></td>
       <td>${esc(fmtM3(row.producao_total_m3))}<small>${fmtInt(row.producao_total_qtd)} peças</small></td>
@@ -525,7 +550,7 @@ async function boot(){
 }
 
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginError").textContent="";try{const r=await SiloSupabase.signIn($("loginEmail").value.trim(),$("loginPassword").value);if(r?.error)throw r.error;await boot();}catch(error){$("loginError").textContent=translateError(error);}});
-$("monthPicker").addEventListener("change",()=>{const v=$("monthPicker").value;if(v){state.month=v;loadClosing();}});
+$("monthPicker").addEventListener("change",()=>{const v=$("monthPicker").value;if(v){state.month=v;loadClosing();loadHistory();}});
 $("refreshBtn").addEventListener("click",async()=>{await loadClosing();await loadHistory();});
 $("resetBtn").addEventListener("click",resetChanges);
 $("deleteClosingBtn").addEventListener("click",deleteClosing);
