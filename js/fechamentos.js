@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.44";
+const APP_VERSION = "5.1.45";
 
 (() => {
 "use strict";
@@ -177,13 +177,36 @@ async function loadSavedAttendance(id){
   return data.map(r=>({data:String(r.data).slice(0,10),quantidade_importada:Number(r.quantidade_importada??r.funcionarios??0),alteracoes:Number(r.alteracoes||0),observacoes:String(r.observacoes||""),funcionarios:Math.max(0,Number(r.quantidade_importada??r.funcionarios??0)+Number(r.alteracoes||0))}));
 }
 async function loadClosing(){
-  $("currentMonthLabel").textContent=monthLabel(state.month);$("formTitle").textContent=`Dados de ${monthLabel(state.month)}`;$("monthPicker").value=state.month;$("closingError").textContent="";
+  $("currentMonthLabel").textContent=monthLabel(state.month).replace(/ de /g,"/");$("formTitle").textContent=`Dados de ${monthLabel(state.month)}`;$("monthPicker").value=state.month;$("closingError").textContent="";
   loading(`Carregando fechamento de ${monthLabel(state.month)}...`);
   try{
     await loadPresenceBaseline();
     const {data,error}=await sb.rpc("obter_fechamento_mes",{p_mes:`${state.month}-01`});if(error)throw error;
     const row=Array.isArray(data)&&data.length?data[0]:null;state.closing=row;
-    if(row){fillForm(row);const saved=await loadSavedAttendance(row.id);state.attendance=saved?.length?saved:state.presenceBaseline.map(r=>({...r}));$("closingStatus").textContent="Fechamento salvo";$("closingStatus").className="fm-status saved";}
+    if(row){
+      fillForm(row);
+      const saved=await loadSavedAttendance(row.id);
+      // Os dados importados pertencem ao Controle de Presença; jamais tratar
+      // uma cópia antiga como fonte definitiva. Preservar ajustes e observações.
+      const savedByDate=new Map((saved||[]).map(r=>[r.data,r]));
+      const baselineHasData=state.presenceBaseline.some(r=>Number(r.quantidade_importada)>0);
+      state.attendance=state.presenceBaseline.map(base=>{
+        const previous=savedByDate.get(base.data);
+        const imported=baselineHasData
+          ? Number(base.quantidade_importada||0)
+          : Math.max(Number(base.quantidade_importada||0),Number(previous?.quantidade_importada||0));
+        const alteracoes=Number(previous?.alteracoes||0);
+        return {
+          data:base.data,
+          quantidade_importada:imported,
+          alteracoes,
+          observacoes:String(previous?.observacoes||""),
+          funcionarios:Math.max(0,imported+alteracoes)
+        };
+      });
+      $("closingStatus").textContent="Fechamento salvo";
+      $("closingStatus").className="fm-status saved";
+    }
     else{resetForm();state.attendance=state.presenceBaseline.map(r=>({...r}));$("closingStatus").textContent="Novo fechamento";$("closingStatus").className="fm-status new";}
     renderAttendance();renderKpis();setFormDisabled(!isAdmin());updateHistorySelection();renderComparison();renderCharts();
   }catch(error){console.error(error);setMessage(translateError(error),"error");state.closing=null;resetForm();state.attendance=state.presenceBaseline||[];renderAttendance();renderKpis();}

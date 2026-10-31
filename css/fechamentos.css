@@ -1402,3 +1402,23 @@
     grid-template-columns:1fr;
   }
 }
+
+/* V5.1.45 - seletor de período consistente e responsivo */
+.fm-toolbar { justify-content:flex-start; }
+.fm-toolbar-main { width:100%; display:grid; grid-template-columns:minmax(155px, 1fr) minmax(215px, 240px) auto; align-items:center; gap:14px; }
+.fm-toolbar-main > div:first-child { min-width:0; }
+#currentMonthLabel { display:block; margin-top:4px; font-size:20px; font-weight:800; line-height:1.2; text-transform:capitalize; }
+.fm-toolbar-main input#monthPicker[type="month"] { width:100%; min-width:0; max-width:none; height:44px; padding:0 12px; box-sizing:border-box; font-size:15px; }
+.fm-toolbar-main button#refreshBtn { min-height:44px; white-space:nowrap; }
+@media(max-width:700px) {
+  .fm-toolbar-main { grid-template-columns:1fr auto; gap:12px; }
+  .fm-toolbar-main > div:first-child { grid-column:1/-1; }
+  .fm-toolbar-main input#monthPicker[type="month"] { grid-column:1; }
+  .fm-toolbar-main button#refreshBtn { grid-column:2; }
+}
+@media(max-width:380px) {
+  .fm-toolbar-main { grid-template-columns:1fr; }
+  .fm-toolbar-main > div:first-child,
+  .fm-toolbar-main input#monthPicker[type="month"],
+  .fm-toolbar-main button#refreshBtn { grid-column:1; width:100%; }
+}
