@@ -126,9 +126,9 @@ function renderAttendance(){
     const effective=Math.max(0,imported+alter);
     return `<tr data-date="${esc(row.data)}">
       <td>${esc(dateLabel(row.data))}</td><td class="weekday">${esc(weekdayLabel(row.data))}</td>
-      <td><input class="attendance-imported" type="number" value="${imported}" disabled></td>
-      <td><input class="attendance-change" data-date="${esc(row.data)}" type="number" step="1" value="${alter}" ${isAdmin()?"":"disabled"}></td>
-      <td><input class="attendance-note" data-date="${esc(row.data)}" type="text" value="${esc(row.observacoes||"")}" placeholder="Opcional" ${isAdmin()?"":"disabled"}></td>
+      <td><input id="attendance-imported-${esc(row.data)}" name="attendance_imported_${esc(row.data)}" aria-label="Quantidade importada em ${esc(dateLabel(row.data))}" class="attendance-imported" type="number" value="${imported}" disabled></td>
+      <td><input id="attendance-change-${esc(row.data)}" name="attendance_change_${esc(row.data)}" aria-label="Alterações em ${esc(dateLabel(row.data))}" class="attendance-change" data-date="${esc(row.data)}" type="number" step="1" value="${alter}" ${isAdmin()?"":"disabled"}></td>
+      <td><input id="attendance-note-${esc(row.data)}" name="attendance_note_${esc(row.data)}" aria-label="Observações em ${esc(dateLabel(row.data))}" class="attendance-note" data-date="${esc(row.data)}" type="text" value="${esc(row.observacoes||"")}" placeholder="Opcional" ${isAdmin()?"":"disabled"}></td>
       <td><strong class="effective-workers">${effective}</strong></td>
     </tr>`;
   }).join("");

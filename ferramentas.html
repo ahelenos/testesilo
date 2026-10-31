@@ -56,11 +56,11 @@
   <div class="modal-head"><div><span class="eyebrow">ASSISTÊNCIA TÉCNICA</span><h2>Cadastrar assistência</h2></div><button id="closeAssistModal" class="icon-btn" type="button">×</button></div>
   <form id="assistQuickForm" class="form">
     <div class="form-grid">
-      <div class="field full"><label>Nome da assistência *</label><input name="nome" required placeholder="Ex.: Oficina Bosch Lajeado"></div>
-      <div class="field"><label>Contato</label><input name="contato" placeholder="Nome do contato"></div>
-      <div class="field"><label>Telefone</label><input name="telefone" placeholder="(51) 99999-9999"></div>
-      <div class="field"><label>E-mail</label><input name="email" type="email"></div>
-      <div class="field full"><label>Observações</label><textarea name="observacoes"></textarea></div>
+      <div class="field full"><label for="a11y-ferramentas-1-nome">Nome da assistência *</label><input id="a11y-ferramentas-1-nome" name="nome" required placeholder="Ex.: Oficina Bosch Lajeado"></div>
+      <div class="field"><label for="a11y-ferramentas-2-contato">Contato</label><input id="a11y-ferramentas-2-contato" name="contato" placeholder="Nome do contato"></div>
+      <div class="field"><label for="a11y-ferramentas-3-telefone">Telefone</label><input id="a11y-ferramentas-3-telefone" name="telefone" placeholder="(51) 99999-9999"></div>
+      <div class="field"><label for="a11y-ferramentas-4-email">E-mail</label><input id="a11y-ferramentas-4-email" name="email" type="email"></div>
+      <div class="field full"><label for="a11y-ferramentas-5-observacoes">Observações</label><textarea id="a11y-ferramentas-5-observacoes" name="observacoes"></textarea></div>
     </div>
     <div class="form-actions"><button type="button" class="btn secondary" id="cancelAssistForm">Cancelar</button><button class="btn primary">Cadastrar assistência</button></div>
   </form>
@@ -69,8 +69,8 @@
   <div class="modal-head"><div><span class="eyebrow">CADASTRO</span><h2 id="typeModalTitle">Cadastrar tipo de ferramenta</h2></div><button id="closeTypeModal" class="icon-btn" type="button">×</button></div>
   <form id="typeQuickForm" class="form">
     <div class="form-grid">
-      <div class="field full"><label>Tipo de ferramenta *</label><input name="nome" required placeholder="Ex.: Parafusadeira"></div>
-      <div class="field full"><label>Observações</label><textarea name="observacoes" placeholder="Opcional"></textarea></div>
+      <div class="field full"><label for="a11y-ferramentas-6-nome">Tipo de ferramenta *</label><input id="a11y-ferramentas-6-nome" name="nome" required placeholder="Ex.: Parafusadeira"></div>
+      <div class="field full"><label for="a11y-ferramentas-7-observacoes">Observações</label><textarea id="a11y-ferramentas-7-observacoes" name="observacoes" placeholder="Opcional"></textarea></div>
     </div>
     <div class="form-actions" style="justify-content:space-between"><button type="button" class="btn danger hidden" id="typeDeleteBtn">Excluir tipo</button><div style="display:flex;gap:8px;margin-left:auto"><button type="button" class="btn secondary" id="cancelTypeForm">Cancelar</button><button id="typeSubmitBtn" class="btn primary">Cadastrar tipo</button></div></div>
   </form>

@@ -414,10 +414,10 @@ function render(){
             ${inactive}
           </div>
         </td>
-        <td><label class="presence-switch"><input type="checkbox" data-shift="manha" ${r.manha?"checked":""} ${disabled}><span>✓</span></label></td>
-        <td><label class="presence-switch"><input type="checkbox" data-shift="tarde" ${r.tarde?"checked":""} ${disabled}><span>✓</span></label></td>
-        <td><label class="presence-switch"><input type="checkbox" data-shift="extra" ${r.extra?"checked":""} ${disabled}><span>✓</span></label></td>
-        <td><input class="presence-observation" data-observation type="text" maxlength="500" value="${esc(r.observacao)}" placeholder="Observação..." ${disabled}></td>
+        <td><label class="presence-switch"><input id="presence-manha-${esc(r.id)}" name="presence_manha_${esc(r.id)}" aria-label="Manhã — ${esc(r.nome)}" type="checkbox" data-shift="manha" ${r.manha?"checked":""} ${disabled}><span>✓</span></label></td>
+        <td><label class="presence-switch"><input id="presence-tarde-${esc(r.id)}" name="presence_tarde_${esc(r.id)}" aria-label="Tarde — ${esc(r.nome)}" type="checkbox" data-shift="tarde" ${r.tarde?"checked":""} ${disabled}><span>✓</span></label></td>
+        <td><label class="presence-switch"><input id="presence-extra-${esc(r.id)}" name="presence_extra_${esc(r.id)}" aria-label="Turno extra — ${esc(r.nome)}" type="checkbox" data-shift="extra" ${r.extra?"checked":""} ${disabled}><span>✓</span></label></td>
+        <td><input id="presence-observation-${esc(r.id)}" name="presence_observation_${esc(r.id)}" aria-label="Observações — ${esc(r.nome)}" class="presence-observation" data-observation type="text" maxlength="500" value="${esc(r.observacao)}" placeholder="Observação..." ${disabled}></td>
       </tr>`;
   }).join("");
 

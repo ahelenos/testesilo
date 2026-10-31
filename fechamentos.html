@@ -28,7 +28,98 @@
     <p>Consolide os indicadores da fábrica e a quantidade de funcionários presentes em cada dia do mês.</p>
     <form id="loginForm">
       <label for="loginEmail">E-mail</label>
-      <input id="loginEmail" type="email" autocomplete="username" required>
+      <input id="loginEmail" aria-label="E-mail
+      
+      Senha
+      
+      Entrar
+      
+    
+  
+
+
+
+
+  
+    
+    
+      Gestão de Fábrica
+      
+    
+  
+  
+    ← Central
+    V5.1.46
+    Sair
+  
+
+
+
+  
+    
+      ← Central da fábrica
+      GESTÃO · PRODUÇÃO
+      Fechamentos de Mês
+      Consolide os resultados da fábrica e acompanhe a presença diária dos funcionários.
+    
+    
+      Relatório mensal
+      Imprimir / PDF
+    
+  
+
+  
+
+  
+    
+      
+        PERÍODO
+        —
+      
+      
+      Atualizar
+    
+
+  
+
+  
+    
+      Produção total
+      —
+      —
+    
+    
+      Produção efetiva
+      —
+      —
+    
+    
+      Expedição
+      —
+      —
+    
+    
+      Média funcionários / dia
+      —
+      —
+    
+  
+
+  
+    
+      
+        FECHAMENTO
+        Dados do mês
+      
+      Nenhum fechamento salvo
+    
+
+    
+      
+        Fábrica
+        
+          
+            Produção total — m³" type="email" autocomplete="username" required>
       <label for="loginPassword">Senha</label>
       <input id="loginPassword" type="password" autocomplete="current-password" required>
       <button class="btn primary" type="submit">Entrar</button>
@@ -118,24 +209,115 @@
         <legend>Fábrica</legend>
         <div class="fm-field-grid">
           <div class="fm-field-group">
-            <label>Produção total</label>
-            <div class="fm-pair"><input id="producao_total_m3" type="number" step="0.001" min="0" placeholder="m³"><input id="producao_total_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
+            <label for="producao_total_m3">Produção total</label>
+            <div class="fm-pair"><input id="producao_total_m3" type="number" step="0.001" min="0" placeholder="m³"><input aria-label="E-mail
+      
+      Senha
+      
+      Entrar
+      
+    
+  
+
+
+
+
+  
+    
+    
+      Gestão de Fábrica
+      
+    
+  
+  
+    ← Central
+    V5.1.46
+    Sair
+  
+
+
+
+  
+    
+      ← Central da fábrica
+      GESTÃO · PRODUÇÃO
+      Fechamentos de Mês
+      Consolide os resultados da fábrica e acompanhe a presença diária dos funcionários.
+    
+    
+      Relatório mensal
+      Imprimir / PDF
+    
+  
+
+  
+
+  
+    
+      
+        PERÍODO
+        —
+      
+      
+      Atualizar
+    
+
+  
+
+  
+    
+      Produção total
+      —
+      —
+    
+    
+      Produção efetiva
+      —
+      —
+    
+    
+      Expedição
+      —
+      —
+    
+    
+      Média funcionários / dia
+      —
+      —
+    
+  
+
+  
+    
+      
+        FECHAMENTO
+        Dados do mês
+      
+      Nenhum fechamento salvo
+    
+
+    
+      
+        Fábrica
+        
+          
+            Produção total — unidades" id="producao_total_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
           </div>
           <div class="fm-field-group computed-field">
-            <label>Produção efetiva <small>(total − recusas da fábrica)</small></label>
-            <div class="fm-pair"><input id="producao_efetiva_m3" type="number" step="0.001" min="0" readonly placeholder="Calculado"><input id="producao_efetiva_qtd" type="number" step="1" min="0" readonly placeholder="Calculado"></div>
+            <label for="producao_efetiva_m3">Produção efetiva <small>(total − recusas da fábrica)</small></label>
+            <div class="fm-pair"><input id="producao_efetiva_m3" aria-label="Produção efetiva (total − recusas da fábrica) — m³" type="number" step="0.001" min="0" readonly placeholder="Calculado"><input aria-label="Produção efetiva (total − recusas da fábrica) — unidades" id="producao_efetiva_qtd" type="number" step="1" min="0" readonly placeholder="Calculado"></div>
           </div>
           <div class="fm-field-group">
-            <label>Recusas total</label>
-            <div class="fm-pair"><input id="recusas_total_m3" type="number" step="0.001" min="0" placeholder="m³"><input id="recusas_total_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
+            <label for="recusas_total_m3">Recusas total</label>
+            <div class="fm-pair"><input id="recusas_total_m3" aria-label="Recusas total — m³" type="number" step="0.001" min="0" placeholder="m³"><input aria-label="Recusas total — unidades" id="recusas_total_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
           </div>
           <div class="fm-field-group">
-            <label>Recusas da fábrica</label>
-            <div class="fm-pair"><input id="recusas_fabrica_m3" type="number" step="0.001" min="0" placeholder="m³"><input id="recusas_fabrica_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
+            <label for="recusas_fabrica_m3">Recusas da fábrica</label>
+            <div class="fm-pair"><input id="recusas_fabrica_m3" aria-label="Recusas da fábrica — m³" type="number" step="0.001" min="0" placeholder="m³"><input aria-label="Recusas da fábrica — unidades" id="recusas_fabrica_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
           </div>
           <div class="fm-field-group computed-field">
-            <label>Outras recusas <small>(recusas total − recusas da fábrica)</small></label>
-            <div class="fm-pair"><input id="outras_recusas_m3" type="number" step="0.001" min="0" readonly placeholder="Calculado"><input id="outras_recusas_qtd" type="number" step="1" min="0" readonly placeholder="Calculado"></div>
+            <label for="outras_recusas_m3">Outras recusas <small>(recusas total − recusas da fábrica)</small></label>
+            <div class="fm-pair"><input id="outras_recusas_m3" aria-label="Outras recusas (recusas total − recusas da fábrica) — m³" type="number" step="0.001" min="0" readonly placeholder="Calculado"><input aria-label="Outras recusas (recusas total − recusas da fábrica) — unidades" id="outras_recusas_qtd" type="number" step="1" min="0" readonly placeholder="Calculado"></div>
           </div>
         </div>
       </fieldset>
@@ -144,8 +326,8 @@
         <legend>Maquiagem</legend>
         <div class="fm-field-grid fm-field-grid-small">
           <div class="fm-field-group">
-            <label>Maquiagem</label>
-            <div class="fm-pair"><input id="maquiagem_m3" type="number" step="0.001" min="0" placeholder="m³"><input id="maquiagem_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
+            <label for="maquiagem_m3">Maquiagem</label>
+            <div class="fm-pair"><input id="maquiagem_m3" aria-label="Maquiagem — m³" type="number" step="0.001" min="0" placeholder="m³"><input aria-label="Maquiagem — unidades" id="maquiagem_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
           </div>
         </div>
       </fieldset>
@@ -154,8 +336,8 @@
         <legend>Consoles</legend>
         <div class="fm-field-grid fm-field-grid-small">
           <div class="fm-field-group">
-            <label>Consoles</label>
-            <div class="fm-pair"><input id="consoles_pecas_qtd" type="number" step="1" min="0" placeholder="Quantidade de peças"><input id="consoles_consoles_qtd" type="number" step="1" min="0" placeholder="Quantidade de consoles"></div>
+            <label for="consoles_pecas_qtd">Consoles</label>
+            <div class="fm-pair"><input id="consoles_pecas_qtd" aria-label="Consoles — quantidade de peças" type="number" step="1" min="0" placeholder="Quantidade de peças"><input aria-label="Consoles — quantidade de consoles" id="consoles_consoles_qtd" type="number" step="1" min="0" placeholder="Quantidade de consoles"></div>
           </div>
         </div>
       </fieldset>
@@ -164,8 +346,8 @@
         <legend>Logística</legend>
         <div class="fm-field-grid fm-field-grid-small">
           <div class="fm-field-group">
-            <label>Expedição</label>
-            <div class="fm-pair"><input id="expedicao_m3" type="number" step="0.001" min="0" placeholder="m³"><input id="expedicao_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
+            <label for="expedicao_m3">Expedição</label>
+            <div class="fm-pair"><input id="expedicao_m3" aria-label="Expedição — m³" type="number" step="0.001" min="0" placeholder="m³"><input aria-label="Expedição — unidades" id="expedicao_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
           </div>
         </div>
       </fieldset>
@@ -174,8 +356,8 @@
         <legend>Projetos</legend>
         <div class="fm-field-grid fm-field-grid-small">
           <div class="fm-field-group">
-            <label>Projetado</label>
-            <div class="fm-pair"><input id="projetado_m3" type="number" step="0.001" min="0" placeholder="m³"><input id="projetado_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
+            <label for="projetado_m3">Projetado</label>
+            <div class="fm-pair"><input id="projetado_m3" aria-label="Projetado — m³" type="number" step="0.001" min="0" placeholder="m³"><input aria-label="Projetado — unidades" id="projetado_qtd" type="number" step="1" min="0" placeholder="Quantidade"></div>
           </div>
         </div>
       </fieldset>
@@ -322,6 +504,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=5.1.42"></script>
 <script src="js/loading.js?v=5.1.42"></script>
-<script src="js/fechamentos.js?v=5.1.46"></script>
+<script src="js/fechamentos.js?v=5.1.47"></script>
 </body>
 </html>

@@ -298,9 +298,11 @@ function toggleConditional(){
   $("executionDateSection").classList.toggle("hidden",p);
   syncDateUndefinedUI();
 }
+let partRowCounter=0;
 function addPart(name="",qty=1){
+  partRowCounter++;
   const row=document.createElement("div");row.className="part-row";
-  row.innerHTML=`<input class="part-name" placeholder="Nome da peça" value="${esc(name)}"><input class="part-qty" type="number" min="1" value="${qty}"><button type="button" class="remove-part">×</button>`;
+  row.innerHTML=`<input id="part-name-${partRowCounter}" name="part_name_${partRowCounter}" aria-label="Nome da peça" class="part-name" placeholder="Nome da peça" value="${esc(name)}"><input id="part-qty-${partRowCounter}" name="part_qty_${partRowCounter}" aria-label="Quantidade da peça" class="part-qty" type="number" min="1" value="${qty}"><button type="button" class="remove-part">×</button>`;
   row.querySelector(".remove-part").onclick=()=>row.remove();$("partsRows").appendChild(row);
 }
 function syncDateUndefinedUI(){
