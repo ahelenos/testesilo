@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.50";
+const APP_VERSION = "5.1.52";
 
 (() => {
 "use strict";
@@ -62,6 +62,14 @@ function monthDays(month){
   return Array.from({length:n},(_,i)=>`${y}-${String(m).padStart(2,"0")}-${String(i+1).padStart(2,"0")}`);
 }
 
+// Normaliza valores exibidos no formulário a, no máximo, 3 casas decimais.
+// Evita resíduos de ponto flutuante como 293.77000000000004.
+function decimal3(value){
+  const n = Number(value);
+  if(!Number.isFinite(n)) return "0";
+  return String(Math.round((n + Number.EPSILON) * 1000) / 1000);
+}
+
 function calculateDerived(){
   const totalM3=Number($("producao_total_m3")?.value||0);
   const totalQtd=Number($("producao_total_qtd")?.value||0);
@@ -73,14 +81,14 @@ function calculateDerived(){
   const effectiveQtd=totalQtd-fabQtd;
   const otherM3=recTotalM3-fabM3;
   const otherQtd=recTotalQtd-fabQtd;
-  $("producao_efetiva_m3").value=Number.isFinite(effectiveM3)?Math.max(0,effectiveM3):0;
+  $("producao_efetiva_m3").value=Number.isFinite(effectiveM3)?decimal3(Math.max(0,effectiveM3)):"0";
   $("producao_efetiva_qtd").value=Number.isFinite(effectiveQtd)?Math.max(0,effectiveQtd):0;
-  $("outras_recusas_m3").value=Number.isFinite(otherM3)?Math.max(0,otherM3):0;
+  $("outras_recusas_m3").value=Number.isFinite(otherM3)?decimal3(Math.max(0,otherM3)):"0";
   $("outras_recusas_qtd").value=Number.isFinite(otherQtd)?Math.max(0,otherQtd):0;
 }
 function resetForm(){INPUT_FIELDS.forEach(id=>{const e=$(id);if(e)e.value="";});calculateDerived();}
 function fillForm(row){
-  FIELD_IDS.forEach(id=>{const e=$(id);if(e)e.value=row?.[id]??"";});
+  FIELD_IDS.forEach(id=>{const e=$(id);if(e)e.value=(id.endsWith("_m3") && row?.[id] !== undefined && row?.[id] !== null && row?.[id] !== "") ? decimal3(row[id]) : (row?.[id]??"");});
   calculateDerived();
 }
 function readForm(){
@@ -252,7 +260,7 @@ async function loadClosing(){
       $("closingStatus").className="fm-status saved";
     }
     else{resetForm();state.attendance=state.presenceBaseline.map(r=>({...r}));$("closingStatus").textContent="Novo fechamento";$("closingStatus").className="fm-status new";}
-    renderAttendance();renderKpis();setFormDisabled(!isAdmin());updateHistorySelection();renderComparison();renderCharts();
+    renderAttendance();renderKpis();setFormDisabled(!isAdmin());updateHistorySelection();renderComparison();renderAnnualComparison();renderCharts();
   }catch(error){console.error(error);setMessage(translateError(error),"error");state.closing=null;resetForm();state.attendance=state.presenceBaseline||[];renderAttendance();renderKpis();}
   finally{doneLoading();}
 }
@@ -303,7 +311,7 @@ async function loadHistory(){
     </tr>`).join("");
     $("historyEmpty").classList.toggle("hidden",state.history.length!==0);
     document.querySelectorAll(".fm-open-history").forEach(btn=>btn.addEventListener("click",()=>{state.month=btn.dataset.month;loadClosing();window.scrollTo({top:0,behavior:"smooth"});}));
-    updateHistorySelection();renderComparison();renderCharts();
+    updateHistorySelection();renderComparison();renderAnnualComparison();renderCharts();
   }catch(error){console.error(error);setMessage(translateError(error),"error");}
 }
 function updateHistorySelection(){document.querySelectorAll(".fm-open-history").forEach(btn=>btn.classList.toggle("primary",btn.dataset.month===state.month));}
@@ -364,6 +372,66 @@ function renderComparison(){
     </article>`;
   }).join("");
 }
+// Compara o fechamento selecionado com a media dos meses salvos no mesmo
+// ano civil, de janeiro ate o mes selecionado. Meses nao cadastrados nao
+// entram na media; zeros registrados sao preservados.
+function renderAnnualComparison(){
+  const grid=$("annualComparisonGrid"), badge=$("annualComparisonLabel");
+  if(!grid||!badge)return;
+
+  const selected=String(state.month||"").slice(0,7);
+  const year=selected.slice(0,4);
+  const months=new Map();
+  state.history.forEach(row=>{
+    const key=String(row.mes||"").slice(0,7);
+    if(key.startsWith(`${year}-`) && key<=selected) months.set(key,row);
+  });
+
+  // Caso a listagem ainda nao tenha atualizado, considera o fechamento
+  // atualmente carregado, sem duplicar o mes.
+  if(state.closing && selected) months.set(selected,state.closing);
+
+  const closingMonths=[...months.values()];
+  badge.textContent=closingMonths.length
+    ? `${year} · ${closingMonths.length} ${closingMonths.length===1?"mês":"meses"} com fechamento`
+    : `Ano ${year} · sem fechamentos`;
+
+  if(!state.closing){
+    grid.innerHTML='<div class="fm-empty">Salve o fechamento para visualizar o comparativo anual.</div>';
+    return;
+  }
+
+  const metrics=[
+    ["Produção total","producao_total_m3","m³",true],
+    ["Produção efetiva","producao_efetiva_m3","m³",true],
+    ["Recusas total","recusas_total_m3","m³",false],
+    ["Recusas da fábrica","recusas_fabrica_m3","m³",false],
+    ["Expedição","expedicao_m3","m³",true],
+    ["Maquiagem","maquiagem_m3","m³",true],
+    ["Projetado","projetado_m3","m³",true],
+    ["Média funcionários/dia","media_funcionarios_dia","func./dia",true]
+  ];
+  grid.innerHTML=metrics.map(([name,key,unit,higher])=>{
+    const current=key==="media_funcionarios_dia"
+      ? Math.floor(averageCurrent())
+      : Number(state.closing[key]||0);
+    const yearMean=closingMonths.reduce((sum,row)=>{
+      const value=key==="media_funcionarios_dia" && String(row.mes).slice(0,7)===selected
+        ? current
+        : Number(row[key]||0);
+      return sum+value;
+    },0)/closingMonths.length;
+    const pct=comparePct(current,yearMean);
+    const validPct=yearMean!==0 ? pct : null;
+    const result=validPct===null ? "Sem base anual" : comparisonLabel(validPct,higher);
+    const cls=result==="Melhorou"?"better":result==="Piorou"?"worse":"neutral";
+    return `<article class="fm-compare-card ${cls}">
+      <span>${esc(name)}</span><strong>${validPct===null?"—":`${validPct>=0?"+":""}${fmtNum(validPct,1)}%`}</strong>
+      <small>${esc(result)} · atual ${fmtNum(current,1)} ${unit} · média do ano ${fmtNum(yearMean,1)} ${unit}</small>
+    </article>`;
+  }).join("");
+}
+
 function averageCurrent(){
   const vals=state.attendance.map(r=>Math.max(0,Number(r.quantidade_importada||0)+Number(r.alteracoes||0))).filter(v=>v>0);
   return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
@@ -663,6 +731,7 @@ $("closeReportBtn").addEventListener("click",()=>{$("reportDialog")?.close?.();}
 document.querySelectorAll("#closingForm input").forEach(input=>{if(input.id!=="producao_efetiva_m3"&&input.id!=="producao_efetiva_qtd"&&input.id!=="outras_recusas_m3"&&input.id!=="outras_recusas_qtd")input.addEventListener("input",()=>{
   calculateDerived();
   if(input.id === "producao_total_m3") renderAttendanceKpi();
+  if(state.closing) renderAnnualComparison();
 });});
 $("logoutBtn").addEventListener("click",async()=>{try{await SiloSupabase.signOut();}finally{location.href="index.html";}});
 boot();
