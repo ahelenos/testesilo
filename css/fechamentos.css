@@ -1470,3 +1470,39 @@
   color: #6d28d9;
   border: 1px solid #ddd6fe;
 }
+
+/* V5.1.54 — Secoes identificadas por cores suaves.
+   Mantem os estados dos indicadores, cores de barras e estilos dos inputs. */
+.fm-section-form {
+  background:#fffaf3;
+  border:1px solid #f5dfbd;
+  border-top:3px solid #e7ad56;
+}
+.fm-section-form > .fm-panel-head .eyebrow { color:#a86410; }
+
+.fm-section-evolution {
+  background:#f4fbfa;
+  border:1px solid #cce9e4;
+  border-top:3px solid #45b5a4;
+}
+.fm-section-evolution > .fm-panel-head .eyebrow { color:#0f766e; }
+
+.fm-section-history {
+  background:#f6f8fc;
+  border:1px solid #dce4ef;
+  border-top:3px solid #8297b6;
+}
+.fm-section-history > .fm-panel-head .eyebrow { color:#486284; }
+
+/* As seis visualizacoes preservam fundos brancos para leitura dos graficos,
+   com detalhe superior na cor da respectiva serie. */
+.fm-section-evolution .fm-chart-card {
+  background:#fff;
+  border-top-width:3px;
+}
+.fm-section-evolution .fm-graph-production { border-top-color:#2563eb; }
+.fm-section-evolution .fm-graph-makeup { border-top-color:#16a34a; }
+.fm-section-evolution .fm-graph-logistics { border-top-color:#f59e0b; }
+.fm-section-evolution .fm-graph-projects { border-top-color:#8b5cf6; }
+.fm-section-evolution .fm-graph-consoles { border-top-color:#0f766e; }
+.fm-section-evolution .fm-graph-efficiency { border-top-color:#4f46e5; }
