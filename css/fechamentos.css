@@ -1437,3 +1437,10 @@
     overflow-wrap:anywhere;
   }
 }
+
+/* V5.1.50 — Eficiência mensal por funcionário */
+.fm-prod-bar.indigo{fill:#4f46e5}
+.fm-prod-bar.indigo.latest{fill:#4338ca}
+.fm-chart-card:has(#efficiencyChart) .fm-chart-card-head p{
+  max-width:360px;
+}

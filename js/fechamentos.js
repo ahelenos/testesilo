@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.49";
+const APP_VERSION = "5.1.50";
 
 (() => {
 "use strict";
@@ -419,9 +419,17 @@ function renderMetricChart(containerId, rows, config){
   const w = W-p.l-p.r;
   const h = H-p.t-p.b;
 
-  const rawMax = Math.max(...values, average, 1);
-  const step = rawMax <= 50 ? 10 : rawMax <= 100 ? 20 : rawMax <= 250 ? 50 : rawMax <= 500 ? 100 : 200;
-  const max = Math.max(step, Math.ceil(rawMax * 1.16 / step) * step);
+  // Escala decimal para indicadores inferiores a 1 m³ (eficiência).
+  // Evita que 0,57 seja desenhado numa escala 0–10.
+  const rawMax = Math.max(...values, average, config.fractionalScale ? 0.01 : 1);
+  const step = config.fractionalScale
+    ? (rawMax <= 0.25 ? 0.05 : rawMax <= 0.5 ? 0.1
+      : rawMax <= 1 ? 0.2 : rawMax <= 2.5 ? 0.5
+      : rawMax <= 5 ? 1 : Math.pow(10, Math.floor(Math.log10(rawMax))) / 2)
+    : (rawMax <= 50 ? 10 : rawMax <= 100 ? 20 : rawMax <= 250 ? 50
+      : rawMax <= 500 ? 100 : 200);
+  const max = Math.max(step * (config.fractionalScale ? 5 : 1),
+    Math.ceil(rawMax * 1.16 / step) * step);
   const tickStep = max / 5;
 
   const groupStep = w / data.length;
@@ -434,7 +442,7 @@ function renderMetricChart(containerId, rows, config){
     const yy = y(value);
     return `
       <line x1="${p.l}" y1="${yy.toFixed(2)}" x2="${W-p.r}" y2="${yy.toFixed(2)}" class="fm-prod-grid-line"/>
-      <text x="${p.l-10}" y="${(yy+4).toFixed(2)}" text-anchor="end" class="fm-prod-axis">${fmtNum(value,0)}</text>`;
+      <text x="${p.l-10}" y="${(yy+4).toFixed(2)}" text-anchor="end" class="fm-prod-axis">${fmtNum(value,config.axisDecimals ?? 0)}</text>`;
   }).join("");
 
   const bars = data.map((d,i)=>{
@@ -498,6 +506,19 @@ function renderMetricChart(containerId, rows, config){
     </div>`;
 }
 
+// Histórico mensal da eficiência: usa exatamente a mesma fórmula do card.
+// Somente meses com fechamento e dias/funcionários válidos entram no gráfico.
+function efficiencyForMonth(row){
+  const volume = Number(row?.producao_total_m3);
+  const days = Number(row?.dias_trabalhados);
+  const avg = Math.floor(Number(row?.media_funcionarios_dia));
+  if(!Number.isFinite(volume) || !Number.isFinite(days) ||
+     !Number.isFinite(avg) || volume <= 0 || days <= 0 || avg <= 0){
+    return 0;
+  }
+  return volume / days / avg;
+}
+
 function renderEvolutionChart(rows){
   renderMetricChart("productionChart", rows, {
     periodId:"evolutionChartPeriod",
@@ -541,6 +562,19 @@ function renderEvolutionChart(rows){
     decimals:2,
     valueDecimals:0,
     barClass:"purple"
+  });
+
+  renderMetricChart("efficiencyChart", rows, {
+    periodId:"efficiencyChartPeriod",
+    title:"Média m³ por funcionário",
+    unit:"m³/funcionário/dia",
+    value:efficiencyForMonth,
+    format:v=>`${fmtNum(v,2)} m³`,
+    decimals:3,
+    valueDecimals:2,
+    axisDecimals:2,
+    fractionalScale:true,
+    barClass:"indigo"
   });
 
   renderMetricChart("consolesChart", rows, {

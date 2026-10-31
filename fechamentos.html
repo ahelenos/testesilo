@@ -8,7 +8,7 @@
 <title>Fechamentos de Mês · Gestão de Fábrica</title>
 <link rel="stylesheet" href="css/style.css?v=5.1.42">
 <link rel="stylesheet" href="css/loading.css?v=5.1.42">
-<link rel="stylesheet" href="css/fechamentos.css?v=5.1.49">
+<link rel="stylesheet" href="css/fechamentos.css?v=5.1.50">
 </head>
 <body>
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -465,6 +465,18 @@
       <div class="fm-chart-card">
         <div class="fm-chart-card-head">
           <div>
+            <span class="fm-chart-kicker">EFICIÊNCIA · PRODUÇÃO</span>
+            <h3>Evolução da média m³ por funcionário</h3>
+            <p>Produção total ÷ dias trabalhados ÷ média diária de funcionários.</p>
+          </div>
+          <div class="fm-chart-period" id="efficiencyChartPeriod">—</div>
+        </div>
+        <div id="efficiencyChart" class="fm-chart" aria-live="polite"></div>
+      </div>
+
+      <div class="fm-chart-card">
+        <div class="fm-chart-card-head">
+          <div>
             <span class="fm-chart-kicker">CONSOLES</span>
             <h3>Evolução dos consoles</h3>
             <p>Quantidade de consoles · média do período.</p>
@@ -509,6 +521,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=5.1.42"></script>
 <script src="js/loading.js?v=5.1.42"></script>
-<script src="js/fechamentos.js?v=5.1.49"></script>
+<script src="js/fechamentos.js?v=5.1.50"></script>
 </body>
 </html>
