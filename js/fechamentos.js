@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.45";
+const APP_VERSION = "5.1.46";
 
 (() => {
 "use strict";
@@ -134,12 +134,13 @@ function renderAttendance(){
   }).join("");
   body.querySelectorAll(".attendance-change").forEach(input=>input.addEventListener("input",()=>updateAttendanceRow(input.dataset.date,input)));
   body.querySelectorAll(".attendance-note").forEach(input=>input.addEventListener("input",()=>{
-    const row=state.attendance.find(r=>r.data===input.dataset.date); if(row)row.observacoes=input.value;
+    const row=state.attendance.find(r=>r.data===input.dataset.date); if(row){row.observacoes=input.value;row.atualizado_manualmente=true;}
   }));
 }
 function updateAttendanceRow(date,input){
   const row=state.attendance.find(r=>r.data===date);if(!row)return;
   row.alteracoes=Number.parseInt(input.value||"0",10)||0;
+  row.atualizado_manualmente=true;
   row.funcionarios=Math.max(0,Number(row.quantidade_importada||0)+row.alteracoes);
   const tr=input.closest("tr"); if(tr)tr.querySelector(".effective-workers").textContent=fmtInt(row.funcionarios);
   renderAttendanceKpi();
@@ -168,13 +169,24 @@ function renderAttendanceKpi(){
 async function loadPresenceBaseline(){
   const {data,error}=await sb.rpc("obter_presencas_fechamento_mes",{p_mes:`${state.month}-01`});
   if(error)throw error;
-  state.presenceBaseline=(data||[]).map(r=>({data:String(r.data).slice(0,10),quantidade_importada:Number(r.funcionarios||0),alteracoes:0,observacoes:"",funcionarios:Number(r.funcionarios||0)}));
+  state.presenceBaseline=(data||[]).map(r=>{
+    const imported=Math.max(0,Number(r.funcionarios||0));
+    const automaticAdjustment=imported>0?-1:0;
+    return {data:String(r.data).slice(0,10),quantidade_importada:imported,alteracoes:automaticAdjustment,observacoes:"",atualizado_manualmente:false,funcionarios:Math.max(0,imported+automaticAdjustment)};
+  });
 }
 async function loadSavedAttendance(id){
   if(!id)return null;
   const {data,error}=await sb.from("fechamentos_mes_presencas").select("data,funcionarios,quantidade_importada,alteracoes,observacoes,atualizado_manualmente").eq("fechamento_id",id).order("data",{ascending:true});
   if(error)throw error;if(!data?.length)return null;
-  return data.map(r=>({data:String(r.data).slice(0,10),quantidade_importada:Number(r.quantidade_importada??r.funcionarios??0),alteracoes:Number(r.alteracoes||0),observacoes:String(r.observacoes||""),funcionarios:Math.max(0,Number(r.quantidade_importada??r.funcionarios??0)+Number(r.alteracoes||0))}));
+  return data.map(r=>({
+    data:String(r.data).slice(0,10),
+    quantidade_importada:Number(r.quantidade_importada??r.funcionarios??0),
+    alteracoes:Number(r.alteracoes||0),
+    observacoes:String(r.observacoes||""),
+    atualizado_manualmente:Boolean(r.atualizado_manualmente),
+    funcionarios:Math.max(0,Number(r.quantidade_importada??r.funcionarios??0)+Number(r.alteracoes||0))
+  }));
 }
 async function loadClosing(){
   $("currentMonthLabel").textContent=monthLabel(state.month).replace(/ de /g,"/");$("formTitle").textContent=`Dados de ${monthLabel(state.month)}`;$("monthPicker").value=state.month;$("closingError").textContent="";
@@ -195,12 +207,20 @@ async function loadClosing(){
         const imported=baselineHasData
           ? Number(base.quantidade_importada||0)
           : Math.max(Number(base.quantidade_importada||0),Number(previous?.quantidade_importada||0));
-        const alteracoes=Number(previous?.alteracoes||0);
+        // Respeitar qualquer ajuste feito pelo usuário, inclusive zero explícito.
+        // Registros antigos sem personalização recebem a nova regra padrão (-1).
+        const manuallyCustomized=Boolean(previous?.atualizado_manualmente)
+          || Number(previous?.alteracoes||0)!==0
+          || Boolean(previous?.observacoes);
+        const alteracoes=manuallyCustomized
+          ? Number(previous.alteracoes||0)
+          : (imported>0?-1:0);
         return {
           data:base.data,
           quantidade_importada:imported,
           alteracoes,
           observacoes:String(previous?.observacoes||""),
+          atualizado_manualmente:manuallyCustomized,
           funcionarios:Math.max(0,imported+alteracoes)
         };
       });
@@ -264,7 +284,7 @@ async function loadHistory(){
 }
 function updateHistorySelection(){document.querySelectorAll(".fm-open-history").forEach(btn=>btn.classList.toggle("primary",btn.dataset.month===state.month));}
 
-function collectAttendance(){return state.attendance.map(r=>({data:r.data,funcionarios:Math.max(0,Number(r.quantidade_importada||0)+Number(r.alteracoes||0)),quantidade_importada:Math.max(0,Number(r.quantidade_importada||0)),alteracoes:Number.parseInt(r.alteracoes||0,10)||0,observacoes:String(r.observacoes||""),atualizado_manualmente:Number(r.alteracoes||0)!==0||Boolean(r.observacoes)}));}
+function collectAttendance(){return state.attendance.map(r=>({data:r.data,funcionarios:Math.max(0,Number(r.quantidade_importada||0)+Number(r.alteracoes||0)),quantidade_importada:Math.max(0,Number(r.quantidade_importada||0)),alteracoes:Number.parseInt(r.alteracoes||0,10)||0,observacoes:String(r.observacoes||""),atualizado_manualmente:Boolean(r.atualizado_manualmente)||Number(r.alteracoes||0)!==0||Boolean(r.observacoes)}));}
 async function saveClosing(event){
   event?.preventDefault();if(!isAdmin())return;
   const errorEl=$("closingError");errorEl.textContent="";
