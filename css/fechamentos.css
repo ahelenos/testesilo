@@ -1444,3 +1444,29 @@
 .fm-chart-card:has(#efficiencyChart) .fm-chart-card-head p{
   max-width:360px;
 }
+
+
+/* V5.1.53 — Diferenciacao visual dos comparativos (somente paineis).
+   Os estados verde/vermelho/neutro dos cards internos permanecem intactos. */
+#comparisonPanel.fm-compare-month {
+  background: #f5faff;
+  border: 1px solid #cfe5ff;
+  border-top: 3px solid #60a5fa;
+}
+#annualComparisonPanel.fm-compare-year {
+  background: #fbf7ff;
+  border: 1px solid #e5d5ff;
+  border-top: 3px solid #a78bfa;
+}
+#comparisonPanel .fm-panel-head .eyebrow { color: #2563eb; }
+#annualComparisonPanel .fm-panel-head .eyebrow { color: #7c3aed; }
+#comparisonPanel #comparisonLabel.fm-status {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+#annualComparisonPanel #annualComparisonLabel.fm-status {
+  background: #f3e8ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
