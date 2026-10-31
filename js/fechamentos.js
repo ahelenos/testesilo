@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.46";
+const APP_VERSION = "5.1.49";
 
 (() => {
 "use strict";
@@ -165,6 +165,30 @@ function renderAttendanceKpi(){
   $("kpiFuncionarios").textContent = fmtInt(avg);
   $("kpiDias").textContent =
     `${fmtInt(vals.length)} ${vals.length === 1 ? "dia" : "dias"} trabalhados`;
+  renderProductivityKpi(vals.length, avg);
+}
+
+function renderProductivityKpi(diasTrabalhados, mediaFuncionarios){
+  const valorEl = $("kpiProdutividade");
+  const detalheEl = $("kpiProdutividadeDetalhe");
+  if(!valorEl || !detalheEl) return;
+
+  // Considera o volume atual do formulário, permitindo prévia ao editar.
+  const campoProducao = $("producao_total_m3");
+  const producao = Number(String(campoProducao?.value ?? state.closing?.producao_total_m3 ?? "0")
+    .trim().replace(",","."));
+
+  if(!state.closing || !Number.isFinite(producao) || diasTrabalhados <= 0 || mediaFuncionarios <= 0){
+    valorEl.textContent = "—";
+    detalheEl.textContent = diasTrabalhados <= 0 || mediaFuncionarios <= 0
+      ? "Sem dias ou funcionários para calcular"
+      : "m³/funcionário/dia";
+    return;
+  }
+
+  const resultado = (producao / diasTrabalhados) / mediaFuncionarios;
+  valorEl.textContent = `${fmtNum(resultado,2)} m³`;
+  detalheEl.textContent = "por funcionário / dia";
 }
 async function loadPresenceBaseline(){
   const {data,error}=await sb.rpc("obter_presencas_fechamento_mes",{p_mes:`${state.month}-01`});
@@ -602,7 +626,10 @@ $("reportBtn").addEventListener("click",openReport);
 $("reportPrintBtn").addEventListener("click",printReport);
 $("printBtn").addEventListener("click",printReport);
 $("closeReportBtn").addEventListener("click",()=>{$("reportDialog")?.close?.();});
-document.querySelectorAll("#closingForm input").forEach(input=>{if(input.id!=="producao_efetiva_m3"&&input.id!=="producao_efetiva_qtd"&&input.id!=="outras_recusas_m3"&&input.id!=="outras_recusas_qtd")input.addEventListener("input",()=>{calculateDerived();});});
+document.querySelectorAll("#closingForm input").forEach(input=>{if(input.id!=="producao_efetiva_m3"&&input.id!=="producao_efetiva_qtd"&&input.id!=="outras_recusas_m3"&&input.id!=="outras_recusas_qtd")input.addEventListener("input",()=>{
+  calculateDerived();
+  if(input.id === "producao_total_m3") renderAttendanceKpi();
+});});
 $("logoutBtn").addEventListener("click",async()=>{try{await SiloSupabase.signOut();}finally{location.href="index.html";}});
 boot();
 })();

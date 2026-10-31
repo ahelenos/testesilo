@@ -1422,3 +1422,18 @@
   .fm-toolbar-main input#monthPicker[type="month"],
   .fm-toolbar-main button#refreshBtn { grid-column:1; width:100%; }
 }
+
+/* V5.1.49 — Cinco indicadores na mesma linha em telas largas */
+@media (min-width: 901px){
+  .fm-kpis{
+    grid-template-columns:repeat(5,minmax(0,1fr));
+  }
+  .fm-kpi{
+    min-width:0;
+    padding:16px;
+  }
+  .fm-kpi strong{
+    font-size:clamp(18px,1.55vw,23px);
+    overflow-wrap:anywhere;
+  }
+}
