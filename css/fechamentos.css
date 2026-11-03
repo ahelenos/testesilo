@@ -1547,3 +1547,12 @@
 @media(max-width:520px){
   .fm-montagem-campos{grid-template-columns:1fr}
 }
+
+/* V5.1.58: nove indicadores organizados em três colunas,
+   preservando a semântica das cores dos comparativos. */
+@media (min-width: 901px) {
+  #comparisonPanel .fm-comparison-grid,
+  #annualComparisonPanel .fm-comparison-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

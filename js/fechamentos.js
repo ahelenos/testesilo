@@ -242,7 +242,12 @@ async function loadClosing(){
     if(row){
       const montagemRows=await getMontagemRows();
       const montagemRow=montagemByMonth(montagemRows).get(state.month);
-      fillForm({...row,montagem_m3:montagemRow?.montagem_m3??0,montagem_qtd:montagemRow?.montagem_qtd??0});
+      state.closing={
+        ...row,
+        montagem_m3:montagemRow?.montagem_m3??0,
+        montagem_qtd:montagemRow?.montagem_qtd??0
+      };
+      fillForm(state.closing);
       const saved=await loadSavedAttendance(row.id);
       // Os dados importados pertencem ao Controle de Presença; jamais tratar
       // uma cópia antiga como fonte definitiva. Preservar ajustes e observações.
@@ -381,6 +386,7 @@ function renderComparison(){
     ["Recusas da fábrica",state.closing.recusas_fabrica_m3,previous.recusas_fabrica_m3,"m³",false],
     ["Expedição",state.closing.expedicao_m3,previous.expedicao_m3,"m³",true],
     ["Maquiagem",state.closing.maquiagem_m3,previous.maquiagem_m3,"m³",true],
+    ["Montagem",state.closing.montagem_m3,previous.montagem_m3,"m³",true],
     ["Projetado",state.closing.projetado_m3,previous.projetado_m3,"m³",true],
     ["Média funcionários/dia",averageCurrent(),previous.media_funcionarios_dia||0,"func./dia",true]
   ];
@@ -429,6 +435,7 @@ function renderAnnualComparison(){
     ["Recusas da fábrica","recusas_fabrica_m3","m³",false],
     ["Expedição","expedicao_m3","m³",true],
     ["Maquiagem","maquiagem_m3","m³",true],
+    ["Montagem","montagem_m3","m³",true],
     ["Projetado","projetado_m3","m³",true],
     ["Média funcionários/dia","media_funcionarios_dia","func./dia",true]
   ];
