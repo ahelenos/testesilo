@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.52";
+const APP_VERSION = "5.1.56";
 
 (() => {
 "use strict";
@@ -18,6 +18,7 @@ const FIELD_IDS = [
   "recusas_fabrica_m3","recusas_fabrica_qtd",
   "outras_recusas_m3","outras_recusas_qtd",
   "maquiagem_m3","maquiagem_qtd",
+  "montagem_m3","montagem_qtd",
   "consoles_pecas_qtd","consoles_consoles_qtd",
   "expedicao_m3","expedicao_qtd",
   "projetado_m3","projetado_qtd"
@@ -26,7 +27,7 @@ const FIELD_IDS = [
 const INPUT_FIELDS = FIELD_IDS.filter(id=>!id.startsWith("producao_efetiva_") && !id.startsWith("outras_recusas_"));
 const INTEGER_FIELDS = [
   "producao_total_qtd","producao_efetiva_qtd","recusas_total_qtd","recusas_fabrica_qtd",
-  "outras_recusas_qtd","maquiagem_qtd","consoles_pecas_qtd","consoles_consoles_qtd",
+  "outras_recusas_qtd","maquiagem_qtd","montagem_qtd","consoles_pecas_qtd","consoles_consoles_qtd",
   "expedicao_qtd","projetado_qtd"
 ];
 
@@ -111,6 +112,7 @@ function labelFor(id){
     recusas_fabrica_m3:"Recusas da fábrica (m³)",recusas_fabrica_qtd:"Recusas da fábrica (quantidade)",
     outras_recusas_m3:"Outras recusas (m³)",outras_recusas_qtd:"Outras recusas (quantidade)",
     maquiagem_m3:"Maquiagem (m³)",maquiagem_qtd:"Maquiagem (quantidade)",
+    montagem_m3:"Montagem (m³)",montagem_qtd:"Montagem (quantidade de peças)",
     consoles_pecas_qtd:"Consoles — peças",consoles_consoles_qtd:"Consoles — consoles",
     expedicao_m3:"Expedição (m³)",expedicao_qtd:"Expedição (quantidade)",
     projetado_m3:"Projetado (m³)",projetado_qtd:"Projetado (quantidade)"
@@ -220,6 +222,16 @@ async function loadSavedAttendance(id){
     funcionarios:Math.max(0,Number(r.quantidade_importada??r.funcionarios??0)+Number(r.alteracoes||0))
   }));
 }
+// Consulta própria para Montagem: preserva o retorno das RPCs existentes.
+async function getMontagemRows(){
+  const {data,error}=await sb.rpc("obter_montagem_fechamentos_mes",{p_mes:`${state.month}-01`});
+  if(error)throw error;
+  return Array.isArray(data)?data:[];
+}
+function montagemByMonth(rows){
+  return new Map(rows.map(r=>[String(r.mes).slice(0,7),r]));
+}
+
 async function loadClosing(){
   $("currentMonthLabel").textContent=monthLabel(state.month).replace(/ de /g,"/");$("formTitle").textContent=`Dados de ${monthLabel(state.month)}`;$("monthPicker").value=state.month;$("closingError").textContent="";
   loading(`Carregando fechamento de ${monthLabel(state.month)}...`);
@@ -228,7 +240,9 @@ async function loadClosing(){
     const {data,error}=await sb.rpc("obter_fechamento_mes",{p_mes:`${state.month}-01`});if(error)throw error;
     const row=Array.isArray(data)&&data.length?data[0]:null;state.closing=row;
     if(row){
-      fillForm(row);
+      const montagemRows=await getMontagemRows();
+      const montagemRow=montagemByMonth(montagemRows).get(state.month);
+      fillForm({...row,montagem_m3:montagemRow?.montagem_m3??0,montagem_qtd:montagemRow?.montagem_qtd??0});
       const saved=await loadSavedAttendance(row.id);
       // Os dados importados pertencem ao Controle de Presença; jamais tratar
       // uma cópia antiga como fonte definitiva. Preservar ajustes e observações.
@@ -300,6 +314,13 @@ async function loadHistory(){
     } catch (evolutionError) {
       console.warn("Nao foi possivel consultar a evolucao dos consoles:", evolutionError);
     }
+
+    const montagemRows=await getMontagemRows();
+    const montagemMap=montagemByMonth(montagemRows);
+    state.history=state.history.map(row=>{
+      const extra=montagemMap.get(String(row.mes).slice(0,7));
+      return {...row,montagem_m3:extra?.montagem_m3??0,montagem_qtd:extra?.montagem_qtd??0};
+    });
 
     $("historyBody").innerHTML=state.history.map(row=>`<tr>
       <td><strong>${esc(monthLabel(String(row.mes).slice(0,7)))}</strong></td>
@@ -656,6 +677,17 @@ function renderEvolutionChart(rows){
     barClass:"teal"
   });
 
+  renderMetricChart("montagemChart", rows, {
+    periodId:"montagemChartPeriod",
+    title:"Montagem",
+    unit:"m³",
+    value:r=>r.montagem_m3,
+    format:fmtM3,
+    decimals:2,
+    valueDecimals:2,
+    barClass:"cyan"
+  });
+
   renderMetricChart("refusalsChart", rows, {
     periodId:"refusalsChartPeriod",
     title:"Recusas totais",
@@ -684,6 +716,7 @@ function reportMetrics(){
     ["Recusas da fábrica",fmtM3(d.recusas_fabrica_m3),fmtInt(d.recusas_fabrica_qtd)+" peças"],
     ["Outras recusas",fmtM3(d.outras_recusas_m3),fmtInt(d.outras_recusas_qtd)+" peças"],
     ["Maquiagem",fmtM3(d.maquiagem_m3),fmtInt(d.maquiagem_qtd)+" peças"],
+    ["Montagem",fmtM3($("montagem_m3")?.value),fmtInt($("montagem_qtd")?.value)+" peças"],
     ["Consoles",fmtInt(d.consoles_pecas_qtd)+" peças",fmtInt(d.consoles_consoles_qtd)+" consoles"],
     ["Expedição",fmtM3(d.expedicao_m3),fmtInt(d.expedicao_qtd)+" peças"],
     ["Projetado",fmtM3(d.projetado_m3),fmtInt(d.projetado_qtd)+" peças"],

@@ -8,7 +8,7 @@
 <title>Fechamentos de Mês · Gestão de Fábrica</title>
 <link rel="stylesheet" href="css/style.css?v=5.1.42">
 <link rel="stylesheet" href="css/loading.css?v=5.1.42">
-<link rel="stylesheet" href="css/fechamentos.css?v=5.1.55">
+<link rel="stylesheet" href="css/fechamentos.css?v=5.1.56">
 </head>
 <body>
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -139,7 +139,7 @@
   </div>
   <div class="header-actions">
     <a class="btn ghost" href="index.html" aria-label="Voltar para a Central da fábrica">← Central</a>
-    <span class="home-version">V5.1.46</span>
+    <span class="home-version">V5.1.56</span>
     <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
   </div>
 </header>
@@ -338,6 +338,19 @@
       </fieldset>
 
       <fieldset class="fm-section">
+        <legend>Montagem</legend>
+        <div class="fm-field-grid fm-field-grid-small">
+          <div class="fm-field-group">
+            <label for="montagem_m3">Montagem</label>
+            <div class="fm-pair">
+              <input id="montagem_m3" name="montagem_m3" aria-label="Montagem — volume em metros cúbicos" type="number" step="0.001" min="0" placeholder="Volume m³">
+              <input id="montagem_qtd" name="montagem_qtd" aria-label="Montagem — quantidade de peças" type="number" step="1" min="0" placeholder="Quantidade de peças">
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="fm-section">
         <legend>Consoles</legend>
         <div class="fm-field-grid fm-field-grid-small">
           <div class="fm-field-group">
@@ -497,6 +510,18 @@
         <div id="consolesChart" class="fm-chart"></div>
       </div>
 
+      <div class="fm-chart-card fm-graph-montagem">
+        <div class="fm-chart-card-head">
+          <div>
+            <span class="fm-chart-kicker">MONTAGEM</span>
+            <h3>Evolução do volume montado</h3>
+            <p>Volume montado em m³ · média do período.</p>
+          </div>
+          <div class="fm-chart-period" id="montagemChartPeriod">—</div>
+        </div>
+        <div id="montagemChart" class="fm-chart" aria-live="polite"></div>
+      </div>
+
       <div class="fm-chart-card fm-graph-refusals">
         <div class="fm-chart-card-head">
           <div>
@@ -544,6 +569,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=5.1.42"></script>
 <script src="js/loading.js?v=5.1.42"></script>
-<script src="js/fechamentos.js?v=5.1.55"></script>
+<script src="js/fechamentos.js?v=5.1.56"></script>
 </body>
 </html>
