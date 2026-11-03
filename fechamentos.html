@@ -8,7 +8,7 @@
 <title>Fechamentos de Mês · Gestão de Fábrica</title>
 <link rel="stylesheet" href="css/style.css?v=5.1.42">
 <link rel="stylesheet" href="css/loading.css?v=5.1.42">
-<link rel="stylesheet" href="css/fechamentos.css?v=5.1.56">
+<link rel="stylesheet" href="css/fechamentos.css?v=5.1.57">
 </head>
 <body>
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -139,7 +139,7 @@
   </div>
   <div class="header-actions">
     <a class="btn ghost" href="index.html" aria-label="Voltar para a Central da fábrica">← Central</a>
-    <span class="home-version">V5.1.56</span>
+    <span class="home-version">V5.1.57</span>
     <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
   </div>
 </header>
@@ -341,10 +341,17 @@
         <legend>Montagem</legend>
         <div class="fm-field-grid fm-field-grid-small">
           <div class="fm-field-group">
-            <label for="montagem_m3">Montagem</label>
-            <div class="fm-pair">
-              <input id="montagem_m3" name="montagem_m3" aria-label="Montagem — volume em metros cúbicos" type="number" step="0.001" min="0" placeholder="Volume m³">
-              <input id="montagem_qtd" name="montagem_qtd" aria-label="Montagem — quantidade de peças" type="number" step="1" min="0" placeholder="Quantidade de peças">
+            <div class="fm-pair fm-montagem-campos">
+              <div class="fm-montagem-campo">
+                <label for="montagem_m3">Volume (m³)</label>
+                <input id="montagem_m3" name="montagem_m3" aria-label="Montagem — volume em metros cúbicos, até três casas decimais" type="number" step="0.001" min="0" placeholder="Ex.: 218,702">
+                <span class="fm-montagem-hint">Até 3 casas decimais</span>
+              </div>
+              <div class="fm-montagem-campo">
+                <label for="montagem_qtd">Quantidade de peças (un.)</label>
+                <input id="montagem_qtd" name="montagem_qtd" aria-label="Montagem — quantidade de peças, número inteiro" type="number" step="1" min="0" placeholder="Ex.: 161">
+                <span class="fm-montagem-hint">Somente números inteiros</span>
+              </div>
             </div>
           </div>
         </div>
@@ -569,6 +576,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=5.1.42"></script>
 <script src="js/loading.js?v=5.1.42"></script>
-<script src="js/fechamentos.js?v=5.1.56"></script>
+<script src="js/fechamentos.js?v=5.1.57"></script>
 </body>
 </html>

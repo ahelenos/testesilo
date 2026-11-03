@@ -1519,3 +1519,31 @@
 .fm-prod-bar.cyan.latest{fill:#0e7490}
 .fm-section-evolution .fm-graph-montagem{border-top-color:#0891b2}
 .fm-graph-montagem .fm-production-kpi::before{background:#0891b2}
+
+
+/* Montagem: identificação clara entre volume e quantidade */
+.fm-montagem-campos{
+  align-items:start;
+}
+.fm-montagem-campo{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
+.fm-montagem-campo label{
+  font-size:11px;
+  font-weight:700;
+  margin-bottom:0;
+}
+.fm-montagem-campo input{
+  width:100%;
+  min-width:0;
+}
+.fm-montagem-hint{
+  font-size:10px;
+  color:var(--muted,#667085);
+}
+@media(max-width:520px){
+  .fm-montagem-campos{grid-template-columns:1fr}
+}
