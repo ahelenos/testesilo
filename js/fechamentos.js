@@ -655,6 +655,19 @@ function renderEvolutionChart(rows){
     valueDecimals:0,
     barClass:"teal"
   });
+
+  renderMetricChart("refusalsChart", rows, {
+    periodId:"refusalsChartPeriod",
+    title:"Recusas totais",
+    unit:"m³",
+    value:r=>r.recusas_total_m3,
+    format:fmtM3,
+    decimals:3,
+    valueDecimals:2,
+    axisDecimals:2,
+    fractionalScale:true,
+    barClass:"red"
+  });
 }
 
 function renderCharts(){

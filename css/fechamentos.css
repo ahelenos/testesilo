@@ -1506,3 +1506,10 @@
 .fm-section-evolution .fm-graph-projects { border-top-color:#8b5cf6; }
 .fm-section-evolution .fm-graph-consoles { border-top-color:#0f766e; }
 .fm-section-evolution .fm-graph-efficiency { border-top-color:#4f46e5; }
+
+
+/* V5.1.55 — Evolucao das recusas totais (mesma estrutura dos outros graficos). */
+.fm-prod-bar.red{fill:#fb7185}
+.fm-prod-bar.red.latest{fill:#e11d48}
+.fm-section-evolution .fm-graph-refusals{border-top-color:#fb7185}
+.fm-graph-refusals .fm-production-kpi::before{background:#fb7185}
