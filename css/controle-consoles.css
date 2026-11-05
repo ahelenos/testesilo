@@ -213,3 +213,24 @@
   .cc-report-search-action,.cc-report-search-action .btn{width:100%}
   .cc-report-summary{grid-template-columns:1fr}
 }
+
+/* V6.0.6 — alinhar o botão à linha dos campos de data.
+   O espaço de rótulo replica a altura/intervalo dos labels vizinhos. */
+.cc-report-filters > .cc-report-search-action{
+  align-self:start;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:8px;
+}
+.cc-report-filters > .cc-report-search-action::before{
+  content:"\00a0";
+  display:block;
+  font-size:12px;
+  font-weight:700;
+  line-height:normal;
+  visibility:hidden;
+}
+@media(max-width:680px){
+  .cc-report-filters > .cc-report-search-action::before{display:none}
+}
