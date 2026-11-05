@@ -73,7 +73,7 @@ function latestWorkExecutionDate(workId){
  for(const execution of state.executions){
   if(!pillarIds.has(execution.pilar_id)||!execution.data_execucao)continue;
   const day=String(execution.data_execucao).slice(0,10);
-  if(/^\\d{4}-\\d{2}-\\d{2}$/.test(day)&&(!latest||day>latest))latest=day;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(day)&&(!latest||day>latest))latest=day;
  }
  return latest;
 }
