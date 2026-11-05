@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.57";
+const APP_VERSION = "6.0.4";
 
 (() => {
 "use strict";
@@ -8,7 +8,7 @@ const sb = window.supabaseClient;
 
 const state = {
   user:null, profile:null, permission:"none", month:"",
-  closing:null, attendance:[], presenceBaseline:[], history:[]
+  closing:null, attendance:[], presenceBaseline:[], history:[], consolesSynced:false
 };
 
 const FIELD_IDS = [
@@ -279,9 +279,42 @@ async function loadClosing(){
       $("closingStatus").className="fm-status saved";
     }
     else{resetForm();state.attendance=state.presenceBaseline.map(r=>({...r}));$("closingStatus").textContent="Novo fechamento";$("closingStatus").className="fm-status new";}
+    // O formulário exibe sempre os totais vivos das execuções.
+    try{
+      await syncMonthlyConsoles();
+    }catch(syncError){
+      console.error(syncError);
+      const status=$("consolesImportStatus");
+      if(status){status.textContent=syncError.message+" O salvamento fica bloqueado até corrigir a importação.";status.classList.add("fm-consoles-error");}
+      setMessage(syncError.message,"error");
+    }
     renderAttendance();renderKpis();setFormDisabled(!isAdmin());updateHistorySelection();renderComparison();renderAnnualComparison();renderCharts();
   }catch(error){console.error(error);setMessage(translateError(error),"error");state.closing=null;resetForm();state.attendance=state.presenceBaseline||[];renderAttendance();renderKpis();}
   finally{doneLoading();}
+}
+// V6.0.4: a origem oficial dos consoles é o Controle Consoles.
+// A RPC retorna apenas os totais mensais, sem expor detalhes de obras
+// a usuários que possuem acesso somente ao Fechamentos de Mês.
+async function syncMonthlyConsoles(){
+  state.consolesSynced=false;
+  const {data,error}=await sb.rpc("cc_totais_fechamento_mes",{p_mes:`${state.month}-01`});
+  if(error)throw new Error(`Erro ao importar Consoles: ${error.message}`);
+  const row=Array.isArray(data)?data[0]:data;
+  if(!row)throw new Error("A consulta mensal de Consoles não retornou valores.");
+  const pillars=Number(row.pilares_executados);
+  const consoles=Number(row.consoles_executados);
+  if(!Number.isSafeInteger(pillars)||pillars<0||!Number.isSafeInteger(consoles)||consoles<0){
+    throw new Error("Os totais importados do Controle Consoles são inválidos.");
+  }
+  $("consoles_pecas_qtd").value=String(pillars);
+  $("consoles_consoles_qtd").value=String(consoles);
+  if(state.closing){
+    state.closing.consoles_pecas_qtd=pillars;
+    state.closing.consoles_consoles_qtd=consoles;
+  }
+  const status=$("consolesImportStatus");
+  if(status){status.textContent=`Importado automaticamente do Controle Consoles para ${monthLabel(state.month)}: ${pillars} pilar(es), ${consoles} console(s).`;status.classList.remove("fm-consoles-error");}
+  state.consolesSynced=true;
 }
 function renderKpis(){
   const d=state.closing;
@@ -347,6 +380,8 @@ async function saveClosing(event){
   event?.preventDefault();if(!isAdmin())return;
   const errorEl=$("closingError");errorEl.textContent="";
   try{
+    // Reconsultar imediatamente antes de gravar para evitar dados desatualizados.
+    await syncMonthlyConsoles();
     const data=readForm();validateData(data);const attendance=collectAttendance();
     $("saveBtn").disabled=true;loading("Salvando fechamento...");
     const {error}=await sb.rpc("salvar_fechamento_mes",{p_mes:`${state.month}-01`,p_dados:data,p_presencas:attendance});if(error)throw error;

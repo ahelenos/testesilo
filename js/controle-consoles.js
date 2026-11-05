@@ -126,6 +126,41 @@ function renderPillars(){
    <td>${admin()?`${record?`<button class="btn secondary" data-action="edit-execution" data-id="${esc(p.id)}">Editar execução</button><button class="btn secondary danger" data-action="remove-execution" data-id="${esc(p.id)}">Desfazer</button>`:`<button class="btn primary" data-action="new-execution" data-id="${esc(p.id)}">Registrar</button>`}<button class="btn secondary" data-action="edit-pillar" data-id="${esc(p.id)}">Nome</button><button class="btn secondary danger" data-action="remove-pillar" data-id="${esc(p.id)}">Excluir</button>`:"—"}</td></tr>`;
  }).join("");
 }
+
+function reportPeriodDefault(){
+ const end=today();
+ $("ccReportStart").value=`${end.slice(0,7)}-01`;
+ $("ccReportEnd").value=end;
+}
+function renderPeriodReport(){
+ const from=$("ccReportStart").value;
+ const to=$("ccReportEnd").value;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(from)||!/^\d{4}-\d{2}-\d{2}$/.test(to))throw Error("Informe as duas datas.");
+ if(from>to)throw Error("A data inicial não pode ser posterior à final.");
+ const pillarsById=new Map(state.pillars.map(p=>[p.id,p]));
+ const worksById=new Map(state.works.map(w=>[w.id,w]));
+ const labelMaps=new Map(state.works.map(w=>[w.id,displayPillarNames(workPillars(w.id))]));
+ const rows=state.executions.filter(e=>{
+  const d=String(e.data_execucao||"").slice(0,10);
+  return d>=from&&d<=to&&pillarsById.has(e.pilar_id);
+ }).map(e=>{
+  const pillar=pillarsById.get(e.pilar_id);
+  const work=worksById.get(pillar.obra_id);
+  return {id:e.pilar_id,data:String(e.data_execucao).slice(0,10),obra:work?.nome||"Obra não encontrada",
+   pilar:labelMaps.get(pillar.obra_id)?.get(pillar.id)||pillar.nome,quantidade:Number(e.quantidade)||0};
+ }).sort((a,b)=>b.data.localeCompare(a.data)||collator.compare(a.obra,b.obra)||collator.compare(a.pilar,b.pilar));
+ const totalConsoles=rows.reduce((sum,r)=>sum+r.quantidade,0);
+ $("ccReportPillars").textContent=String(new Set(rows.map(r=>r.id)).size);
+ $("ccReportConsoles").textContent=totalConsoles.toLocaleString("pt-BR");
+ $("ccReportCount").textContent=`${rows.length} registro(s) entre ${br(from)} e ${br(to)}`;
+ $("ccReportBody").innerHTML=rows.map(r=>`<tr><td>${br(r.data)}</td><td>${esc(r.obra)}</td><td>${esc(r.pilar)}</td><td>${r.quantidade.toLocaleString("pt-BR")}</td></tr>`).join("");
+ $("ccReportEmpty").classList.toggle("hidden",rows.length!==0);
+}
+function openPeriodReport(){
+ reportPeriodDefault();
+ renderPeriodReport();
+ showDialog("ccReportDialog");
+}
 function option(value,label){const el=document.createElement("option");el.value=value;el.textContent=label;return el;}
 function fillRecordPillars(workId,selectedPillarId=null){
  const sel=$("recordPillar");sel.replaceChildren();
@@ -254,6 +289,8 @@ $("loginForm").addEventListener("submit",guarded(async e=>{
 $("logoutBtn").addEventListener("click",guarded(async()=>{await SiloSupabase.signOut();location.replace("index.html");}));
 $("newWorkBtn").addEventListener("click",()=>openWorkEditor());
 $("newRecordBtn").addEventListener("click",()=>openRecord());
+$("ccReportOpenBtn").addEventListener("click",guarded(async()=>openPeriodReport()));
+$("ccReportForm").addEventListener("submit",guarded(async e=>{e.preventDefault();renderPeriodReport();}));
 $("searchWork").addEventListener("input",render);
 $("workForm").addEventListener("submit",guarded(saveWork));
 $("pillarForm").addEventListener("submit",guarded(addPillar));

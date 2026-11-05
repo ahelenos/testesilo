@@ -8,7 +8,7 @@
 <title>Fechamentos de Mês · Gestão de Fábrica</title>
 <link rel="stylesheet" href="css/style.css?v=5.1.42">
 <link rel="stylesheet" href="css/loading.css?v=5.1.42">
-<link rel="stylesheet" href="css/fechamentos.css?v=5.1.59">
+<link rel="stylesheet" href="css/fechamentos.css?v=6.0.4">
 </head>
 <body>
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -361,8 +361,8 @@
         <legend>Consoles</legend>
         <div class="fm-field-grid fm-field-grid-small">
           <div class="fm-field-group">
-            <label for="consoles_pecas_qtd">Consoles</label>
-            <div class="fm-pair"><input id="consoles_pecas_qtd" aria-label="Consoles — quantidade de peças" type="number" step="1" min="0" placeholder="Quantidade de peças"><input aria-label="Consoles — quantidade de consoles" id="consoles_consoles_qtd" type="number" step="1" min="0" placeholder="Quantidade de consoles"></div>
+            <label for="consoles_pecas_qtd">Consoles — dados importados</label>
+            <div class="fm-pair"><input id="consoles_pecas_qtd" name="consoles_pecas_qtd" aria-label="Pilares concluídos no mês, importados do Controle Consoles" type="number" step="1" min="0" readonly placeholder="Quantidade de peças"><input aria-label="Consoles — quantidade de consoles" id="consoles_consoles_qtd" name="consoles_consoles_qtd" type="number" step="1" min="0" readonly placeholder="Quantidade de consoles"></div><p id="consolesImportStatus" class="fm-consoles-import-status" role="status" aria-live="polite">Consultando dados do Controle Consoles…</p>
           </div>
         </div>
       </fieldset>
@@ -576,6 +576,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=5.1.42"></script>
 <script src="js/loading.js?v=5.1.42"></script>
-<script src="js/fechamentos.js?v=5.1.59"></script>
+<script src="js/fechamentos.js?v=6.0.4"></script>
 </body>
 </html>

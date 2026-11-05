@@ -1642,3 +1642,8 @@
   #reportDialog .fm-report-content{font-size:10px!important}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
 }
+
+/* V6.0.4 — Totais de Consoles importados automaticamente */
+.fm-consoles-import-status{margin:8px 0 0;color:#31715c;font-size:11px;line-height:1.5}
+.fm-consoles-import-status.fm-consoles-error{color:#b42318}
+#consoles_pecas_qtd[readonly],#consoles_consoles_qtd[readonly]{background:#f1f5f9;color:#173354;font-weight:700;cursor:not-allowed}

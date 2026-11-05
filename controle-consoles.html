@@ -4,9 +4,9 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b1220"><link rel="icon" href="favicon.ico">
   <title>Controle Consoles · Gestão de Fábrica</title>
-  <link rel="stylesheet" href="css/style.css?v=6.0.3">
-  <link rel="stylesheet" href="css/loading.css?v=6.0.3">
-  <link rel="stylesheet" href="css/controle-consoles.css?v=6.0.3">
+  <link rel="stylesheet" href="css/style.css?v=6.0.4">
+  <link rel="stylesheet" href="css/loading.css?v=6.0.4">
+  <link rel="stylesheet" href="css/controle-consoles.css?v=6.0.4">
 </head>
 <body class="cc-page">
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -28,13 +28,13 @@
   <div class="brand"><img class="vigas-header-logo" src="assets/vigas-amarelo.png" alt="VIGAS">
     <div class="brand-text"><strong>Gestão de Fábrica</strong><span id="userRole">—</span><span id="userEmail" class="user-email"></span></div>
   </div>
-  <div class="header-actions"><a class="btn ghost" href="index.html">← Central</a><span class="home-version">V6.0.3</span><button class="btn ghost" id="logoutBtn" type="button">Sair</button></div>
+  <div class="header-actions"><a class="btn ghost" href="index.html">← Central</a><span class="home-version">V6.0.4</span><button class="btn ghost" id="logoutBtn" type="button">Sair</button></div>
 </header>
 <main class="cc-main">
  <section class="cc-hero">
   <div><a class="cc-back" href="index.html">← Central da fábrica</a><span class="eyebrow">GESTÃO · PRODUÇÃO</span>
    <h1>Controle Consoles</h1><p>Acompanhe, por obra, quais pilares já receberam consoles e quando foram executados.</p></div>
-  <div class="cc-actions"><button class="btn secondary cc-admin-only" id="newWorkBtn" type="button">+ Nova obra</button>
+  <div class="cc-actions"><button class="btn secondary" id="ccReportOpenBtn" type="button">Consultar por período</button><button class="btn secondary cc-admin-only" id="newWorkBtn" type="button">+ Nova obra</button>
    <button class="btn primary cc-admin-only" id="newRecordBtn" type="button">+ Registrar execução</button></div>
  </section>
  <p id="ccMessage" class="cc-message" role="status" aria-live="polite"></p>
@@ -85,9 +85,35 @@
   <div class="cc-footer"><button class="btn secondary" type="button" data-close="recordDialog">Cancelar</button><button class="btn primary" type="submit">Salvar execução</button></div>
  </form>
 </dialog>
+<dialog id="ccReportDialog" class="cc-dialog cc-dialog-wide">
+ <div class="cc-dialog-card cc-report-dialog-card">
+  <div class="cc-dialog-title">
+   <div><span class="eyebrow">CONSULTA DE EXECUÇÕES</span><h2>Pilares concluídos por período</h2><p>Consulte as execuções das obras entre duas datas.</p></div>
+   <button class="cc-x" data-close="ccReportDialog" type="button" aria-label="Fechar">×</button>
+  </div>
+  <form id="ccReportForm" class="cc-report-filters">
+   <label for="ccReportStart">Data inicial<input id="ccReportStart" name="data_inicial" type="date" required></label>
+   <label for="ccReportEnd">Data final<input id="ccReportEnd" name="data_final" type="date" required></label>
+   <button class="btn primary" type="submit">Pesquisar</button>
+  </form>
+  <div class="cc-report-summary">
+    <div><span>Pilares concluídos</span><strong id="ccReportPillars">0</strong></div>
+    <div><span>Consoles executados</span><strong id="ccReportConsoles">0</strong></div>
+  </div>
+  <p class="cc-report-count" id="ccReportCount" aria-live="polite"></p>
+  <div class="cc-table-wrap cc-report-table-wrap">
+   <table class="cc-table cc-report-table">
+    <thead><tr><th>Data</th><th>Obra</th><th>Pilar</th><th>Consoles</th></tr></thead>
+    <tbody id="ccReportBody"></tbody>
+   </table>
+  </div>
+  <p id="ccReportEmpty" class="cc-empty hidden">Nenhum pilar concluído no período selecionado.</p>
+  <div class="cc-footer"><button class="btn secondary" data-close="ccReportDialog" type="button">Fechar</button></div>
+ </div>
+</dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js?v=6.0.3"></script>
-<script src="js/loading.js?v=6.0.3"></script>
+<script src="js/supabase.js?v=6.0.4"></script>
+<script src="js/loading.js?v=6.0.4"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="js/controle-consoles.js?v=6.0.3"></script>
+<script src="js/controle-consoles.js?v=6.0.4"></script>
 </body></html>
