@@ -730,28 +730,52 @@ function reportMetrics(){
     ["Média funcionários/dia",fmtNum(averageCurrent(),1),`${fmtInt(state.attendance.filter(r=>(Number(r.quantidade_importada||0)+Number(r.alteracoes||0))>0).length)} dias trabalhados`]
   ];
 }
+// Aproveita os gráficos SVG já renderizados no painel. Não consulta nem altera
+// dados no banco e evita resultados diferentes entre a tela e o relatório.
+function reportEvolutionCharts(){
+  const chartIds=[
+    "productionChart",
+    "makeupChart",
+    "logisticsChart",
+    "projectsChart",
+    "efficiencyChart",
+    "consolesChart",
+    "montagemChart",
+    "refusalsChart"
+  ];
+  const cards=chartIds.map(chartId=>{
+    const chart=document.getElementById(chartId);
+    const sourceCard=chart?.closest(".fm-chart-card");
+    if(!sourceCard)return "";
+    const copy=sourceCard.cloneNode(true);
+    copy.classList.remove("fm-chart-wide");
+    copy.querySelectorAll("[id]").forEach(el=>el.removeAttribute("id"));
+    copy.querySelectorAll("[tabindex]").forEach(el=>el.removeAttribute("tabindex"));
+    return `<section class="fm-report-chart-item">${copy.outerHTML}</section>`;
+  }).filter(Boolean);
+  return cards.length
+    ? `<h3 class="fm-report-chart-title">Evolução dos indicadores mensais</h3>
+       <p class="fm-report-chart-note">Gráficos dos fechamentos cadastrados no período analisado. A linha tracejada representa a média dos meses com dados.</p>
+       <div class="fm-report-charts">${cards.join("")}</div>`
+    : `<h3>Evolução dos indicadores mensais</h3><p>Não há gráficos disponíveis para este período.</p>`;
+}
 function renderReport(){
   $("reportTitle").textContent=`Fechamento de ${monthLabel(state.month)}`;
   const previous=state.history.find(r=>String(r.mes).slice(0,7)===previousMonth(state.month));
   const metrics=reportMetrics();
   const cards=metrics.map(([a,b,c])=>`<div class="fm-report-metric"><span>${esc(a)}</span><strong>${esc(b)}</strong><small>${esc(c)}</small></div>`).join("");
-  const att=state.attendance.map(r=>{
-    const imported=Number(r.quantidade_importada||0),alter=Number(r.alteracoes||0),eff=Math.max(0,imported+alter);
-    return `<tr><td>${esc(dateLabel(r.data))}</td><td>${esc(weekdayLabel(r.data))}</td><td>${imported}</td><td>${alter>0?"+":""}${alter}</td><td>${eff}</td><td>${esc(r.observacoes||"—")}</td></tr>`;
-  }).join("");
   $("reportContent").innerHTML=`<div class="fm-report-header"><div><strong>Gestão de Fábrica</strong><span>Fechamento mensal · ${esc(monthLabel(state.month))}</span></div><span>${new Date().toLocaleDateString("pt-BR")}</span></div>
   <div class="fm-report-metrics">${cards}</div>
   <h3>Comparativo com ${esc(monthLabel(previousMonth(state.month)))}</h3>
   <div class="fm-report-comparison">${previous?renderReportComparison(previous):`<p>Não há fechamento do mês anterior para comparação.</p>`}</div>
-  <h3>Funcionários que vieram trabalhar</h3>
-  <table class="fm-report-table"><thead><tr><th>Data</th><th>Dia</th><th>Quantidade Importada</th><th>Alterações</th><th>Trabalhadores Efetivos</th><th>Observações</th></tr></thead><tbody>${att}</tbody></table>`;
+  ${reportEvolutionCharts()}`;
 }
 function renderReportComparison(previous){
   const d=state.closing||{};
   const items=[["Produção total",d.producao_total_m3,previous.producao_total_m3,true],["Produção efetiva",d.producao_efetiva_m3,previous.producao_efetiva_m3,true],["Recusas total",d.recusas_total_m3,previous.recusas_total_m3,false],["Recusas da fábrica",d.recusas_fabrica_m3,previous.recusas_fabrica_m3,false],["Expedição",d.expedicao_m3,previous.expedicao_m3,true],["Projetado",d.projetado_m3,previous.projetado_m3,true]];
   return `<div class="fm-report-compare-grid">${items.map(([n,c,p,h])=>{const pct=comparePct(c,p),lab=comparisonLabel(pct,h);return `<div><strong>${esc(n)}</strong><span>${pct===null?"—":`${pct>=0?"+":""}${fmtNum(pct,1)}%`}</span><small>${lab}</small></div>`;}).join("")}</div>`;
 }
-function openReport(){renderReport();const d=$("reportDialog");if(d?.showModal)d.showModal();else d?.setAttribute("open","");}
+function openReport(){renderCharts();renderReport();const d=$("reportDialog");if(d?.showModal)d.showModal();else d?.setAttribute("open","");}
 function printReport(){if(!$("reportDialog")?.open)openReport();else renderReport();setTimeout(()=>window.print(),120);}
 
 async function boot(){

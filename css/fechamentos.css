@@ -1556,3 +1556,89 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+
+/* Relatório mensal: gráficos de evolução (V5.1.59) */
+.fm-report-chart-title{margin-top:24px!important}
+.fm-report-chart-note{
+  color:#667085;
+  font-size:11px;
+  margin:0 0 14px;
+}
+.fm-report-charts{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.fm-report-chart-item{min-width:0;break-inside:avoid;page-break-inside:avoid}
+.fm-report-chart-item .fm-chart-card{
+  width:100%;
+  height:100%;
+  box-sizing:border-box;
+}
+.fm-report-chart-item .fm-chart-card-head{gap:6px}
+.fm-report-chart-item .fm-chart-card h3{font-size:13px}
+.fm-report-chart-item .fm-chart-card-head p{font-size:10px}
+.fm-report-chart-item .fm-chart-period{font-size:9px}
+.fm-report-chart-item .fm-chart svg{width:100%;height:auto;max-width:100%}
+.fm-report-chart-item .fm-prod-chart-wrap svg{display:block;width:100%;height:auto}
+@media(max-width:750px){
+  .fm-report-charts{grid-template-columns:1fr}
+}
+/* Impressão do próprio relatório, sem tabelas de presença. */
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  html,body{height:auto!important;overflow:visible!important;background:#fff!important}
+  body > *:not(#reportDialog){display:none!important}
+  body > #reportDialog{
+    display:block!important;
+    position:static!important;
+    width:100%!important;
+    max-width:none!important;
+    max-height:none!important;
+    overflow:visible!important;
+    padding:0!important;
+    margin:0!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+  }
+  #reportDialog .fm-report-shell{
+    overflow:visible!important;
+    max-height:none!important;
+    padding:0!important;
+  }
+  #reportDialog .fm-report-toolbar{display:none!important}
+  #reportDialog .fm-report-metrics{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:7px!important;
+    margin:10px 0 12px!important;
+  }
+  #reportDialog .fm-report-metric{padding:8px!important;break-inside:avoid}
+  #reportDialog .fm-report-metric strong{font-size:13px!important}
+  #reportDialog .fm-report-comparison{break-inside:avoid}
+  #reportDialog .fm-report-charts{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:9px!important;
+    align-items:start;
+  }
+  #reportDialog .fm-report-chart-item{break-inside:avoid!important;page-break-inside:avoid!important}
+  #reportDialog .fm-chart-card{
+    box-shadow:none!important;
+    padding:10px!important;
+    border-radius:10px!important;
+    break-inside:avoid!important;
+    page-break-inside:avoid!important;
+  }
+  #reportDialog .fm-chart{min-height:0!important}
+  #reportDialog .fm-prod-chart-wrap{min-height:0!important;overflow:visible!important}
+  #reportDialog .fm-prod-chart-wrap svg{max-height:185px!important;width:100%!important}
+  #reportDialog .fm-chart svg{max-height:185px!important;width:100%!important}
+  #reportDialog .fm-production-summary{gap:7px!important;margin-bottom:5px!important}
+  #reportDialog .fm-production-kpi,
+  #reportDialog .fm-production-average{padding:6px!important;min-width:0!important}
+  #reportDialog .fm-chart-card-head{margin-bottom:3px!important}
+  #reportDialog .fm-report-chart-note{margin:0 0 8px!important}
+  #reportDialog .fm-report-content{font-size:10px!important}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+}
