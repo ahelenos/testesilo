@@ -49,6 +49,35 @@ async function loadAll(silent=false){
 function workPillars(id){return state.pillars.filter(p=>p.obra_id===id);}
 function executionFor(id){return state.executions.find(e=>e.pilar_id===id);}
 function stats(id){const pillars=workPillars(id),ready=pillars.filter(p=>Boolean(executionFor(p.id))).length;return {total:pillars.length,ready,pending:pillars.length-ready};}
+// The pillar's UUID and ordem remain unchanged in the database.
+// Only the user-facing label is adjusted; duplicate names stay distinguishable.
+function displayPillarNames(pillars){
+ const grouped=new Map();
+ for(const p of pillars){
+  const name=String(p.nome||"").trim().toLocaleLowerCase("pt-BR");
+  if(!grouped.has(name))grouped.set(name,[]);
+  grouped.get(name).push(p);
+ }
+ const labels=new Map();
+ for(const siblings of grouped.values()){
+  siblings.sort((a,b)=>Number(a.ordem)-Number(b.ordem));
+  siblings.forEach((p,i)=>{
+   labels.set(p.id, siblings.length>1 ? `${p.nome} (${i+1} de ${siblings.length})` : p.nome);
+  });
+ }
+ return labels;
+}
+function latestWorkExecutionDate(workId){
+ const pillarIds=new Set(workPillars(workId).map(p=>p.id));
+ let latest=null;
+ for(const execution of state.executions){
+  if(!pillarIds.has(execution.pilar_id)||!execution.data_execucao)continue;
+  const day=String(execution.data_execucao).slice(0,10);
+  if(/^\\d{4}-\\d{2}-\\d{2}$/.test(day)&&(!latest||day>latest))latest=day;
+ }
+ return latest;
+}
+
 function render(){
  const totals=state.works.reduce((a,w)=>{let s=stats(w.id);a.pillars+=s.total;a.ready+=s.ready;return a;},{pillars:0,ready:0});
  $("totalWorks").textContent=state.works.length;
@@ -59,11 +88,12 @@ function render(){
  const works=[...state.works].filter(w=>w.nome.toLocaleLowerCase("pt-BR").includes(filter)).sort((a,b)=>collator.compare(a.nome,b.nome));
  $("emptyWorks").classList.toggle("hidden",works.length!==0);
  $("worksGrid").innerHTML=works.map(w=>{
-  const s=stats(w.id),pct=s.total?(s.ready/s.total)*100:0;
+  const s=stats(w.id),pct=s.total?(s.ready/s.total)*100:0,latestExecution=latestWorkExecutionDate(w.id);
   return `<article class="cc-work" data-work="${esc(w.id)}">
    <div class="cc-work-head"><h3>${esc(w.nome)}</h3><span class="cc-status">${s.total?Math.round(pct)+"% concluído":"Sem pilares"}</span></div>
    <div class="cc-stats"><div><strong>${s.total}</strong><small>Total de pilares</small></div><div><strong>${s.ready}</strong><small>Prontos com console</small></div><div><strong>${s.pending}</strong><small>A fazer console</small></div></div>
    <div class="cc-progress-track"><div class="cc-progress-bar" style="width:${pct}%"></div></div>
+   <div class="cc-last-execution"><span>Último pilar concluído</span><strong>${latestExecution?br(latestExecution):"Nenhum registro"}</strong></div>
    <div class="cc-work-actions"><button class="btn secondary" data-action="open" data-id="${esc(w.id)}">Ver pilares</button>
    ${admin()?`<button class="btn secondary" data-action="register" data-id="${esc(w.id)}">+ Execução</button><button class="btn secondary" data-action="edit-work" data-id="${esc(w.id)}">Editar</button><button class="btn secondary cc-danger" data-action="delete-work" data-id="${esc(w.id)}">Excluir</button>`:""}</div>
   </article>`;
@@ -82,6 +112,7 @@ function renderPillars(){
  const workId=state.currentWorkId;
  const filter=$("pillarStatusFilter").value;
  const q=$("pillarSearch").value.trim().toLocaleLowerCase("pt-BR");
+ const labels=displayPillarNames(workPillars(workId));
  const pillars=workPillars(workId).filter(p=>{
   const done=Boolean(executionFor(p.id));
   return (filter==="all"||(filter==="done"&&done)||(filter==="pending"&&!done))&&p.nome.toLocaleLowerCase("pt-BR").includes(q);
@@ -89,7 +120,7 @@ function renderPillars(){
  $("pillarsEmpty").classList.toggle("hidden",pillars.length!==0);
  $("pillarsBody").innerHTML=pillars.map(p=>{
   const record=executionFor(p.id);
-  return `<tr><td><strong>${esc(p.nome)}</strong><small style="display:block;color:#8798af">#${Number(p.ordem)||"—"}</small></td>
+  return `<tr><td><strong>${esc(labels.get(p.id)||p.nome)}</strong></td>
    <td><span class="${record?"cc-tag-done":"cc-tag-pending"}">${record?"Pronto":"Pendente"}</span></td>
    <td>${record?Number(record.quantidade):"—"}</td><td>${record?br(record.data_execucao):"—"}</td>
    <td>${admin()?`${record?`<button class="btn secondary" data-action="edit-execution" data-id="${esc(p.id)}">Editar execução</button><button class="btn secondary danger" data-action="remove-execution" data-id="${esc(p.id)}">Desfazer</button>`:`<button class="btn primary" data-action="new-execution" data-id="${esc(p.id)}">Registrar</button>`}<button class="btn secondary" data-action="edit-pillar" data-id="${esc(p.id)}">Nome</button><button class="btn secondary danger" data-action="remove-pillar" data-id="${esc(p.id)}">Excluir</button>`:"—"}</td></tr>`;
@@ -99,11 +130,12 @@ function option(value,label){const el=document.createElement("option");el.value=
 function fillRecordPillars(workId,selectedPillarId=null){
  const sel=$("recordPillar");sel.replaceChildren();
  const pillars=workPillars(workId).sort((a,b)=>collator.compare(a.nome,b.nome)||a.ordem-b.ordem);
+ const labels=displayPillarNames(pillars);
  // When editing an existing record, include the selected pilar.
  const available=pillars.filter(p=>!executionFor(p.id)||p.id===selectedPillarId);
  if(!available.length){sel.add(option("","Não há pilares pendentes"));return;}
  sel.add(option("","Selecione o pilar"));
- for(const p of available) sel.add(option(p.id,`${p.nome} · #${p.ordem}`));
+ for(const p of available) sel.add(option(p.id,labels.get(p.id)||p.nome));
  if(selectedPillarId)sel.value=selectedPillarId;
 }
 function openRecord(workId=null,pillarId=null){
