@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220"><link rel="icon" href="favicon.ico">
+  <title>Controle Consoles · Gestão de Fábrica</title>
+  <link rel="stylesheet" href="css/style.css?v=6.0.0">
+  <link rel="stylesheet" href="css/loading.css?v=6.0.0">
+  <link rel="stylesheet" href="css/controle-consoles.css?v=6.0.0">
+</head>
+<body class="cc-page">
+<div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
+  <div class="global-loading-card"><span class="loading-spinner" aria-hidden="true"></span><strong id="globalLoadingText">Carregando...</strong></div>
+</div>
+<div id="loginScreen" class="login-screen">
+ <div class="login-box">
+  <img class="vigas-login-logo" src="assets/vigas-preto.png" alt="VIGAS">
+  <div class="login-divider"></div><span class="eyebrow">GESTÃO DE FÁBRICA</span>
+  <h1>Controle Consoles</h1><p>Controle a execução dos consoles dos pilares por obra.</p>
+  <form id="loginForm"><label for="loginEmail">E-mail</label><input type="email" id="loginEmail" autocomplete="username" required>
+   <label for="loginPassword">Senha</label><input type="password" id="loginPassword" autocomplete="current-password" required>
+   <button type="submit" class="btn primary">Entrar</button><p id="loginError" role="alert"></p>
+  </form>
+ </div>
+</div>
+<div id="appScreen" class="hidden">
+<header class="cc-header">
+  <div class="brand"><img class="vigas-header-logo" src="assets/vigas-amarelo.png" alt="VIGAS">
+    <div class="brand-text"><strong>Gestão de Fábrica</strong><span id="userRole">—</span><span id="userEmail" class="user-email"></span></div>
+  </div>
+  <div class="header-actions"><a class="btn ghost" href="index.html">← Central</a><span class="home-version">V6.0.0</span><button class="btn ghost" id="logoutBtn" type="button">Sair</button></div>
+</header>
+<main class="cc-main">
+ <section class="cc-hero">
+  <div><a class="cc-back" href="index.html">← Central da fábrica</a><span class="eyebrow">GESTÃO · PRODUÇÃO</span>
+   <h1>Controle Consoles</h1><p>Acompanhe, por obra, quais pilares já receberam consoles e quando foram executados.</p></div>
+  <div class="cc-actions"><button class="btn secondary cc-admin-only" id="newWorkBtn" type="button">+ Nova obra</button>
+   <button class="btn primary cc-admin-only" id="newRecordBtn" type="button">+ Registrar execução</button></div>
+ </section>
+ <p id="ccMessage" class="cc-message" role="status" aria-live="polite"></p>
+ <section class="cc-overview" aria-label="Resumo geral">
+  <article><span>Obras cadastradas</span><strong id="totalWorks">0</strong></article>
+  <article><span>Total de pilares</span><strong id="totalPillars">0</strong></article>
+  <article><span>Pilares prontos</span><strong id="totalReady">0</strong></article>
+  <article><span>Pilares pendentes</span><strong id="totalPending">0</strong></article>
+ </section>
+ <section class="cc-panel">
+  <div class="cc-section-head"><div><span class="eyebrow">OBRAS</span><h2>Andamento dos consoles</h2></div>
+  <label class="cc-search"><span>Pesquisar obra</span><input type="search" id="searchWork" placeholder="Nome da obra..." autocomplete="off"></label></div>
+  <div id="worksGrid" class="cc-works-grid"></div>
+  <p id="emptyWorks" class="cc-empty hidden">Nenhuma obra encontrada. Cadastre uma obra para começar.</p>
+ </section>
+</main>
+</div>
+<dialog id="workDialog" class="cc-dialog">
+ <form id="workForm" class="cc-dialog-card">
+  <div class="cc-dialog-title"><div><span class="eyebrow">OBRAS</span><h2 id="workDialogTitle">Nova obra</h2></div><button class="cc-x" type="button" data-close="workDialog" aria-label="Fechar">×</button></div>
+  <label for="workName">Nome da obra</label><input id="workName" name="workName" maxlength="160" required placeholder="Ex.: Condomínio Central">
+  <div class="cc-footer"><button class="btn secondary" type="button" data-close="workDialog">Cancelar</button><button class="btn primary" type="submit">Salvar obra</button></div>
+ </form>
+</dialog>
+<dialog id="pillarsDialog" class="cc-dialog cc-dialog-wide">
+ <div class="cc-dialog-card">
+  <div class="cc-dialog-title"><div><span class="eyebrow">PILARES DA OBRA</span><h2 id="pillarsTitle">Pilares</h2><p id="pillarsSubtitle"></p></div><button class="cc-x" type="button" data-close="pillarsDialog" aria-label="Fechar">×</button></div>
+  <div class="cc-inline cc-admin-only"><form id="pillarForm" class="cc-inline-form"><label for="pillarName">Nome do pilar</label><input id="pillarName" name="pillarName" maxlength="120" required placeholder="P1, P2, P2..."><button class="btn primary" type="submit">+ Adicionar pilar</button></form></div>
+  <div class="cc-import cc-admin-only"><label for="importFile">Importar pilares de Excel (.xlsx, .xls) ou CSV</label>
+    <div class="cc-inline"><input id="importFile" type="file" accept=".xlsx,.xls,.csv"><button id="importBtn" class="btn secondary" type="button">Importar arquivo</button></div>
+    <small>Cada linha gera um pilar independente, inclusive quando o nome se repete. Use uma coluna “Pilar”, “Nome” ou a primeira coluna da planilha.</small></div>
+  <div class="cc-inline cc-filter-row"><label for="pillarStatusFilter">Situação</label>
+    <select id="pillarStatusFilter"><option value="all">Todos</option><option value="pending">Pendentes</option><option value="done">Prontos</option></select>
+    <label for="pillarSearch">Pesquisar pilar</label><input id="pillarSearch" type="search" placeholder="Ex.: P2"></div>
+  <div class="cc-table-wrap"><table class="cc-table"><thead><tr><th>Pilar</th><th>Situação</th><th>Consoles</th><th>Data da execução</th><th>Ações</th></tr></thead><tbody id="pillarsBody"></tbody></table></div>
+  <p id="pillarsEmpty" class="cc-empty hidden">Nenhum pilar encontrado.</p>
+  <div class="cc-footer"><button class="btn secondary" type="button" data-close="pillarsDialog">Fechar</button></div>
+ </div>
+</dialog>
+<dialog id="recordDialog" class="cc-dialog">
+ <form id="recordForm" class="cc-dialog-card">
+  <div class="cc-dialog-title"><div><span class="eyebrow">EXECUÇÃO DOS CONSOLES</span><h2 id="recordTitle">Registrar execução</h2></div><button class="cc-x" type="button" data-close="recordDialog" aria-label="Fechar">×</button></div>
+  <label for="recordWork">Obra</label><select id="recordWork" required></select>
+  <label for="recordPillar">Pilar</label><select id="recordPillar" required></select>
+  <label for="recordQty">Quantidade de consoles executados</label><input id="recordQty" type="number" min="1" max="100000" step="1" required placeholder="Ex.: 2">
+  <label for="recordDate">Data da execução</label><input id="recordDate" type="date" required>
+  <p class="cc-hint">O primeiro registro conclui o pilar, independentemente da quantidade de consoles informada.</p>
+  <div class="cc-footer"><button class="btn secondary" type="button" data-close="recordDialog">Cancelar</button><button class="btn primary" type="submit">Salvar execução</button></div>
+ </form>
+</dialog>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js?v=6.0.0"></script>
+<script src="js/loading.js?v=6.0.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="js/controle-consoles.js?v=6.0.0"></script>
+</body></html>

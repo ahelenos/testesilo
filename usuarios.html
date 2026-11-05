@@ -29,7 +29,7 @@
     </div>
   </div>
   <div class="header-actions">
-    <span class="home-version">V5.1.24</span>
+    <span class="home-version">V6.0.0</span>
     <a class="btn ghost" href="index.html">← Gestão de Fábrica</a>
     <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
   </div>
@@ -82,6 +82,7 @@
             <th>Controle de Presença</th>
             <th>Corpo de Prova</th>
             <th>Fechamentos de Mês</th>
+            <th>Controle Consoles</th>
             <th></th>
           </tr>
         </thead>
@@ -188,6 +189,14 @@
             <option value="admin">Administrar</option>
           </select>
         </div>
+        <div>
+          <label for="newControleConsoles">Controle Consoles</label>
+          <select id="newControleConsoles">
+            <option value="none">Sem acesso</option>
+            <option value="viewer">Visualizar</option>
+            <option value="admin">Administrar</option>
+          </select>
+        </div>
       </div>
     </fieldset>
 
@@ -283,6 +292,14 @@
             <option value="admin">Administrar</option>
           </select>
         </div>
+        <div>
+          <label for="editControleConsoles">Controle Consoles</label>
+          <select id="editControleConsoles">
+            <option value="none">Sem acesso</option>
+            <option value="viewer">Visualizar</option>
+            <option value="admin">Administrar</option>
+          </select>
+        </div>
       </div>
     </fieldset>
 
@@ -340,11 +357,11 @@
   </div>
 </dialog>
 
-<footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V5.1.24</footer>
+<footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V6.0.0</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=5.1.37"></script>
 <script src="js/loading.js?v=5.1.37"></script>
-<script src="js/usuarios.js?v=5.1.37"></script>
+<script src="js/usuarios.js?v=6.0.0"></script>
 </body>
 </html>

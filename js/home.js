@@ -62,12 +62,13 @@ async function boot(){
       ["ferramentas","toolsModuleCard"],
       ["presenca","presenceModuleCard"],
       ["corpo_prova","corpoProvaModuleCard"],
-      ["fechamentos_mes","fechamentosModuleCard"]
+      ["fechamentos_mes","fechamentosModuleCard"],
+      ["controle_consoles","controleConsolesModuleCard"]
     ];
     for(const [module,cardId] of moduleCards){
       try{
         let permission;
-        if(module === "corpo_prova" || module === "fechamentos_mes"){
+        if(module === "corpo_prova" || module === "fechamentos_mes" || module === "controle_consoles"){
           const {data:isGlobalAdmin,error:adminCheckError}=await supabaseClient.rpc("is_global_admin");
           if(!adminCheckError && isGlobalAdmin===true) permission="admin";
           else {
