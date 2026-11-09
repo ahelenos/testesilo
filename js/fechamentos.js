@@ -279,8 +279,11 @@ async function loadClosing(){
       $("closingStatus").className="fm-status saved";
     }
     else{resetForm();state.attendance=state.presenceBaseline.map(r=>({...r}));$("closingStatus").textContent="Novo fechamento";$("closingStatus").className="fm-status new";}
-    // O formulário exibe sempre os totais vivos das execuções.
-    try{
+    // Fechamentos existentes sao historicos: nunca substituir os consoles
+    // originalmente salvos por valores importados de outra origem.
+    if(state.closing?.id){
+      preserveSavedConsoles();
+    }else try{
       await syncMonthlyConsoles();
     }catch(syncError){
       console.error(syncError);
@@ -291,6 +294,21 @@ async function loadClosing(){
     renderAttendance();renderKpis();setFormDisabled(!isAdmin());updateHistorySelection();renderComparison();renderAnnualComparison();renderCharts();
   }catch(error){console.error(error);setMessage(translateError(error),"error");state.closing=null;resetForm();state.attendance=state.presenceBaseline||[];renderAttendance();renderKpis();}
   finally{doneLoading();}
+}
+// V6.0.7: Fechamentos existentes mantem os dados historicos de Consoles.
+// Nao consultar o Controle Consoles ao abrir/editar um fechamento ja salvo.
+function preserveSavedConsoles(){
+  if(!state.closing?.id)return;
+  const pillars=Number(state.closing.consoles_pecas_qtd??0);
+  const consoles=Number(state.closing.consoles_consoles_qtd??0);
+  $("consoles_pecas_qtd").value=String(Number.isFinite(pillars)?pillars:0);
+  $("consoles_consoles_qtd").value=String(Number.isFinite(consoles)?consoles:0);
+  const status=$("consolesImportStatus");
+  if(status){
+    status.textContent="Valores preservados do fechamento salvo. A importacao automatica vale apenas para fechamentos novos.";
+    status.classList.remove("fm-consoles-error");
+  }
+  state.consolesSynced=true;
 }
 // V6.0.4: a origem oficial dos consoles é o Controle Consoles.
 // A RPC retorna apenas os totais mensais, sem expor detalhes de obras
@@ -380,9 +398,19 @@ async function saveClosing(event){
   event?.preventDefault();if(!isAdmin())return;
   const errorEl=$("closingError");errorEl.textContent="";
   try{
-    // Reconsultar imediatamente antes de gravar para evitar dados desatualizados.
-    await syncMonthlyConsoles();
-    const data=readForm();validateData(data);const attendance=collectAttendance();
+    // Nao sobrescrever consoles historicos ao editar um fechamento existente.
+    // Somente o primeiro salvamento de um mes novo importa valores do Controle Consoles.
+    if(state.closing?.id){
+      preserveSavedConsoles();
+    }else{
+      await syncMonthlyConsoles();
+    }
+    const data=readForm();
+    if(state.closing?.id){
+      data.consoles_pecas_qtd=Number(state.closing.consoles_pecas_qtd??0);
+      data.consoles_consoles_qtd=Number(state.closing.consoles_consoles_qtd??0);
+    }
+    validateData(data);const attendance=collectAttendance();
     $("saveBtn").disabled=true;loading("Salvando fechamento...");
     const {error}=await sb.rpc("salvar_fechamento_mes",{p_mes:`${state.month}-01`,p_dados:data,p_presencas:attendance});if(error)throw error;
     setMessage("Fechamento salvo com sucesso.","success");await loadClosing();await loadHistory();
