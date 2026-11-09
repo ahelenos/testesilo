@@ -580,7 +580,7 @@ function renderMetricChart(containerId, rows, config){
 
   // Escala decimal para indicadores inferiores a 1 m³ (eficiência).
   // Evita que 0,57 seja desenhado numa escala 0–10.
-  const rawMax = Math.max(...values, average, config.fractionalScale ? 0.01 : 1);
+  const rawMax = Math.max(...values, average, Number(config.targetValue) || 0, config.fractionalScale ? 0.01 : 1);
   const step = config.fractionalScale
     ? (rawMax <= 0.25 ? 0.05 : rawMax <= 0.5 ? 0.1
       : rawMax <= 1 ? 0.2 : rawMax <= 2.5 ? 0.5
@@ -633,6 +633,19 @@ function renderMetricChart(containerId, rows, config){
 
   const averageY = y(average);
 
+  // Meta fixa de volume: exclusiva dos quatro gráficos selecionados.
+  // A escala Y inclui a meta mesmo quando todos os volumes estão abaixo dela.
+  const target = Number(config.targetValue);
+  const hasTarget = Number.isFinite(target) && target > 0;
+  const targetY = hasTarget ? y(target) : 0;
+  // Evita sobrepor os rótulos se a média e a meta estiverem muito próximas.
+  const targetLabelY = hasTarget
+    ? Math.max(p.t + 3, Math.min(p.t + h - 24, targetY - 23))
+    : 0;
+  const meanLabelY = hasTarget && Math.abs(targetY - averageY) < 30
+    ? Math.min(p.t + h - 22, averageY + 5)
+    : averageY - 23;
+
   container.innerHTML = `
     <div class="fm-production-summary compact">
       <div class="fm-production-kpi ${config.kpiClass || ""}">
@@ -654,11 +667,18 @@ function renderMetricChart(containerId, rows, config){
         <line x1="${p.l}" y1="${p.t+h}" x2="${W-p.r}" y2="${p.t+h}" class="fm-prod-axis-line"/>
         <line x1="${p.l}" y1="${averageY.toFixed(2)}" x2="${W-p.r}" y2="${averageY.toFixed(2)}" class="fm-prod-average-line"/>
         <g class="fm-prod-average-label">
-          <rect x="${W-p.r-128}" y="${(averageY-23).toFixed(2)}" width="116" height="22" rx="11"/>
-          <text x="${W-p.r-70}" y="${(averageY-8).toFixed(2)}" text-anchor="middle">
+          <rect x="${W-p.r-128}" y="${meanLabelY.toFixed(2)}" width="116" height="22" rx="11"/>
+          <text x="${W-p.r-70}" y="${(meanLabelY+15).toFixed(2)}" text-anchor="middle">
             Média ${config.format(average)}
           </text>
         </g>
+        ${hasTarget ? `
+          <line x1="${p.l}" y1="${targetY.toFixed(2)}" x2="${W-p.r}" y2="${targetY.toFixed(2)}" class="fm-prod-target-line"/>
+          <g class="fm-prod-target-label">
+            <rect x="${W-p.r-72}" y="${targetLabelY.toFixed(2)}" width="68" height="22" rx="11"/>
+            <text x="${W-p.r-38}" y="${(targetLabelY+15).toFixed(2)}" text-anchor="middle">META</text>
+          </g>
+        ` : ""}
         ${bars}
         ${labels}
       </svg>
@@ -683,6 +703,7 @@ function renderEvolutionChart(rows){
     periodId:"evolutionChartPeriod",
     title:"Produção total",
     unit:"m³",
+    targetValue:550,
     value:r=>r.producao_total_m3,
     format:fmtM3,
     decimals:2,
@@ -705,6 +726,7 @@ function renderEvolutionChart(rows){
     periodId:"logisticsChartPeriod",
     title:"Expedição",
     unit:"m³",
+    targetValue:550,
     value:r=>r.expedicao_m3,
     format:fmtM3,
     decimals:2,
@@ -716,6 +738,7 @@ function renderEvolutionChart(rows){
     periodId:"projectsChartPeriod",
     title:"Projetado",
     unit:"m³",
+    targetValue:550,
     value:r=>r.projetado_m3,
     format:fmtM3,
     decimals:2,
@@ -751,6 +774,7 @@ function renderEvolutionChart(rows){
     periodId:"montagemChartPeriod",
     title:"Montagem",
     unit:"m³",
+    targetValue:550,
     value:r=>r.montagem_m3,
     format:fmtM3,
     decimals:2,
@@ -818,7 +842,7 @@ function reportEvolutionCharts(){
   }).filter(Boolean);
   return cards.length
     ? `<h3 class="fm-report-chart-title">Evolução dos indicadores mensais</h3>
-       <p class="fm-report-chart-note">Gráficos dos fechamentos cadastrados no período analisado. A linha tracejada representa a média dos meses com dados.</p>
+       <p class="fm-report-chart-note">Gráficos dos fechamentos cadastrados no período analisado. Linha laranja: média dos meses com dados. Linha vermelha (META): 550 m³ nos gráficos de Produção Total, Expedição, Projetado e Montagem.</p>
        <div class="fm-report-charts">${cards.join("")}</div>`
     : `<h3>Evolução dos indicadores mensais</h3><p>Não há gráficos disponíveis para este período.</p>`;
 }

@@ -1647,3 +1647,37 @@
 .fm-consoles-import-status{margin:8px 0 0;color:#31715c;font-size:11px;line-height:1.5}
 .fm-consoles-import-status.fm-consoles-error{color:#b42318}
 #consoles_pecas_qtd[readonly],#consoles_consoles_qtd[readonly]{background:#f1f5f9;color:#173354;font-weight:700;cursor:not-allowed}
+
+
+/* V6.0.8 — Meta fixa de 550 m³ nos quatro gráficos de volume.
+   SVG copiado ao relatório/PDF preserva a mesma representação. */
+.fm-prod-target-line{
+  stroke:#dc2626;
+  stroke-width:2;
+  stroke-dasharray:7 5;
+  pointer-events:none;
+}
+.fm-prod-target-label rect{
+  fill:#fff1f2;
+  stroke:#fda4af;
+  stroke-width:1;
+}
+.fm-prod-target-label text{
+  fill:#b91c1c;
+  font-size:10px;
+  font-weight:850;
+}
+@media print{
+  .fm-prod-target-line{
+    stroke:#dc2626 !important;
+    stroke-width:2;
+    stroke-dasharray:7 5;
+  }
+  .fm-prod-target-label rect{
+    fill:#fff1f2 !important;
+    stroke:#fda4af !important;
+  }
+  .fm-prod-target-label text{
+    fill:#b91c1c !important;
+  }
+}
