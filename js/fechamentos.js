@@ -167,12 +167,11 @@ function renderAttendanceKpi(){
 
   const total = vals.reduce((a, b) => a + b, 0);
 
-  // Média de funcionários por dia: sempre arredondada para baixo.
-  const avg = vals.length
-    ? Math.floor(total / vals.length)
-    : 0;
+  // Média real dos trabalhadores efetivos dos dias com atividade.
+  // Mantém a precisão no cálculo e arredonda apenas na apresentação.
+  const avg = vals.length ? total / vals.length : 0;
 
-  $("kpiFuncionarios").textContent = fmtInt(avg);
+  $("kpiFuncionarios").textContent = fmtNum(avg, 2);
   $("kpiDias").textContent =
     `${fmtInt(vals.length)} ${vals.length === 1 ? "dia" : "dias"} trabalhados`;
   renderProductivityKpi(vals.length, avg);
@@ -347,6 +346,24 @@ async function loadHistory(){
     const {data,error}=await sb.rpc("listar_fechamentos_mes");if(error)throw error;
     state.history=data||[];
 
+    // A RPC historica original arredondava a média para baixo.
+    // Esta RPC retorna a média real calculada com base nos trabalhadores
+    // efetivos salvos para cada dia do fechamento, sem alterar registros.
+    const {data: mediasReais,error: mediasError} =
+      await sb.rpc("fm_medias_reais_funcionarios");
+    if(mediasError) throw mediasError;
+    const mediasPorMes=new Map(
+      (mediasReais||[]).map(r=>[String(r.mes).slice(0,7),r])
+    );
+    state.history=state.history.map(row=>{
+      const real=mediasPorMes.get(String(row.mes).slice(0,7));
+      return real ? {
+        ...row,
+        media_funcionarios_dia:Number(real.media_funcionarios_dia||0),
+        dias_trabalhados:Number(real.dias_trabalhados||0)
+      } : row;
+    });
+
     // A listagem historica nao inclui os campos de consoles.
     // Busca os volumes pela RPC especifica sem comprometer os demais graficos.
     try {
@@ -383,7 +400,7 @@ async function loadHistory(){
       <td>${esc(fmtM3(row.producao_total_m3))}<small>${fmtInt(row.producao_total_qtd)} peças</small></td>
       <td>${esc(fmtM3(row.producao_efetiva_m3))}<small>${fmtInt(row.producao_efetiva_qtd)} peças</small></td>
       <td>${esc(fmtM3(row.expedicao_m3))}<small>${fmtInt(row.expedicao_qtd)} peças</small></td>
-      <td>${fmtNum(row.media_funcionarios_dia||0,1)}<small>${fmtInt(row.dias_trabalhados||0)} dias trabalhados</small></td>
+      <td>${fmtNum(row.media_funcionarios_dia||0,2)}<small>${fmtInt(row.dias_trabalhados||0)} dias trabalhados</small></td>
       <td><button class="btn secondary fm-open-history" data-month="${esc(String(row.mes).slice(0,7))}" type="button">Abrir</button></td>
     </tr>`).join("");
     $("historyEmpty").classList.toggle("hidden",state.history.length!==0);
@@ -458,7 +475,7 @@ function renderComparison(){
     const cls=label==="Melhorou"?"better":label==="Piorou"?"worse":"neutral";
     return `<article class="fm-compare-card ${cls}">
       <span>${esc(name)}</span><strong>${pct===null?"—":`${pct>=0?"+":""}${fmtNum(pct,1)}%`}</strong>
-      <small>${esc(label)} · atual ${fmtNum(c,1)} ${unit} · anterior ${fmtNum(p,1)} ${unit}</small>
+      <small>${esc(label)} · atual ${fmtNum(c,unit==="func./dia"?2:1)} ${unit} · anterior ${fmtNum(p,unit==="func./dia"?2:1)} ${unit}</small>
     </article>`;
   }).join("");
 }
@@ -504,7 +521,7 @@ function renderAnnualComparison(){
   ];
   grid.innerHTML=metrics.map(([name,key,unit,higher])=>{
     const current=key==="media_funcionarios_dia"
-      ? Math.floor(averageCurrent())
+      ? averageCurrent()
       : Number(state.closing[key]||0);
     const yearMean=closingMonths.reduce((sum,row)=>{
       const value=key==="media_funcionarios_dia" && String(row.mes).slice(0,7)===selected
@@ -518,7 +535,7 @@ function renderAnnualComparison(){
     const cls=result==="Melhorou"?"better":result==="Piorou"?"worse":"neutral";
     return `<article class="fm-compare-card ${cls}">
       <span>${esc(name)}</span><strong>${validPct===null?"—":`${validPct>=0?"+":""}${fmtNum(validPct,1)}%`}</strong>
-      <small>${esc(result)} · atual ${fmtNum(current,1)} ${unit} · média do ano ${fmtNum(yearMean,1)} ${unit}</small>
+      <small>${esc(result)} · atual ${fmtNum(current,unit==="func./dia"?2:1)} ${unit} · média do ano ${fmtNum(yearMean,unit==="func./dia"?2:1)} ${unit}</small>
     </article>`;
   }).join("");
 }
@@ -690,7 +707,7 @@ function renderMetricChart(containerId, rows, config){
 function efficiencyForMonth(row){
   const volume = Number(row?.producao_total_m3);
   const days = Number(row?.dias_trabalhados);
-  const avg = Math.floor(Number(row?.media_funcionarios_dia));
+  const avg = Number(row?.media_funcionarios_dia);
   if(!Number.isFinite(volume) || !Number.isFinite(days) ||
      !Number.isFinite(avg) || volume <= 0 || days <= 0 || avg <= 0){
     return 0;
@@ -814,7 +831,7 @@ function reportMetrics(){
     ["Consoles",fmtInt(d.consoles_pecas_qtd)+" peças",fmtInt(d.consoles_consoles_qtd)+" consoles"],
     ["Expedição",fmtM3(d.expedicao_m3),fmtInt(d.expedicao_qtd)+" peças"],
     ["Projetado",fmtM3(d.projetado_m3),fmtInt(d.projetado_qtd)+" peças"],
-    ["Média funcionários/dia",fmtNum(averageCurrent(),1),`${fmtInt(state.attendance.filter(r=>(Number(r.quantidade_importada||0)+Number(r.alteracoes||0))>0).length)} dias trabalhados`]
+    ["Média funcionários/dia",fmtNum(averageCurrent(),2),`${fmtInt(state.attendance.filter(r=>(Number(r.quantidade_importada||0)+Number(r.alteracoes||0))>0).length)} dias trabalhados`]
   ];
 }
 // Aproveita os gráficos SVG já renderizados no painel. Não consulta nem altera
