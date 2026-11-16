@@ -29,7 +29,7 @@
     </div>
   </div>
   <div class="header-actions">
-    <span class="home-version">V6.0.0</span>
+    <span class="home-version">V7.0.0</span>
     <a class="btn ghost" href="index.html">← Gestão de Fábrica</a>
     <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
   </div>
@@ -83,6 +83,7 @@
             <th>Corpo de Prova</th>
             <th>Fechamentos de Mês</th>
             <th>Controle Consoles</th>
+             <th>Apresentação Comercial</th>
             <th scope="col" class="users-actions-head">Ações</th>
           </tr>
         </thead>
@@ -197,6 +198,14 @@
             <option value="admin">Administrar</option>
           </select>
         </div>
+         <div>
+           <label for="newApresentacaoComercial">Apresentação Comercial</label>
+           <select id="newApresentacaoComercial" name="newApresentacaoComercial">
+             <option value="none">Sem acesso</option>
+             <option value="viewer">Visualizar</option>
+             <option value="admin">Administrar (somente leitura)</option>
+           </select>
+         </div>
       </div>
     </fieldset>
 
@@ -300,6 +309,14 @@
             <option value="admin">Administrar</option>
           </select>
         </div>
+         <div>
+           <label for="editApresentacaoComercial">Apresentação Comercial</label>
+           <select id="editApresentacaoComercial" name="editApresentacaoComercial">
+             <option value="none">Sem acesso</option>
+             <option value="viewer">Visualizar</option>
+             <option value="admin">Administrar (somente leitura)</option>
+           </select>
+         </div>
       </div>
     </fieldset>
 
@@ -357,11 +374,11 @@
   </div>
 </dialog>
 
-<footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V6.0.0</footer>
+<footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V7.0.0</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=5.1.37"></script>
 <script src="js/loading.js?v=5.1.37"></script>
-<script src="js/usuarios.js?v=6.0.0"></script>
+<script src="js/usuarios.js?v=7.0.0"></script>
 </body>
 </html>

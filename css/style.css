@@ -538,3 +538,20 @@
     display:none !important;
   }
 }
+
+/* V7.0.0 - módulo de BI executivo premium na Central */
+.module-apresentacao-comercial{
+  border-color:#4e6ca8!important;
+  background:linear-gradient(128deg,#122a4c 0%,#1e2244 58%,#162c43 100%)!important;
+  color:#f6f9ff!important;
+  position:relative;overflow:hidden;
+}
+.module-apresentacao-comercial::before{
+  content:"";position:absolute;right:-55px;top:-70px;width:190px;height:190px;
+  border-radius:50%;background:radial-gradient(circle,#8099fb3a 0%,transparent 65%);pointer-events:none;
+}
+.module-apresentacao-comercial .module-icon{background:#ffffff14;color:#f4d584}
+.module-apresentacao-comercial h2{color:#fff!important}
+.module-apresentacao-comercial p{color:#becce4!important}
+.module-apresentacao-comercial .module-eyebrow{color:#f4cf81!important}
+.module-apresentacao-comercial .module-arrow{color:#f4cf81!important}

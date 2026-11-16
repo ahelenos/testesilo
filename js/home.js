@@ -1,4 +1,4 @@
-const APP_VERSION = "5.1.38";
+const APP_VERSION = "7.0.0";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
@@ -63,12 +63,13 @@ async function boot(){
       ["presenca","presenceModuleCard"],
       ["corpo_prova","corpoProvaModuleCard"],
       ["fechamentos_mes","fechamentosModuleCard"],
-      ["controle_consoles","controleConsolesModuleCard"]
+      ["controle_consoles","controleConsolesModuleCard"],
+      ["apresentacao_comercial","apresentacaoComercialModuleCard"]
     ];
     for(const [module,cardId] of moduleCards){
       try{
         let permission;
-        if(module === "corpo_prova" || module === "fechamentos_mes" || module === "controle_consoles"){
+        if(module === "corpo_prova" || module === "fechamentos_mes" || module === "controle_consoles" || module === "apresentacao_comercial"){
           const {data:isGlobalAdmin,error:adminCheckError}=await supabaseClient.rpc("is_global_admin");
           if(!adminCheckError && isGlobalAdmin===true) permission="admin";
           else {

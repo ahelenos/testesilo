@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1426">
+  <link rel="icon" href="favicon.ico">
+  <title>Apresentação Comercial | Gestão de Fábrica V7</title>
+  <link rel="stylesheet" href="css/apresentacao-comercial.css?v=7.0.0">
+</head>
+<body>
+  <div class="bi-app" id="biApp" hidden>
+    <header class="bi-topbar">
+      <a class="bi-brand" href="index.html" aria-label="Voltar à Central da Fábrica">
+        <img src="assets/vigas-amarelo.png" alt="VIGAS Engenharia em Pré-Moldados">
+        <span class="bi-brand-text"><strong>VIGAS <em>/ BI EXECUTIVO</em></strong><small>Gestão de Fábrica · V7.0.0</small></span>
+      </a>
+      <nav aria-label="Seções do dashboard" class="bi-nav">
+        <a href="#biPerformance">Performance</a>
+        <a href="#biQuality">Qualidade</a>
+        <a href="#biWorks">Obras</a>
+      </nav>
+      <div class="bi-top-actions">
+        <span class="bi-live"><i></i> DADOS REAIS</span>
+        <a href="index.html" class="bi-action bi-action-quiet">← Central</a>
+        <button id="biExitPresentation" type="button" class="bi-action bi-action-quiet" hidden>Sair da apresentação</button>
+        <button id="biLogout" type="button" class="bi-action bi-action-quiet">Sair</button>
+      </div>
+    </header>
+
+    <main class="bi-main">
+      <section class="bi-intro">
+        <div>
+          <p class="bi-eyebrow"><span class="bi-small-line"></span> INTELIGÊNCIA DE PRODUÇÃO · V7</p>
+          <h1>Apresentação <span>Comercial.</span></h1>
+          <p class="bi-intro-description">Indicadores industriais, eficiência, qualidade e obras em uma visão executiva — com base nos registros da fábrica.</p>
+        </div>
+        <div class="bi-intro-side">
+          <span>PAINEL EXECUTIVO</span>
+          <strong id="biSnapshotLabel">—</strong>
+          <small id="biUpdated">Carregando dados...</small>
+          <div class="bi-intro-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+      </section>
+
+      <section class="bi-filters" aria-label="Filtros globais do BI">
+        <div class="bi-filter-heading"><span class="bi-eyebrow">FILTROS GLOBAIS</span><span class="bi-filters-caption">Altere os parâmetros para atualizar toda a análise.</span></div>
+        <div class="bi-filter-grid">
+          <label>Janela de análise
+            <select id="biPeriod" name="biPeriod">
+              <option value="6">Últimos 6 meses</option>
+              <option value="12" selected>Últimos 12 meses</option>
+              <option value="24">Últimos 24 meses</option>
+            </select>
+          </label>
+          <label>Até o mês
+            <input id="biEndMonth" name="biEndMonth" type="month">
+          </label>
+          <label>Obra
+            <select id="biWorkFilter" name="biWorkFilter"><option value="all">Todas as obras</option></select>
+          </label>
+          <label>Área do dashboard
+            <select id="biFocus" name="biFocus">
+              <option value="all">Visão completa</option>
+              <option value="performance">Produção e desempenho</option>
+              <option value="quality">Qualidade e eficiência</option>
+              <option value="works">Obras e consoles</option>
+            </select>
+          </label>
+          <div class="bi-filter-buttons">
+            <button type="button" id="biRefresh" class="bi-action bi-action-primary">↻ Atualizar</button>
+            <button type="button" id="biPrint" class="bi-action">Imprimir / PDF</button>
+            <button type="button" id="biPresentation" class="bi-action">▣ Apresentar</button>
+          </div>
+        </div>
+        <p class="bi-info-line">O filtro de obra atua somente nos dados de pilares e consoles. Os volumes de produção são registrados por mês para a fábrica inteira.</p>
+      </section>
+
+      <div id="biStatus" class="bi-status" role="status" aria-live="polite">Buscando dados consolidados no Supabase…</div>
+
+      <section class="bi-section bi-summary-section" id="biOverview">
+        <div class="bi-section-heading">
+          <div><span class="bi-eyebrow">01 · VISÃO EXECUTIVA</span><h2>Os números da operação</h2><p id="biSummaryContext">Indicadores do último fechamento disponível na janela selecionada.</p></div>
+          <span class="bi-section-tag" id="biMonthBadge">—</span>
+        </div>
+        <div id="biKpis" class="bi-kpi-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="bi-section" id="biPerformance">
+        <div class="bi-section-heading">
+          <div><span class="bi-eyebrow">02 · CAPACIDADE INDUSTRIAL</span><h2>Performance de produção</h2><p>Evolução de volumes e atingimento da meta de referência de 550 m³.</p></div>
+          <span class="bi-section-tag">META · 550 m³</span>
+        </div>
+        <div class="bi-chart-grid">
+          <article class="bi-chart-card bi-chart-wide">
+            <div class="bi-card-head"><div><span class="bi-mini-label">EVOLUÇÃO INDUSTRIAL</span><h3>Volumes da fábrica</h3><p>Compare séries no mesmo intervalo mensal.</p></div>
+              <label class="bi-compact-label">Indicador
+                <select id="biIndicator" name="biIndicator">
+                  <option value="all">Produção, expedição, montagem e projetado</option>
+                  <option value="producao_total_m3">Produção total</option>
+                  <option value="expedicao_m3">Expedição</option>
+                  <option value="montagem_m3">Montagem</option>
+                  <option value="projetado_m3">Projetado</option>
+                  <option value="maquiagem_m3">Maquiagem</option>
+                </select>
+              </label>
+            </div>
+            <div id="biHeroChart" class="bi-chart-canvas"></div>
+            <div id="biHeroDetail" class="bi-chart-detail" aria-live="polite">Selecione um ponto para ver o valor exato.</div>
+          </article>
+
+          <article class="bi-chart-card">
+            <div class="bi-card-head"><div><span class="bi-mini-label">META INDUSTRIAL</span><h3>Produção total mensal</h3><p>Volume em m³ · média e meta.</p></div><span class="bi-corner-dot blue"></span></div>
+            <div id="biProductionChart" class="bi-chart-canvas"></div>
+            <div id="biProductionDetail" class="bi-chart-detail" aria-live="polite"></div>
+          </article>
+          <article class="bi-chart-card">
+            <div class="bi-card-head"><div><span class="bi-mini-label">FLUXO DE ENTREGAS</span><h3>Expedição × montagem</h3><p>Volume mensal em m³.</p></div><span class="bi-corner-dot teal"></span></div>
+            <div id="biFlowChart" class="bi-chart-canvas"></div>
+            <div id="biFlowDetail" class="bi-chart-detail" aria-live="polite"></div>
+          </article>
+          <article class="bi-chart-card">
+            <div class="bi-card-head"><div><span class="bi-mini-label">ETAPAS COMPLEMENTARES</span><h3>Maquiagem e projetado</h3><p>Volume mensal por atividade.</p></div><span class="bi-corner-dot purple"></span></div>
+            <div id="biMakeupChart" class="bi-chart-canvas"></div>
+            <div id="biMakeupDetail" class="bi-chart-detail" aria-live="polite"></div>
+          </article>
+          <article class="bi-chart-card">
+            <div class="bi-card-head"><div><span class="bi-mini-label">PANORAMA DE CAPACIDADE</span><h3>Cumprimento de meta</h3><p>Percentual da meta nos últimos fechamentos.</p></div><span class="bi-corner-dot gold"></span></div>
+            <div id="biTargetChart" class="bi-chart-canvas"></div>
+            <div id="biTargetDetail" class="bi-chart-detail" aria-live="polite"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="bi-section" id="biQuality">
+        <div class="bi-section-heading"><div><span class="bi-eyebrow">03 · QUALIDADE E EFICIÊNCIA</span><h2>Produtividade com controle</h2><p>Indicadores de aproveitamento, recusas e força de trabalho.</p></div><span class="bi-section-tag">QUALIDADE · EFICIÊNCIA</span></div>
+        <div class="bi-chart-grid">
+          <article class="bi-chart-card"><div class="bi-card-head"><div><span class="bi-mini-label">CONTROLE DE QUALIDADE</span><h3>Recusas por origem</h3><p>Recusas da fábrica e outras recusas (m³).</p></div><span class="bi-corner-dot coral"></span></div><div id="biRefusalChart" class="bi-chart-canvas"></div><div id="biRefusalDetail" class="bi-chart-detail" aria-live="polite"></div></article>
+          <article class="bi-chart-card"><div class="bi-card-head"><div><span class="bi-mini-label">QUALIDADE DO FECHAMENTO</span><h3>Aproveitamento da produção</h3><p>Produção efetiva e recusas da fábrica.</p></div><span class="bi-corner-dot gold"></span></div><div id="biDonutChart" class="bi-donut-wrap"></div><div id="biDonutDetail" class="bi-chart-detail" aria-live="polite"></div></article>
+          <article class="bi-chart-card"><div class="bi-card-head"><div><span class="bi-mini-label">EFICIÊNCIA OPERACIONAL</span><h3>m³ por funcionário / dia</h3><p>Produção por dia trabalhado e equipe média.</p></div><span class="bi-corner-dot teal"></span></div><div id="biEfficiencyChart" class="bi-chart-canvas"></div><div id="biEfficiencyDetail" class="bi-chart-detail" aria-live="polite"></div></article>
+          <article class="bi-chart-card"><div class="bi-card-head"><div><span class="bi-mini-label">FORÇA DE TRABALHO</span><h3>Equipe média mensal</h3><p>Média real de trabalhadores efetivos por dia.</p></div><span class="bi-corner-dot purple"></span></div><div id="biPeopleChart" class="bi-chart-canvas"></div><div id="biPeopleDetail" class="bi-chart-detail" aria-live="polite"></div></article>
+        </div>
+      </section>
+
+      <section class="bi-section" id="biWorks">
+        <div class="bi-section-heading"><div><span class="bi-eyebrow">04 · INTELIGÊNCIA POR OBRA</span><h2>Execução de consoles</h2><p>Avanço das obras e quantidade de pilares concluídos.</p></div><span class="bi-section-tag" id="biWorksBadge">Todas as obras</span></div>
+        <div class="bi-works-stat-grid" id="biWorksStats"></div>
+        <div class="bi-chart-grid">
+          <article class="bi-chart-card"><div class="bi-card-head"><div><span class="bi-mini-label">CONTROLE CONSOLES</span><h3>Consoles por mês</h3><p>Consoles executados no intervalo selecionado.</p></div><span class="bi-corner-dot gold"></span></div><div id="biConsolesChart" class="bi-chart-canvas"></div><div id="biConsolesDetail" class="bi-chart-detail" aria-live="polite"></div></article>
+          <article class="bi-chart-card"><div class="bi-card-head"><div><span class="bi-mini-label">ANDAMENTO DAS OBRAS</span><h3>Ranking de conclusão</h3><p>Percentual de pilares com consoles por obra.</p></div><span class="bi-corner-dot teal"></span></div><div id="biWorksRanking" class="bi-work-ranking"></div></article>
+        </div>
+        <article class="bi-chart-card bi-worklist-card">
+          <div class="bi-card-head"><div><span class="bi-mini-label">CARTEIRA DE OBRAS</span><h3>Panorama de execução</h3><p>Obras ordenadas pelo nome · pilares concluídos e pendentes.</p></div></div>
+          <div id="biWorksCards" class="bi-work-cards"></div>
+        </article>
+      </section>
+
+      <section class="bi-section bi-insights-section" id="biInsightsSection">
+        <div class="bi-section-heading"><div><span class="bi-eyebrow">05 · NARRATIVA EXECUTIVA</span><h2>Destaques do período</h2><p>Leituras automáticas, calculadas somente a partir dos fechamentos registrados.</p></div><span class="bi-section-tag">INSIGHTS FACTUAIS</span></div>
+        <div id="biInsights" class="bi-insights"></div>
+      </section>
+      <p class="bi-disclaimer">Os indicadores mensais referem-se à fábrica como um todo. Dados por obra estão limitados a pilares e consoles. Meses sem fechamento não entram nas médias. Referência de meta: 550 m³.</p>
+    </main>
+    <footer class="bi-footer"><span>VIGAS Engenharia em Pré-Moldados</span><span>Apresentação Comercial · V7.0.0 · Somente leitura</span></footer>
+  </div>
+
+  <div id="biSplash" class="bi-splash" role="status" aria-live="polite">
+    <img src="assets/vigas-amarelo.png" alt="VIGAS">
+    <strong>Preparando inteligência de produção</strong>
+    <span id="biSplashText">Verificando sua sessão e as permissões...</span>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js?v=6.0.9"></script>
+  <script src="js/apresentacao-comercial.js?v=7.0.0"></script>
+</body>
+</html>

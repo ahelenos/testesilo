@@ -1,5 +1,5 @@
 
-const APP_VERSION = "5.1.38";
+const APP_VERSION = "7.0.0";
 
 (() => {
 "use strict";
@@ -58,7 +58,8 @@ function normalizeUser(row){
     presenca: row.presenca_permission || "none",
     corpo_prova: row.corpo_prova_permission || "none",
     fechamentos_mes: row.fechamentos_mes_permission || "none",
-    controle_consoles: row.controle_consoles_permission || "none"
+    controle_consoles: row.controle_consoles_permission || "none",
+    apresentacao_comercial: row.apresentacao_comercial_permission || "none"
   };
 }
 
@@ -90,6 +91,7 @@ function renderUsers(){
       <td>${pill(permissionText(u.corpo_prova),u.corpo_prova==="admin"?"access-admin":(u.corpo_prova==="viewer"?"access-viewer":"access-none"))}</td>
       <td>${pill(permissionText(u.fechamentos_mes),u.fechamentos_mes==="admin"?"access-admin":(u.fechamentos_mes==="viewer"?"access-viewer":"access-none"))}</td>
       <td>${pill(permissionText(u.controle_consoles),u.controle_consoles==="admin"?"access-admin":(u.controle_consoles==="viewer"?"access-viewer":"access-none"))}</td>
+      <td>${pill(permissionText(u.apresentacao_comercial),u.apresentacao_comercial==="admin"?"access-admin":(u.apresentacao_comercial==="viewer"?"access-viewer":"access-none"))}</td>
       <td>
         <div class="row-actions">
           <button class="row-action edit-user" data-id="${u.id}" type="button">Editar</button>
@@ -140,7 +142,8 @@ async function loadUsers(){
         presenca: modulePermissions.presenca ?? user.presenca,
         corpo_prova: modulePermissions.corpo_prova ?? user.corpo_prova,
         fechamentos_mes: modulePermissions.fechamentos_mes ?? user.fechamentos_mes,
-        controle_consoles: modulePermissions.controle_consoles ?? user.controle_consoles
+        controle_consoles: modulePermissions.controle_consoles ?? user.controle_consoles,
+        apresentacao_comercial: modulePermissions.apresentacao_comercial ?? user.apresentacao_comercial
       };
     });
 
@@ -193,6 +196,7 @@ function openEditor(id){
   $("editCorpoProva").value=selectedUser.corpo_prova;
   $("editFechamentosMes").value=selectedUser.fechamentos_mes;
   $("editControleConsoles").value=selectedUser.controle_consoles;
+  $("editApresentacaoComercial").value=selectedUser.apresentacao_comercial;
   $("editError").textContent="";
   $("editUserDialog").showModal();
 }
@@ -205,7 +209,8 @@ async function applyModulePermissions(userId, permissions){
     ["presenca",permissions.presenca_permission],
     ["corpo_prova",permissions.corpo_prova_permission],
     ["fechamentos_mes",permissions.fechamentos_mes_permission],
-    ["controle_consoles",permissions.controle_consoles_permission]
+    ["controle_consoles",permissions.controle_consoles_permission],
+    ["apresentacao_comercial",permissions.apresentacao_comercial_permission]
   ];
 
   for(const [module,permission] of entries){
@@ -248,7 +253,8 @@ async function saveEditor(){
     presenca_permission:$("editPresenca").value,
     corpo_prova_permission:$("editCorpoProva").value,
     fechamentos_mes_permission:$("editFechamentosMes").value,
-    controle_consoles_permission:$("editControleConsoles").value
+    controle_consoles_permission:$("editControleConsoles").value,
+    apresentacao_comercial_permission:$("editApresentacaoComercial").value
   };
 
   try{
@@ -273,6 +279,7 @@ function openNewUser(){
   $("newActive").value="true";
   $("newSilo").value="viewer";
   $("newControleConsoles").value="none";
+  $("newApresentacaoComercial").value="none";
   $("newManutencao").value="viewer";
   $("newFerramentas").value="viewer";
   $("newPresenca").value="viewer";
@@ -307,7 +314,8 @@ async function createUser(){
       presenca_permission:$("newPresenca").value,
       corpo_prova_permission:$("newCorpoProva").value,
       fechamentos_mes_permission:$("newFechamentosMes").value,
-      controle_consoles_permission:$("newControleConsoles").value
+      controle_consoles_permission:$("newControleConsoles").value,
+      apresentacao_comercial_permission:$("newApresentacaoComercial").value
     };
 
     await SiloSupabase.adminUserManagement("create_user",{
@@ -413,7 +421,11 @@ async function openHistory(id){
       silo:"Controle de Silo",
       manutencao:"Manutenção",
       ferramentas:"Ferramentas",
-      presenca:"Controle de Presença"
+      presenca:"Controle de Presença",
+      apresentacao_comercial:"Apresentação Comercial",
+      controle_consoles:"Controle Consoles",
+      fechamentos_mes:"Fechamentos de Mês",
+      corpo_prova:"Corpo de Prova"
     };
 
     const actionNames={
