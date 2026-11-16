@@ -1,4 +1,4 @@
-/* Gestão de Fábrica V7.0.0 · Apresentação Comercial · BI Premium */
+/* Gestão de Fábrica V7.0.1 · Inteligência Administrativa · BI Premium */
 :root{
   color-scheme:dark;
   --bi-ink:#edf4ff;--bi-muted:#9db0ca;--bi-bg:#080f1d;--bi-panel:#132137;
@@ -126,4 +126,226 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,[t
 @media print{
   .bi-chart-canvas{overflow:visible}
   .bi-chart-canvas svg{min-width:0!important}
+}
+
+
+/* V7.0.1 — BI Executivo Premium: interação visual sem dados fictícios */
+.bi-intro h1{
+  max-width:910px;font-size:clamp(30px,3.7vw,51px);line-height:1.13;
+  letter-spacing:-.055em;text-wrap:balance
+}
+.bi-intro h1 span{display:block;font-size:.83em;letter-spacing:-.035em;margin-top:4px}
+.bi-filter-grid{
+  grid-template-columns:minmax(155px,1.02fr) minmax(92px,.48fr)
+  minmax(135px,.65fr) minmax(160px,.95fr) minmax(165px,.95fr) auto
+}
+.bi-pulse-bar{
+  margin-top:13px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:10px
+}
+.bi-pulse-item{
+  border:1px solid #2c3e5b;background:#14243a;border-radius:13px;
+  padding:10px 14px;min-width:0;display:grid;gap:4px;
+  transition:transform .24s,background .24s,border-color .24s
+}
+.bi-pulse-item:hover{transform:translateY(-2px);background:#1b314c;border-color:#60769b}
+.bi-pulse-item small{font-size:9px;letter-spacing:.12em;color:#839bb9;font-weight:800}
+.bi-pulse-item strong{font-size:13px;color:#e9f3ff;overflow-wrap:anywhere}
+
+.bi-kpi,.bi-work-item,.bi-insight,.bi-rank-row{
+  text-align:left;color:inherit;font:inherit;cursor:pointer;
+}
+.bi-kpi,.bi-work-item,.bi-insight{width:100%}
+.bi-kpi{display:block;isolation:isolate;transition:transform .28s cubic-bezier(.2,.65,.3,1),border-color .28s,box-shadow .28s}
+.bi-kpi:after,.bi-chart-card:after,.bi-insight:after,.bi-work-item:after{
+  content:"";position:absolute;inset:0;border-radius:inherit;
+  background:radial-gradient(260px circle at var(--shine-x,50%) var(--shine-y,0%),
+    rgba(255,255,255,.11),transparent 72%);
+  opacity:0;pointer-events:none;z-index:0;transition:opacity .3s
+}
+.bi-kpi:hover:after,.bi-chart-card:hover:after,.bi-insight:hover:after,.bi-work-item:hover:after{opacity:1}
+.bi-kpi>*{position:relative;z-index:1}
+.bi-kpi:hover,.bi-kpi:focus-visible{
+  transform:translateY(-6px);border-color:var(--kpi-accent,#8dbaff);
+  box-shadow:0 20px 46px rgba(0,8,22,.55),0 0 28px color-mix(in srgb,var(--kpi-accent,#8dbaff) 16%,transparent)
+}
+.bi-card-open{
+  display:block;font-size:10px;color:#a7c8e8;letter-spacing:.04em;
+  margin-top:12px;opacity:.75;transition:color .24s,transform .24s,opacity .24s
+}
+.bi-kpi:hover .bi-card-open{opacity:1;color:#fff;transform:translateX(4px)}
+.bi-chart-card{
+  position:relative;isolation:isolate;
+  transition:border-color .3s,transform .3s,box-shadow .3s;
+}
+.bi-chart-card:hover{border-color:#42648d;box-shadow:0 24px 55px #020a1750}
+.bi-chart-card>*{position:relative;z-index:1}
+.bi-card-head{align-items:flex-start;flex-wrap:wrap}
+.bi-expand-chart{
+  margin-left:auto;flex:none;min-height:32px;border-radius:9px;padding:6px 10px;
+  background:#223852;border:1px solid #3a577b;color:#a9d5ff;
+  font-size:11px;font-weight:800;white-space:nowrap;
+  transition:transform .22s,color .22s,border-color .22s,background .22s
+}
+.bi-expand-chart:hover{transform:translateY(-2px);color:#fff;background:#2c4970;border-color:#70aaff}
+.bi-chart-canvas [data-chart-point]{
+  transition:opacity .2s,filter .2s,stroke .2s;
+}
+.bi-chart-canvas [data-chart-point]:hover{
+  opacity:1;filter:brightness(1.35) drop-shadow(0 0 4px rgba(132,190,255,.5))
+}
+.bi-chart-canvas circle[data-chart-point]:hover{stroke:#fff;stroke-width:3}
+.bi-series{transition:opacity .28s,filter .28s}
+.bi-series.bi-series-muted{opacity:.12;filter:saturate(.2);pointer-events:none}
+.bi-legend-button{
+  appearance:none;background:transparent;border:1px solid transparent;
+  border-radius:7px;padding:4px 7px;color:inherit;font-size:inherit;
+  transition:color .2s,background .2s,border-color .2s,transform .2s
+}
+.bi-legend-button:hover,.bi-legend-button.is-selected{
+  color:white;border-color:#50789e;background:#233d5d;
+  transform:translateY(-2px)
+}
+.bi-animated-line{stroke-dasharray:1;stroke-dashoffset:1;animation:biDrawLine 1.4s cubic-bezier(.22,.9,.34,1) both}
+.bi-animated-bar{transform-box:fill-box;transform-origin:center bottom;animation:biRise .85s cubic-bezier(.2,.8,.24,1) backwards}
+@keyframes biDrawLine{to{stroke-dashoffset:0}}
+@keyframes biRise{from{transform:scaleY(.05);opacity:.25}to{transform:scaleY(1);opacity:1}}
+.bi-floating-tooltip{
+  position:fixed;z-index:120;max-width:min(300px,80vw);
+  padding:12px 14px;border-radius:11px;border:1px solid #7295ba;
+  background:linear-gradient(140deg,#233956,#16243c);color:#f5f9ff;
+  font-size:12px;line-height:1.45;font-weight:650;box-shadow:0 18px 55px #0009;
+  pointer-events:none;animation:biFadeIn .15s ease-out
+}
+@keyframes biFadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.bi-donut{transition:transform .4s,filter .4s;cursor:pointer}
+.bi-donut-wrap:hover .bi-donut{transform:rotate(7deg) scale(1.035);filter:drop-shadow(0 0 12px #4ad2bb55)}
+.bi-rank-row{
+  width:100%;appearance:none;background:transparent;border:1px solid transparent;
+  border-radius:9px;padding:5px 7px;transition:background .2s,transform .2s,border-color .2s
+}
+.bi-rank-row:hover,.bi-rank-row:focus-visible{
+  transform:translateX(5px);border-color:#45678d;background:#213953
+}
+.bi-rank-fill,.bi-progress-track i{transition:width 1.2s cubic-bezier(.15,.8,.3,1)}
+.bi-work-item{
+  position:relative;isolation:isolate;
+  transition:transform .27s,border-color .27s,box-shadow .27s;
+}
+.bi-work-item:hover{transform:translateY(-5px);border-color:#69c7c0;box-shadow:0 14px 35px #050f2066}
+.bi-work-item>*{position:relative;z-index:1}
+.bi-work-cta{display:block;color:#98f0de;font-size:10px;font-weight:750;margin-top:10px}
+
+.bi-insights-summary{display:grid;grid-template-columns:2fr 1fr;gap:15px;margin-bottom:16px}
+.bi-insight-hero,.bi-insight-side{
+  position:relative;overflow:hidden;border:1px solid #3c5b77;border-radius:18px;
+  background:linear-gradient(125deg,#203b5a,#152941);padding:23px 27px
+}
+.bi-insight-hero:after{content:"✦";position:absolute;right:25px;top:-26px;color:#a9c4e51a;font-size:130px;pointer-events:none}
+.bi-insight-hero strong,.bi-insight-side strong{display:block;color:#f2f8ff;margin:7px 0;font-size:clamp(19px,2vw,26px)}
+.bi-insight-hero p,.bi-insight-side p{color:#aec2d9;font-size:12px;margin:0;max-width:650px}
+.bi-insight-side{background:linear-gradient(130deg,#3b321e,#192842);border-color:#6b5e39}
+.bi-insight-side strong{color:#ffd684;font-size:30px}
+.bi-insights{gap:15px}
+.bi-insight{
+  display:flex;flex-direction:column;position:relative;isolation:isolate;min-height:197px;
+  gap:6px;transition:transform .28s,border-color .28s,box-shadow .28s;
+}
+.bi-insight>*{position:relative;z-index:1}
+.bi-insight:hover{transform:translateY(-6px);border-color:#6d93b8;box-shadow:0 18px 42px #040c1d80}
+.bi-insight.tone-teal{border-top:3px solid #4ad2bb}
+.bi-insight.tone-purple{border-top:3px solid #b4a0ff}
+.bi-insight.tone-gold{border-top:3px solid #f6c96b}
+.bi-insight.tone-blue{border-top:3px solid #72a7ff}
+.bi-insight.tone-coral{border-top:3px solid #ff8b91}
+.bi-insight-top{display:flex;align-items:center;justify-content:space-between}
+.bi-insight-icon{font-size:20px;color:#bcd9ff;transition:transform .26s}
+.bi-insight:hover .bi-insight-icon{transform:rotate(12deg) scale(1.2)}
+.bi-insight p{flex:1}
+.bi-insight-cta{margin-top:7px;font-size:10px;color:#89cfff;font-weight:800;letter-spacing:.04em}
+.bi-insight:hover .bi-insight-cta{color:#fff}
+
+.bi-reveal{opacity:0;transform:translateY(15px);transition:opacity .6s ease,transform .6s cubic-bezier(.16,.8,.25,1)}
+.bi-reveal.bi-visible{opacity:1;transform:none}
+.bi-detail-dialog{
+  width:min(1000px,calc(100vw - 32px));max-height:min(90vh,980px);
+  padding:0;border:1px solid #53769b;border-radius:20px;
+  background:#0f1d30;color:#f2f7ff;box-shadow:0 40px 100px #000b;
+  overflow:auto;animation:biDialogIn .24s ease-out
+}
+.bi-detail-dialog::backdrop{background:#020814ca;backdrop-filter:blur(9px)}
+.bi-dialog-shell{min-width:0}
+.bi-dialog-head{
+  padding:25px 29px 22px;display:flex;align-items:start;justify-content:space-between;gap:16px;
+  background:linear-gradient(130deg,#233a5a,#12233a);border-bottom:1px solid #34506f;
+  position:sticky;top:0;z-index:2
+}
+.bi-dialog-head h2{font-size:clamp(20px,3vw,28px);margin:8px 0 5px}
+.bi-dialog-head p{font-size:12px;color:#adc2db;margin:0}
+.bi-dialog-close{
+  border:1px solid #6e8199;background:#29435f;color:#fff;
+  border-radius:50%;width:38px;height:38px;flex:none;font-size:16px
+}
+.bi-dialog-close:hover{background:#426384}
+.bi-dialog-body{padding:25px 29px 30px}
+.bi-dialog-body h3{font-size:15px;letter-spacing:.01em;margin:23px 0 11px;color:#f6d48c}
+.bi-dialog-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.bi-dialog-stat{padding:15px;border:1px solid #37506c;background:#1b3049;border-radius:13px;min-width:0}
+.bi-dialog-stat small{display:block;font-size:10px;color:#aac2dd}
+.bi-dialog-stat strong{display:block;font-size:clamp(16px,2vw,22px);margin-top:8px;overflow-wrap:anywhere}
+.bi-dialog-stat span{display:block;color:#99aec7;font-size:10px;margin-top:5px}
+.bi-dialog-note{font-size:12px;color:#b1c4dc;line-height:1.65}
+.bi-dialog-callout{background:#243e5d;border-left:3px solid #f5c96b;padding:14px 16px;
+  border-radius:8px;color:#e4eefb;font-size:13px;line-height:1.65}
+.bi-dialog-table-wrap{border:1px solid #37516c;border-radius:12px;overflow-x:auto}
+.bi-dialog-table{width:100%;border-collapse:collapse;font-size:12px;text-align:left;min-width:460px}
+.bi-dialog-table th{color:#ffd785;background:#203651;font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+.bi-dialog-table th,.bi-dialog-table td{padding:11px 14px;border-bottom:1px solid #304560}
+.bi-dialog-table tr:last-child td{border-bottom:none}
+.bi-dialog-table tr:hover td{background:#1c3451}
+.bi-dialog-chart{border:1px solid #3b5573;border-radius:14px;background:#162840;padding:15px;overflow-x:auto}
+.bi-dialog-chart svg{width:100%;max-height:380px;min-width:0!important}
+.bi-dialog-chart .bi-axis{fill:#9db4d0;font-size:10px}
+.bi-dialog-chart .bi-grid{stroke:#314b6a}
+.bi-dialog-chart .bi-target{stroke:#ff6878;stroke-dasharray:7 5}
+.bi-dialog-chart .bi-mean{stroke:#f6c96b;stroke-dasharray:6 5}
+.bi-detail-progress{height:11px;background:#304560;border-radius:9px;overflow:hidden;margin-top:15px}
+.bi-detail-progress>div{height:100%;background:linear-gradient(90deg,#5d91fc,#57d9bc);border-radius:9px}
+@keyframes biDialogIn{from{opacity:0;transform:translateY(15px) scale(.98)}to{opacity:1;transform:none}}
+@media(max-width:1250px){
+  .bi-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .bi-filter-buttons{grid-column:1/-1}
+}
+@media(max-width:850px){
+  .bi-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bi-pulse-bar{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .bi-dialog-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:640px){
+  .bi-intro h1{font-size:clamp(25px,7vw,34px)}
+  .bi-intro h1 span{font-size:.83em}
+  .bi-filter-grid{grid-template-columns:1fr}
+  .bi-filter-buttons{grid-column:1}
+  .bi-pulse-bar{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bi-insights-summary{grid-template-columns:1fr}
+  .bi-insight-hero,.bi-insight-side{padding:20px}
+  .bi-dialog-head,.bi-dialog-body{padding:18px}
+  .bi-dialog-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bi-chart-card{padding:16px 13px}
+}
+@media(prefers-reduced-motion:reduce){
+  .bi-reveal{opacity:1!important;transform:none!important}
+  .bi-animated-line,.bi-animated-bar{animation:none!important;stroke-dashoffset:0!important}
+  .bi-kpi,.bi-insight,.bi-work-item,.bi-chart-card,.bi-rank-row,.bi-donut{transition:none!important}
+  .bi-detail-dialog{animation:none}
+}
+@media print{
+  .bi-floating-tooltip,.bi-detail-dialog,.bi-expand-chart,.bi-card-open,.bi-work-cta,
+  .bi-insight-cta,.bi-pulse-bar{display:none!important}
+  .bi-reveal{opacity:1!important;transform:none!important}
+  .bi-animated-line,.bi-animated-bar{animation:none!important;stroke-dashoffset:0!important}
+  .bi-kpi,.bi-insight,.bi-work-item,.bi-chart-card{transform:none!important;box-shadow:none!important}
+  .bi-insight-hero,.bi-insight-side{background:#fff!important;color:#192c45!important;border-color:#cbd7e6!important}
+  .bi-insight-hero strong,.bi-insight-side strong{color:#172942!important}
+  .bi-insight-hero p,.bi-insight-side p{color:#516680!important}
 }

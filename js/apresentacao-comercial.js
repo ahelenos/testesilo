@@ -1,4 +1,4 @@
-/* Gestão de Fábrica V7.0.0 · Apresentação Comercial · somente leitura */
+/* Gestão de Fábrica V7.0.1 · Inteligência Administrativa · somente leitura */
 (() => {
   "use strict";
   const $ = id => document.getElementById(id);
@@ -32,6 +32,18 @@
   ];
   let data={months:[],works:[],work_months:[]};
   let authorized=false;
+  let insightsCache=[];
+  let revealedObserver=null;
+  let tipLeaveTimer=null;
+  const motionAllowed=()=>!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const KPI_ADDITIVE=new Set([
+    "producao_total_m3","producao_efetiva_m3","expedicao_m3","montagem_m3",
+    "projetado_m3","maquiagem_m3","recusas_total_m3","recusas_fabrica_m3",
+    "outras_recusas_m3","consoles_consoles_qtd"
+  ]);
+  const MONTH_NAMES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
   const nf=(n,d=0)=>Number(n||0).toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d});
   const vol=n=>nf(n,3)+" m³";
   const val=n=>Number.isFinite(Number(n)) ? Number(n) : 0;
@@ -60,10 +72,17 @@
     $("biStatus").className="bi-status "+type;
   }
   function params(){
-    const end=$("biEndMonth").value||currentMonth();
-    const n=Number($("biPeriod").value)||12;
-    const start=monthOffset(end,-n+1);
-    return {end,n,start,workId:$("biWorkFilter").value};
+    const year=Number($("biYear").value)||Number(currentMonth().slice(0,4));
+    const selection=$("biMonthFilter").value;
+    const chosenMonth=selection!=="all";
+    const mode=chosenMonth?"month":$("biPeriod").value;
+    const monthEnd=chosenMonth?`${year}-${selection}`:
+      data.months.map(m=>monthKey(m.mes)).filter(m=>m.startsWith(`${year}-`)).at(-1)||
+      `${year}-12`;
+    const n=Number(mode)||12;
+    const start=mode==="year"?`${year}-01`:mode==="month"?monthEnd:monthOffset(monthEnd,-n+1);
+    const end=mode==="year"?`${year}-12`:monthEnd;
+    return {start,end,n,mode,year,workId:$("biWorkFilter").value};
   }
   function inRange(key,range){return key>=range.start && key<=range.end;}
   function filteredMonths(range=params()){
@@ -104,32 +123,95 @@
   }
   function latestAndPrevious(rows){
     const latest=lastMonthly(rows);
-    const previous=latest?rows.find(r=>monthKey(r.mes)===monthOffset(monthKey(latest.mes),-1)):null;
+    const previous=latest?data.months.find(r=>monthKey(r.mes)===monthOffset(monthKey(latest.mes),-1)):null;
     return {latest,previous};
   }
-  function renderKpis(rows){
-    const {latest,previous}=latestAndPrevious(rows);
-    $("biMonthBadge").textContent=latest?fmtMonth(latest.mes):"Sem fechamento";
-    $("biSummaryContext").textContent=latest
-      ? `Fechamento de ${fmtMonth(latest.mes)} · dados reais do Supabase.`
+  function aggregateMonths(rows){
+    const result={mes:rows.at(-1)?.mes||"",dias_trabalhados:0,media_funcionarios_dia:0};
+    for(const [key] of KPINAMES)if(KPI_ADDITIVE.has(key))result[key]=0;
+    let workerDays=0;
+    rows.forEach(row=>{
+      for(const [key] of KPINAMES)if(KPI_ADDITIVE.has(key))result[key]+=metric(row,key);
+      const days=metric(row,"dias_trabalhados");
+      result.dias_trabalhados+=days;
+      workerDays+=days*metric(row,"media_funcionarios_dia");
+    });
+    result.media_funcionarios_dia=result.dias_trabalhados>0?workerDays/result.dias_trabalhados:0;
+    result.eficiencia=workerDays>0?result.producao_total_m3/workerDays:0;
+    result.meses_com_dados=rows.length;
+    return result;
+  }
+  function comparePeriod(range,rows){
+    if(!rows.length)return null;
+    if(range.mode==="month"){
+      const prior=monthOffset(range.end,-1);
+      return data.months.find(r=>monthKey(r.mes)===prior)||null;
+    }
+    const previous=rows.map(r=>data.months.find(other=>
+      monthKey(other.mes)===monthOffset(monthKey(r.mes),-12))).filter(Boolean);
+    return previous.length===rows.length?aggregateMonths(previous):null;
+  }
+  function comparedLabel(range){
+    return range.mode==="month"?"vs. mês anterior":"vs. ano anterior (meses equivalentes)";
+  }
+  function animateCounters(){
+    if(!motionAllowed())return;
+    document.querySelectorAll("[data-count-value]").forEach(el=>{
+      const amount=Number(el.dataset.countValue),decimals=Number(el.dataset.countDecimals||0);
+      if(!Number.isFinite(amount))return;
+      const start=performance.now(),duration=760;
+      function frame(now){
+        if(!el.isConnected)return;
+        const progress=Math.min(1,(now-start)/duration);
+        const eased=1-Math.pow(1-progress,3);
+        el.textContent=nf(amount*eased,decimals);
+        if(progress<1)requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+  function renderKpis(rows,range){
+    const latest=lastMonthly(rows);
+    const consolidated=aggregateMonths(rows);
+    const compare=comparePeriod(range,rows);
+    const unitLabel=range.mode==="month"?"Fechamento mensal":"Total consolidado";
+    $("biMonthBadge").textContent=range.mode==="month"?fmtMonth(range.end):
+      `${range.year} · ${rows.length} ${rows.length===1?"mês":"meses"} com fechamento`;
+    $("biSummaryContext").textContent=rows.length
+      ? `${unitLabel} · ${rows.length} ${rows.length===1?"fechamento":"fechamentos"} na seleção · clique em um indicador para explorar seu histórico.`
       : "Nenhum fechamento cadastrado na janela selecionada.";
     const palette=["#69a6ff","#56d6bf","#f3ca7c","#b59aff","#81bdfb","#8bdbac","#ff9298","#ff9298","#f4c471","#bcaafd","#4bd3be","#f7c96a"];
     $("biKpis").innerHTML=KPINAMES.map(([key,title,icon,unit,higher],i)=>{
-      const n=latest?metric(latest,key):null;
-      const previousNumber=previous?metric(previous,key):null;
-      const pct=previousNumber===null?null:pctChange(n,previousNumber);
-      const nice= pct===null?"neutral":Math.abs(pct)<.05?"neutral":(pct>0)===higher?"good":"bad";
-      const formatted=n===null?"—":
-        key==="media_funcionarios_dia"?nf(n,2):
-        key==="eficiencia"?nf(n,2):
-        key==="consoles_consoles_qtd"?nf(n,0):nf(n,3);
-      const subt=unit==="m³"?"m³":unit;
-      return `<article class="bi-kpi" style="--kpi-accent:${palette[i]}">
+      const n=rows.length?metric(range.mode==="month"?latest:consolidated,key):null;
+      const previousNumber=compare?metric(compare,key):null;
+      const pct=previousNumber===null||n===null?null:pctChange(n,previousNumber);
+      const nice=pct===null?"neutral":Math.abs(pct)<.05?"neutral":(pct>0)===higher?"good":"bad";
+      const decimals=key==="media_funcionarios_dia"||key==="eficiencia"?2:key==="consoles_consoles_qtd"?0:3;
+      const formatted=n===null?"—":nf(n,decimals);
+      return `<button type="button" class="bi-kpi bi-interactive" data-kpi-key="${esc(key)}"
+        style="--kpi-accent:${palette[i]}" aria-label="${esc(title)}: ${esc(formatted)} ${esc(unit)}. Ver detalhes">
          <div class="bi-kpi-name"><span>${esc(title)}</span><span class="bi-kpi-mark">${esc(icon)}</span></div>
-         <strong>${formatted}</strong><small>${esc(subt)}</small>
-         <div><span class="bi-kpi-delta ${nice}">${esc(n===null?"Sem dados":labelPct(pct))}</span></div>
-       </article>`;
+         <strong ${n!==null?`data-count-value="${n}" data-count-decimals="${decimals}"`:""}>${formatted}</strong>
+         <small>${esc(unit)} ${range.mode==="month"?"· mês":"· consolidado"}</small>
+         <div><span class="bi-kpi-delta ${nice}">${esc(n===null?"Sem dados":pct===null?"Sem período comparável":`${pct>=0?"+":""}${nf(pct,1)}% ${comparedLabel(range)}`)}</span></div>
+         <span class="bi-card-open">Explorar indicador ↗</span>
+       </button>`;
     }).join("");
+    animateCounters();
+  }
+  function renderPulse(rows,range,worksInfo){
+    const s=aggregateMonths(rows);
+    const achieved=rows.filter(r=>metric(r,"producao_total_m3")>=TARGET_M3).length;
+    const monthsLabel=range.mode==="month"?"Mês selecionado":`Ano de ${range.year}`;
+    const items=[
+      ["VISÃO",monthsLabel,"calendar-days"],
+      ["VOLUME PRODUZIDO",`${nf(s.producao_total_m3,3)} m³`,"trending-up"],
+      ["FECHAMENTOS",`${rows.length} meses com dados`,"database"],
+      ["META ATINGIDA",`${achieved} ${achieved===1?"mês":"meses"}`,"target"],
+      ["OBRAS",`${worksInfo.works.length} em análise`,"building-2"]
+    ];
+    $("biPulseBar").innerHTML=items.map(([label,value])=>
+      `<span class="bi-pulse-item"><small>${esc(label)}</small><strong>${esc(value)}</strong></span>`).join("");
   }
   function axisNice(max){
     if(max<=0 || !Number.isFinite(max))return 1;
@@ -138,21 +220,71 @@
   }
   function pointLabel(x){return esc(fmtMonth(x));}
   function chartLegend(items){
-    return `<div class="bi-chart-legend">${items.map(([name,color])=>
-      `<span class="bi-legend-item"><i style="--legend-color:${esc(color)}"></i>${esc(name)}</span>`
+    return `<div class="bi-chart-legend">${items.map(([name,color,key])=>key
+      ?`<button type="button" class="bi-legend-item bi-legend-button"
+           data-series-legend="${esc(key)}" aria-pressed="false"
+           title="Clique para destacar esta série"><i style="--legend-color:${esc(color)}"></i>${esc(name)}</button>`
+      :`<span class="bi-legend-item"><i style="--legend-color:${esc(color)}"></i>${esc(name)}</span>`
     ).join("")}</div>`;
+  }
+  function updateLegendFocus(el,key){
+    const active=el.dataset.activeSeries===key?"":key;
+    el.dataset.activeSeries=active;
+    el.querySelectorAll("[data-series-key]").forEach(g=>{
+      g.classList.toggle("bi-series-muted",!!active&&g.dataset.seriesKey!==active);
+    });
+    el.querySelectorAll("[data-series-legend]").forEach(button=>{
+      const isSelected=!!active&&button.dataset.seriesLegend===active;
+      button.classList.toggle("is-selected",isSelected);
+      button.setAttribute("aria-pressed",String(isSelected));
+    });
+  }
+  function updateTooltip(text,x,y){
+    const tip=$("biFloatingTooltip");
+    if(!tip)return;
+    tip.textContent=text;
+    tip.hidden=false;
+    const bounds=tip.getBoundingClientRect();
+    tip.style.left=`${Math.max(12,Math.min(x+17,window.innerWidth-bounds.width-12))}px`;
+    tip.style.top=`${Math.max(12,Math.min(y+16,window.innerHeight-bounds.height-12))}px`;
+  }
+  function hideTooltip(){
+    const tip=$("biFloatingTooltip");
+    if(tip)tip.hidden=true;
   }
   function chartEventBinding(chartId,detailId,initial){
     const el=$(chartId);
     if($(detailId))$(detailId).textContent=initial||"Clique ou toque em uma barra ou ponto para detalhes.";
-    const show = target=>{
-      const mark=target.closest("[data-chart-point]");
+    const markFor=target=>target.closest?.("[data-chart-point]");
+    const show=target=>{
+      const mark=markFor(target);
       if(mark&&el.contains(mark)&&$(detailId))$(detailId).textContent=mark.getAttribute("data-chart-detail")||"—";
+      return mark;
     };
-    el.onclick=e=>show(e.target);
+    el.onclick=e=>{
+      const legend=e.target.closest?.("[data-series-legend]");
+      if(legend){updateLegendFocus(el,legend.dataset.seriesLegend);hideTooltip();return;}
+      const mark=show(e.target);
+      if(mark)openPointDetail(mark,chartId);
+    };
+    el.onpointermove=e=>{
+      const mark=show(e.target);
+      if(mark&&e.pointerType!=="touch")updateTooltip(mark.dataset.chartDetail||"—",e.clientX,e.clientY);
+      else hideTooltip();
+    };
+    el.onpointerleave=hideTooltip;
+    el.onfocusin=e=>{
+      const mark=show(e.target);
+      if(mark){
+        const rect=mark.getBoundingClientRect();
+        updateTooltip(mark.dataset.chartDetail||"—",rect.left,rect.top);
+      }
+    };
+    el.onfocusout=hideTooltip;
     el.onkeydown=e=>{
-      if((e.key==="Enter"||e.key===" ")&&e.target.closest("[data-chart-point]")){
-        e.preventDefault();show(e.target);
+      const mark=markFor(e.target);
+      if((e.key==="Enter"||e.key===" ")&&mark){
+        e.preventDefault();show(e.target);openPointDetail(mark,chartId);
       }
     };
   }
@@ -191,8 +323,9 @@
     const bars=points.map((r,i)=>{
       const v=values[i], x=f.X(i)-Math.min(28,group*.32),y=f.Y(v),h=f.Y(0)-y;
       const detail=`${fmtMonth(r.mes)} · ${label}: ${nf(v,decimals)}${suffix}`;
-      return `<rect x="${x}" y="${y}" width="${Math.min(56,group*.64)}" height="${Math.max(h,.5)}" rx="5"
+      return `<rect class="bi-animated-bar" x="${x}" y="${y}" width="${Math.min(56,group*.64)}" height="${Math.max(h,.5)}" rx="5"
           fill="${color}" opacity=".91" role="button" tabindex="0" data-chart-point="1"
+          data-point-month="${esc(monthKey(r.mes))}" data-point-key="${esc(key)}"
           data-chart-detail="${esc(detail)}" aria-label="${esc(detail)}"><title>${esc(detail)}</title></rect>`;
     }).join("");
     const averageY=f.Y(average);
@@ -218,17 +351,20 @@
       const path=present.map((row,i)=>`${i?"L":"M"} ${f.X(i)} ${f.Y(metric(row,key))}`).join(" ");
       const circles=present.map((row,i)=>{
         const amount=metric(row,key),detail=`${fmtMonth(row.mes)} · ${SERIES[key].label}: ${nf(amount,3)} m³`;
-        return `<circle cx="${f.X(i)}" cy="${f.Y(amount)}" r="5" fill="${c}" stroke="#152438" stroke-width="2"
-           role="button" tabindex="0" data-chart-point="1" data-chart-detail="${esc(detail)}" aria-label="${esc(detail)}">
+        return `<circle cx="${f.X(i)}" cy="${f.Y(amount)}" r="6" fill="${c}" stroke="#152438" stroke-width="2"
+           role="button" tabindex="0" data-chart-point="1" data-point-month="${esc(monthKey(row.mes))}"
+           data-point-key="${esc(key)}" data-chart-detail="${esc(detail)}" aria-label="${esc(detail)}">
            <title>${esc(detail)}</title></circle>`;
       }).join("");
-      return `<path d="${path}" stroke="${c}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" fill="none"/>${circles}`;
+      return `<g class="bi-series" data-series-key="${esc(key)}">
+        <path class="bi-animated-line" pathLength="1" d="${path}" stroke="${c}" stroke-width="3" stroke-linejoin="round"
+          stroke-linecap="round" fill="none"/>${circles}</g>`;
     }).join("");
     const showTarget=keys.some(k=>["producao_total_m3","expedicao_m3","montagem_m3","projetado_m3"].includes(k));
     const targetY=f.Y(TARGET_M3);
     const targetLine=showTarget?`<line x1="${f.pad.left}" x2="${f.width-f.pad.right}" y1="${targetY}" y2="${targetY}" class="bi-target"/>
       <text x="${f.width-f.pad.right}" y="${Math.max(15,targetY-6)}" text-anchor="end" font-size="11" fill="#ff9299">META</text>`:"";
-    const legend=keys.map(k=>[SERIES[k].label,SERIES[k].color]).concat(showTarget?[["Meta 550 m³","#ff6878"]]:[]);
+    const legend=keys.map(k=>[SERIES[k].label,SERIES[k].color,k]).concat(showTarget?[["Meta 550 m³","#ff6878"]]:[]);
     graphSvg(chartId,detailId,`<svg viewBox="0 0 ${f.width} ${f.height}" style="min-width:${present.length>14?Math.min(width,1250):0}px"
        role="group" aria-label="Evolução de volumes em m³">${f.grid}${lines}${targetLine}${f.ticks}</svg>`,
        legend,`${present.length} meses com dados · clique ou toque em um ponto para consultar o valor.`);
@@ -251,22 +387,30 @@
       const partA=`<rect x="${x}" y="${f.Y(factory)}" width="${bw}" height="${heightA}" fill="#ff8b91" rx="2"/>`;
       const partB=`<rect x="${x}" y="${f.Y(reported)}" width="${bw}" height="${heightB}" fill="#f5c96b" rx="2"/>`;
       const detail=`${fmtMonth(r.mes)} · Fábrica: ${nf(factory,3)} m³ · Outras: ${nf(other,3)} m³ · Total: ${nf(total,3)} m³`;
-      return `<g role="button" tabindex="0" data-chart-point="1" data-chart-detail="${esc(detail)}" aria-label="${esc(detail)}"><title>${esc(detail)}</title>${partA}${partB}</g>`;
+      return `<g role="button" tabindex="0" data-chart-point="1" data-point-month="${esc(monthKey(r.mes))}"
+        data-point-key="recusas_total_m3" data-chart-detail="${esc(detail)}" aria-label="${esc(detail)}">
+        <title>${esc(detail)}</title>${partA}${partB}</g>`;
     }).join("");
     graphSvg(chartId,detailId,`<svg viewBox="0 0 ${f.width} ${f.height}" style="min-width:${points.length>14?Math.min(width,1250):0}px" role="group" aria-label="Recusas por origem">${f.grid}${bars}${f.ticks}</svg>`,
       [["Recusas da fábrica","#ff8b91"],["Outras recusas","#f5c96b"]],"Barras empilhadas em m³ · selecione um mês.");
   }
   function renderDonut(rows){
-    const latest=lastMonthly(rows),node=$("biDonutChart");
-    if(!latest || metric(latest,"producao_total_m3")<=0){node.innerHTML='<div class="bi-empty">Sem fechamento com produção neste período.</div>';$("biDonutDetail").textContent="—";return;}
-    const total=metric(latest,"producao_total_m3"),reject=Math.max(0,metric(latest,"recusas_fabrica_m3"));
+    const aggregate=aggregateMonths(rows),node=$("biDonutChart");
+    if(!rows.length || metric(aggregate,"producao_total_m3")<=0){node.innerHTML='<div class="bi-empty">Sem fechamento com produção neste período.</div>';$("biDonutDetail").textContent="—";return;}
+    const total=metric(aggregate,"producao_total_m3"),reject=Math.max(0,metric(aggregate,"recusas_fabrica_m3"));
     const effective=Math.max(0,total-reject),ratio=Math.max(0,Math.min(100,effective/total*100));
-    node.innerHTML=`<div class="bi-donut" role="img" aria-label="${esc(nf(ratio,1))}% de produção efetiva" style="background:conic-gradient(#4ad2bb 0% ${ratio}%,#ff8b91 ${ratio}% 100%)">
+    node.innerHTML=`<div class="bi-donut" role="button" tabindex="0" aria-label="${esc(nf(ratio,1))}% de produção efetiva. Clique para ampliar" style="background:conic-gradient(#4ad2bb 0% ${ratio}%,#ff8b91 ${ratio}% 100%)">
       <div class="bi-donut-center"><strong>${nf(ratio,1)}%</strong><span>Aproveitamento</span></div>
       </div><div class="bi-donut-side">
       <div><span>Produção efetiva</span><strong>${nf(effective,3)} m³</strong></div>
       <div><span>Recusas da fábrica</span><strong>${nf(reject,3)} m³</strong></div></div>`;
-    $("biDonutDetail").textContent=`Fechamento de ${fmtMonth(latest.mes)}. Índice = (produção total − recusas da fábrica) ÷ produção total.`;
+    $("biDonutDetail").textContent=`Consolidado de ${rows.length} fechamento(s). Índice = (produção total − recusas da fábrica) ÷ produção total. Clique no gráfico para detalhes.`;
+    node.onclick=event=>{if(event.target.closest(".bi-donut"))openChartDetail("biDonutChart");};
+    node.onkeydown=event=>{
+      if((event.key==="Enter"||event.key===" ")&&event.target.closest(".bi-donut")){
+        event.preventDefault();openChartDetail("biDonutChart");
+      }
+    };
   }
   function targetChart(rows){
     const mapped=rows.map(r=>({...r,atingimento:metric(r,"producao_total_m3")/TARGET_M3*100}));
@@ -318,56 +462,288 @@
     }).slice(0,8);
     $("biWorksRanking").innerHTML=ranked.length?ranked.map((w,i)=>{
       const progress=Math.min(100,val(w.pilares_concluidos)/val(w.pilares_total)*100);
-      return `<div class="bi-rank-row">
+      return `<button type="button" class="bi-rank-row bi-interactive" data-work-id="${esc(w.id)}" aria-label="Detalhes da obra ${esc(w.nome)}">
        <span class="bi-rank-index">${String(i+1).padStart(2,"0")}</span>
        <span class="bi-rank-name" title="${esc(w.nome)}">${esc(w.nome)}</span>
        <div class="bi-rank-track"><div class="bi-rank-fill" style="width:${progress}%"></div></div>
-       <strong>${nf(progress,0)}%</strong></div>`;
+       <strong>${nf(progress,0)}%</strong></button>`;
     }).join(""):'<div class="bi-empty">Ainda não há obras com pilares cadastrados.</div>';
     $("biWorksCards").innerHTML=works.length?works.sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR")).map(w=>{
       const total=val(w.pilares_total),done=val(w.pilares_concluidos),pct=total?Math.min(100,done/total*100):0;
-      return `<article class="bi-work-item"><header><span>${esc(w.nome)}</span><span class="bi-work-badge">${nf(pct,0)}%</span></header>
+      return `<button type="button" class="bi-work-item bi-interactive" data-work-id="${esc(w.id)}" aria-label="Explorar obra ${esc(w.nome)}"><header><span>${esc(w.nome)}</span><span class="bi-work-badge">${nf(pct,0)}%</span></header>
        <p>${nf(total)} pilares · ${nf(done)} concluídos · ${nf(Math.max(0,total-done))} pendentes</p>
        <div class="bi-progress-track"><i style="width:${pct}%"></i></div>
        <footer><span>${nf(val(w.consoles_total))} consoles (acumulado)</span>
-       <span>Última execução: ${esc(shortDate(w.ultima_execucao))}</span></footer></article>`;
+       <span>Última execução: ${esc(shortDate(w.ultima_execucao))}</span></footer><span class="bi-work-cta">Abrir painel da obra ↗</span></button>`;
     }).join(""):'<div class="bi-empty">Nenhuma obra encontrada.</div>';
     return {totalAll,doneAll,pilaresPeriod,consolesPeriod,works};
   }
-  function renderInsights(rows,workInfo){
-    const {latest,previous}=latestAndPrevious(rows);
-    const items=[];
-    if(latest){
-      const prod=metric(latest,"producao_total_m3");
-      const attainment=prod/TARGET_M3*100;
-      items.push(["Meta industrial",`${nf(attainment,1)}% da meta`,
-        `A produção de ${fmtMonth(latest.mes)} foi de ${nf(prod,3)} m³. A referência de 550 m³ ${prod>=TARGET_M3?"foi atingida":"ainda não foi atingida"} nesse fechamento.`]);
-      if(previous){
-        const prev=metric(previous,"producao_total_m3");
-        const change=pctChange(prod,prev);
-        items.push(["Tendência mensal",change===null?"Base indisponível":`${change>=0?"+":""}${nf(change,1)}% na produção`,
-        `Comparação com ${fmtMonth(previous.mes)}: ${nf(prev,3)} m³ no mês anterior e ${nf(prod,3)} m³ no último fechamento disponível.`]);
+  function renderInsights(rows,workInfo,range){
+    const summary=aggregateMonths(rows),latest=lastMonthly(rows),items=[];
+    const add=(kind,title,description,key="producao_total_m3",tone="blue",icon="✧")=>
+      items.push({kind,title,description,key,tone,icon});
+    if(rows.length){
+      const total=metric(summary,"producao_total_m3");
+      const productive=rows.filter(r=>metric(r,"producao_total_m3")>0);
+      const mean=productive.length?total/productive.length:0;
+      const hits=rows.filter(r=>metric(r,"producao_total_m3")>=TARGET_M3).length;
+      add("Produção consolidada",`${nf(total,3)} m³`,
+        `Soma de ${rows.length} fechamento(s). Média mensal dos meses com produção: ${nf(mean,3)} m³.`,"producao_total_m3","blue","◈");
+      add("Meta industrial",`${hits} ${hits===1?"mês":"meses"} na meta`,
+        `De ${rows.length} fechamento(s), ${hits} atingiram pelo menos 550 m³ de produção no mês.`,
+        "producao_total_m3","gold","◎");
+      if(productive.length){
+        const best=[...productive].sort((a,b)=>metric(b,"producao_total_m3")-metric(a,"producao_total_m3"))[0];
+        add("Recorde de produção",`${nf(metric(best,"producao_total_m3"),3)} m³`,
+          `O maior volume de produção foi registrado em ${fmtMonth(best.mes)}.`,"producao_total_m3","blue","★");
       }
-      const loss=prod>0?metric(latest,"recusas_fabrica_m3")/prod*100:0;
-      if(prod>0)items.push(["Qualidade",`${nf(loss,2)}% de recusas da fábrica`,
-        `Proporção de recusas atribuídas à fábrica em ${fmtMonth(latest.mes)}, calculada sobre a produção total.`]);
-      const efficiencyValue=efficiency(latest);
-      if(efficiencyValue>0)items.push(["Eficiência",`${nf(efficiencyValue,2)} m³/func./dia`,
-        `Calculado a partir da produção total, dos ${nf(metric(latest,"dias_trabalhados"),0)} dias trabalhados e da equipe média real.`]);
-    }
-    const nonzero=rows.filter(r=>metric(r,"producao_total_m3")>0);
-    if(nonzero.length){
-      const best=[...nonzero].sort((a,b)=>metric(b,"producao_total_m3")-metric(a,"producao_total_m3"))[0];
-      items.push(["Destaque do período",`${nf(metric(best,"producao_total_m3"),3)} m³`,
-        `${fmtMonth(best.mes)} foi o mês de maior produção entre os ${nonzero.length} fechamentos com produção na janela selecionada.`]);
+      if(total>0){
+        const refuse=metric(summary,"recusas_fabrica_m3");
+        add("Aproveitamento",`${nf(100-refuse/total*100,2)}%`,
+          `Recusas da fábrica totalizaram ${nf(refuse,3)} m³, equivalentes a ${nf(refuse/total*100,2)}% da produção.`,
+          "recusas_fabrica_m3","teal","◇");
+      }
+      add("Expedição consolidada",`${nf(metric(summary,"expedicao_m3"),3)} m³`,
+        `Volume expedido ao longo dos meses selecionados, conforme fechamentos registrados.`,
+        "expedicao_m3","gold","➤");
+      const bestDispatch=rows.filter(r=>metric(r,"expedicao_m3")>0)
+        .sort((a,b)=>metric(b,"expedicao_m3")-metric(a,"expedicao_m3"))[0];
+      if(bestDispatch)add("Pico de expedição",`${fmtMonth(bestDispatch.mes)}`,
+        `${nf(metric(bestDispatch,"expedicao_m3"),3)} m³ expedidos no mês de destaque.`,
+        "expedicao_m3","gold","↗");
+      const productiveMonths=rows.filter(r=>efficiency(r)>0);
+      if(productiveMonths.length){
+        const best=[...productiveMonths].sort((a,b)=>efficiency(b)-efficiency(a))[0];
+        add("Pico de produtividade",`${nf(efficiency(best),2)} m³/func./dia`,
+          `Maior produtividade mensal em ${fmtMonth(best.mes)}, considerando produção, dias e equipe.`,
+          "eficiencia","purple","✦");
+        add("Eficiência consolidada",`${nf(summary.eficiencia,2)} m³/func./dia`,
+          `Produção consolidada dividida pela soma dos funcionários-dia do período.`,
+          "eficiencia","teal","◉");
+      }
+      if(metric(summary,"projetado_m3")>0||metric(summary,"montagem_m3")>0){
+        add("Projetado e montagem",`${nf(metric(summary,"projetado_m3"),2)} / ${nf(metric(summary,"montagem_m3"),2)} m³`,
+          `Volumes acumulados por atividade; não representam necessariamente um saldo de obras pendentes.`,
+          "montagem_m3","purple","▣");
+      }
+      const {previous}=latestAndPrevious(rows);
+      if(latest&&previous){
+        const curr=metric(latest,"producao_total_m3"),prev=metric(previous,"producao_total_m3");
+        const variation=pctChange(curr,prev);
+        add("Tendência mais recente",variation===null?"Sem base comparável":`${variation>=0?"+":""}${nf(variation,1)}%`,
+          `Comparação de ${fmtMonth(latest.mes)} (${nf(curr,3)} m³) com ${fmtMonth(previous.mes)} (${nf(prev,3)} m³).`,
+          "producao_total_m3",variation!==null&&variation>=0?"teal":"coral","↕");
+      }
     }
     if(workInfo.works.length){
-      items.push(["Execução por obra",`${nf(workInfo.pilaresPeriod)} pilares no período`,
-        `${nf(workInfo.consolesPeriod)} consoles executados no intervalo filtrado. O avanço acumulado é de ${nf(workInfo.doneAll)} de ${nf(workInfo.totalAll)} pilares cadastrados.`]);
+      const donePct=workInfo.totalAll?100*workInfo.doneAll/workInfo.totalAll:0;
+      add("Carteira de obras",`${nf(donePct,1)}% dos pilares`,
+        `${nf(workInfo.doneAll)} pilares concluídos de ${nf(workInfo.totalAll)} cadastrados; avanço acumulado, não restrito ao ano.`,
+        "works","teal","▦");
+      add("Execução de consoles",`${nf(workInfo.consolesPeriod)} consoles`,
+        `Quantidade de consoles executados no intervalo selecionado, considerando as obras filtradas.`,
+        "works","gold","▣");
+      const most=[...workInfo.works].sort((a,b)=>val(b.consoles_total)-val(a.consoles_total))[0];
+      if(most&&val(most.consoles_total)>0)add("Obra em destaque",most.nome,
+        `${nf(most.consoles_total)} consoles acumulados e ${nf(most.pilares_concluidos)} pilares concluídos.`,
+        "work:"+most.id,"purple","★");
     }
-    $("biInsights").innerHTML=items.length?items.slice(0,6).map(([kind,title,description])=>
-      `<article class="bi-insight"><span class="bi-insight-tag">${esc(kind)}</span><strong>${esc(title)}</strong><p>${esc(description)}</p></article>`
+    insightsCache=items;
+    $("biInsightsSummary").innerHTML=rows.length
+      ?`<div class="bi-insight-hero"><span class="bi-eyebrow">LEITURA ESTRATÉGICA</span>
+        <strong>${range.mode==="month"?"Panorama do mês":"Panorama consolidado"} · ${esc(range.mode==="month"?fmtMonth(range.end):String(range.year))}</strong>
+        <p>${rows.length} fechamento(s) analisado(s). Meses sem fechamento não são contabilizados como zero.</p></div>
+        <div class="bi-insight-side"><span class="bi-eyebrow">META 550 m³</span>
+          <strong>${rows.filter(r=>metric(r,"producao_total_m3")>=TARGET_M3).length} de ${rows.length}</strong>
+          <p>fechamentos atingiram a meta mensal.</p></div>`
+      :`<div class="bi-empty">Não há fechamentos registrados nesse período.</div>`;
+    $("biInsights").innerHTML=items.length?items.map((it,index)=>
+      `<button type="button" class="bi-insight bi-interactive tone-${it.tone}" data-insight-index="${index}"
+        aria-label="Detalhes: ${esc(it.kind)}">
+        <div class="bi-insight-top"><span class="bi-insight-tag">${esc(it.kind)}</span>
+          <span class="bi-insight-icon" aria-hidden="true">${esc(it.icon)}</span></div>
+        <strong>${esc(it.title)}</strong><p>${esc(it.description)}</p>
+        <span class="bi-insight-cta">Explorar análise ↗</span></button>`
     ).join(""):'<div class="bi-empty">Os destaques aparecerão quando houver fechamentos e execuções cadastradas.</div>';
+  }
+
+  function formatMetric(key,value){
+    const decimals=key==="eficiencia"||key==="media_funcionarios_dia"?2:
+      key==="consoles_consoles_qtd"||key==="dias_trabalhados"?0:3;
+    const unit=key==="eficiencia"?" m³/func./dia":
+      key==="media_funcionarios_dia"?" func./dia":
+      key==="consoles_consoles_qtd"?" un.":key==="dias_trabalhados"?" dias":" m³";
+    return `${nf(value,decimals)}${unit}`;
+  }
+  function statPanel(label,value,detail=""){
+    return `<div class="bi-dialog-stat"><small>${esc(label)}</small><strong>${esc(value)}</strong>
+      ${detail?`<span>${esc(detail)}</span>`:""}</div>`;
+  }
+  function modalTable(headers,rows){
+    return `<div class="bi-dialog-table-wrap"><table class="bi-dialog-table">
+      <thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead>
+      <tbody>${rows.map(row=>`<tr>${row.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody>
+      </table></div>`;
+  }
+  function openDialog(kicker,title,subtitle,body){
+    hideTooltip();
+    const dialog=$("biDetailDialog");
+    $("biDialogKicker").textContent=kicker;
+    $("biDialogTitle").textContent=title;
+    $("biDialogSubtitle").textContent=subtitle;
+    $("biDialogBody").innerHTML=body;
+    if(!dialog.open)dialog.showModal();
+    dialog.scrollTop=0;
+  }
+  function openKpiDetail(key,context=""){
+    const range=params(),rows=filteredMonths(range),aggregated=aggregateMonths(rows);
+    const info=KPINAMES.find(k=>k[0]===key);
+    if(!info)return;
+    const [,title]=info;
+    const values=rows.map(r=>({mes:monthKey(r.mes),value:metric(r,key)}));
+    const avg=values.length?values.reduce((s,v)=>s+v.value,0)/values.length:0;
+    const peak=values.length?[...values].sort((a,b)=>b.value-a.value)[0]:null;
+    const total=metric(aggregated,key);
+    const interpretation=key==="media_funcionarios_dia"
+      ?"Média ponderada pelo número de dias trabalhados: soma dos funcionários-dia dividida pela soma dos dias. Não é soma de médias mensais."
+      :key==="eficiencia"
+      ?"Produção total dividida pela soma de funcionários-dia. As médias mensais não são somadas."
+      :"Valores mensais dos fechamentos salvos. Meses ausentes não são tratados como registros de valor zero.";
+    const headline=range.mode==="month"&&values.length?values[0].value:total;
+    let body=`<div class="bi-dialog-stats">
+      ${statPanel(range.mode==="month"?"Valor do mês":"Indicador consolidado",formatMetric(key,headline))}
+      ${statPanel("Meses com fechamento",nf(rows.length))}
+      ${statPanel("Maior registro",peak?formatMetric(key,peak.value):"—",peak?fmtMonth(peak.mes):"")}
+      ${statPanel("Média mensal",rows.length?formatMetric(key,avg):"—")}
+      </div><p class="bi-dialog-note">${esc(interpretation)}</p>`;
+    if(context)body+=`<p class="bi-dialog-callout">${esc(context)}</p>`;
+    body+=`<h3>Evolução mensal detalhada</h3>`+
+      (values.length?modalTable(["Mês","Valor registrado"],values.map(v=>[fmtMonth(v.mes),formatMetric(key,v.value)])):
+      '<div class="bi-empty">Nenhum fechamento no período.</div>');
+    openDialog("DETALHE DO INDICADOR",title,
+      `${fmtMonth(range.start)} — ${fmtMonth(range.end)} · dados reais do Supabase`,body);
+  }
+  const CHART_KEYS={
+    biHeroChart:["producao_total_m3","expedicao_m3","montagem_m3","projetado_m3"],
+    biProductionChart:["producao_total_m3"],
+    biFlowChart:["expedicao_m3","montagem_m3"],
+    biMakeupChart:["maquiagem_m3","projetado_m3"],
+    biTargetChart:["producao_total_m3"],
+    biRefusalChart:["recusas_total_m3","recusas_fabrica_m3","outras_recusas_m3"],
+    biDonutChart:["producao_total_m3","producao_efetiva_m3","recusas_fabrica_m3"],
+    biEfficiencyChart:["eficiencia","media_funcionarios_dia"],
+    biPeopleChart:["media_funcionarios_dia","dias_trabalhados"],
+    biConsolesChart:["consoles"],
+    biWorksRanking:[]
+  };
+  function metricTitle(key){
+    if(key==="consoles")return "Consoles executados";
+    if(key==="dias_trabalhados")return "Dias trabalhados";
+    return KPINAMES.find(k=>k[0]===key)?.[1]||SERIES[key]?.label||key;
+  }
+  function openChartDetail(chartId){
+    const target=$(chartId);
+    if(!target)return;
+    const chartCard=target.closest(".bi-chart-card");
+    const title=chartCard?.querySelector("h3")?.textContent||"Análise detalhada";
+    const range=params();
+    const rows=chartId==="biConsolesChart"?monthWorkTotals(range):filteredMonths(range);
+    const keys=chartId==="biHeroChart"?
+      ($("biIndicator").value==="all"?CHART_KEYS.biHeroChart:[$("biIndicator").value]):
+      (CHART_KEYS[chartId]||[]);
+    const chartMarkup=target.innerHTML;
+    const tableRows=rows.map(r=>[fmtMonth(r.mes),...keys.map(key=>
+      key==="consoles"?`${nf(val(r.consoles))} un.`:formatMetric(key,metric(r,key)))]);
+    const body=`<div class="bi-dialog-chart">${chartMarkup}</div>
+      <h3>Valores mensais</h3>
+      ${keys.length?(tableRows.length?modalTable(["Mês",...keys.map(metricTitle)],tableRows):
+        '<div class="bi-empty">Sem dados mensais.</div>'):
+        '<p class="bi-dialog-note">Selecione uma obra no ranking para examinar seu avanço acumulado e execução mensal.</p>'}
+      <p class="bi-dialog-note">Referência de meta de produção: 550 m³ mensais. As linhas e as tabelas representam somente registros existentes.</p>`;
+    openDialog("EXPLORAR GRÁFICO",title,`${fmtMonth(range.start)} — ${fmtMonth(range.end)}`,body);
+  }
+  function openPointDetail(mark,chartId){
+    const month=mark.dataset.pointMonth,detail=mark.dataset.chartDetail||"";
+    const key=mark.dataset.pointKey;
+    if(!month){openChartDetail(chartId);return;}
+    const row=data.months.find(m=>monthKey(m.mes)===month);
+    const workTotals=monthWorkTotals(params()).find(m=>monthKey(m.mes)===month);
+    const parts=[];
+    if(row){
+      for(const k of ["producao_total_m3","producao_efetiva_m3","expedicao_m3",
+        "montagem_m3","projetado_m3","maquiagem_m3","recusas_total_m3",
+        "media_funcionarios_dia","eficiencia"])
+        parts.push(statPanel(metricTitle(k),formatMetric(k,metric(row,k))));
+    }
+    if(workTotals)parts.push(statPanel("Consoles executados",`${nf(workTotals.consoles)} un.`));
+    const body=`<p class="bi-dialog-callout">${esc(detail)}</p>
+      <div class="bi-dialog-stats">${parts.join("")||statPanel("Situação","Sem dados adicionais")}</div>
+      <p class="bi-dialog-note">Clique em outro ponto do gráfico para consultar outro mês. Os dados por obra não são atribuídos aos volumes da fábrica.</p>`;
+    openDialog("DETALHE MENSAL",fmtMonth(month),metricTitle(key),body);
+  }
+  function openWorkDetail(workId){
+    const w=data.works.find(item=>String(item.id)===String(workId));
+    if(!w)return;
+    const range=params();
+    const total=val(w.pilares_total),done=val(w.pilares_concluidos);
+    const pct=total?Math.min(100,100*done/total):0;
+    const records=filteredWorkMonths(range).filter(r=>String(r.obra_id)===String(workId))
+      .sort((a,b)=>String(a.mes).localeCompare(String(b.mes)));
+    const consoles=records.reduce((s,r)=>s+val(r.consoles),0);
+    const body=`<div class="bi-dialog-stats">
+      ${statPanel("Pilares cadastrados",nf(total))}
+      ${statPanel("Pilares concluídos",nf(done),"Acumulado")}
+      ${statPanel("Avanço acumulado",`${nf(pct,1)}%`)}
+      ${statPanel("Consoles no período",nf(consoles))}
+      </div><div class="bi-detail-progress"><div style="width:${pct}%"></div></div>
+      <p class="bi-dialog-note">Última execução registrada: ${esc(shortDate(w.ultima_execucao))}. O avanço de pilares é acumulado desde o início da obra; a tabela abaixo respeita os filtros de período.</p>
+      <h3>Execuções registradas por mês</h3>
+      ${records.length?modalTable(["Mês","Pilares com execução","Consoles"],
+        records.map(r=>[fmtMonth(r.mes),nf(r.pilares),nf(r.consoles)])):
+        '<div class="bi-empty">Sem execuções no período selecionado.</div>'}`;
+    openDialog("PAINEL DA OBRA",w.nome,"Execução por obra · leitura protegida",body);
+  }
+  function openInsightDetail(index){
+    const it=insightsCache[index];
+    if(!it)return;
+    if(it.key.startsWith("work:")){openWorkDetail(it.key.slice(5));return;}
+    if(it.key==="works"){openChartDetail("biConsolesChart");return;}
+    openKpiDetail(it.key,`${it.kind}: ${it.title}. ${it.description}`);
+  }
+  function installExpandControls(){
+    document.querySelectorAll(".bi-chart-card").forEach(card=>{
+      const node=card.querySelector(".bi-chart-canvas,.bi-donut-wrap,.bi-work-ranking");
+      const head=card.querySelector(".bi-card-head");
+      if(!node||!head||head.querySelector(".bi-expand-chart"))return;
+      const button=document.createElement("button");
+      button.type="button";
+      button.className="bi-expand-chart";
+      button.dataset.expandChart=node.id;
+      button.textContent="↗ Ampliar";
+      button.setAttribute("aria-label",`Ampliar gráfico: ${head.querySelector("h3")?.textContent||"gráfico"}`);
+      head.appendChild(button);
+    });
+  }
+  function observeReveals(){
+    if(revealedObserver)revealedObserver.disconnect();
+    const elements=[...document.querySelectorAll(".bi-section,.bi-chart-card,.bi-insight,.bi-work-stat,.bi-kpi")];
+    if(!motionAllowed()||!window.IntersectionObserver){
+      elements.forEach(el=>el.classList.add("bi-visible"));
+      return;
+    }
+    revealedObserver=new IntersectionObserver(entries=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){
+          entry.target.classList.add("bi-visible");
+          revealedObserver.unobserve(entry.target);
+        }
+      });
+    },{threshold:.04,rootMargin:"0px 0px 80px 0px"});
+    elements.forEach(el=>{
+      el.classList.add("bi-reveal");
+      el.classList.remove("bi-visible");
+      revealedObserver.observe(el);
+    });
   }
   function focusSections(){
     const choice=$("biFocus").value;
@@ -381,14 +757,30 @@
   function render(){
     const range=params();
     const months=filteredMonths(range);
-    $("biSnapshotLabel").textContent=`${fmtMonth(range.start)} — ${fmtMonth(range.end)}`;
-    renderKpis(months);
+    $("biSnapshotLabel").textContent=range.mode==="year"
+      ?`Ano ${range.year} · consolidado`
+      :`${fmtMonth(range.start)} — ${fmtMonth(range.end)}`;
+    renderKpis(months,range);
     renderCharts(months,range);
     const worksInfo=renderWorks(range);
-    renderInsights(months,worksInfo);
+    renderPulse(months,range,worksInfo);
+    renderInsights(months,worksInfo,range);
     focusSections();
+    observeReveals();
     if(!data.months.length && !data.works.length)notify("Sem dados cadastrados ainda. Os gráficos serão preenchidos à medida que os módulos forem utilizados.","ok");
     else notify(`Dados carregados: ${months.length} fechamento(s) e ${worksInfo.works.length} obra(s) na seleção.`, "ok");
+  }
+  function populateYearSelect(){
+    const select=$("biYear");
+    const saved=select.value;
+    const years=new Set([
+      ...data.months.map(r=>Number(monthKey(r.mes).slice(0,4))),
+      ...data.work_months.map(r=>Number(monthKey(r.mes).slice(0,4)))
+    ].filter(y=>Number.isInteger(y)&&y>2000&&y<2100));
+    if(!years.size)years.add(Number(currentMonth().slice(0,4)));
+    const ordered=[...years].sort((a,b)=>b-a);
+    select.innerHTML=ordered.map(y=>`<option value="${y}">${y}</option>`).join("");
+    select.value=ordered.includes(Number(saved))?saved:String(ordered[0]);
   }
   function populateWorkSelect(){
     const select=$("biWorkFilter");
@@ -411,19 +803,14 @@
         works:Array.isArray(result.works)?result.works:[],
         work_months:Array.isArray(result.work_months)?result.work_months:[]
       };
-      // Não modifica os registros. Apenas inicializa o filtro com o último fechamento,
-      // se o usuário ainda não tiver selecionado um período.
-      if(!$("biEndMonth").value){
-        $("biEndMonth").value=monthKey(
-          data.months[data.months.length-1]?.mes||currentMonth()
-        );
-      }
+      // A primeira abertura seleciona o ano mais recente, sem restringir o mês.
+      // Atualizações posteriores preservam a escolha feita pelo usuário.
       $("biUpdated").textContent=result.generated_at
         ?`Atualizado em ${new Date(result.generated_at).toLocaleString("pt-BR")}`
         :"Dados atualizados";
-      populateWorkSelect();render();
+      populateYearSelect();populateWorkSelect();render();
     }catch(err){
-      console.error("Apresentação Comercial:",err);
+      console.error("Inteligência Administrativa:",err);
       const msg=String(err.message||err);
       notify(msg.includes("bi_apresentacao_dados")
         ?"A consulta BI ainda não está disponível. Execute a migração SQL da V7.0.0 no Supabase."
@@ -446,9 +833,45 @@
     }
   }
   function bindEvents(){
-    for(const id of ["biPeriod","biEndMonth","biWorkFilter","biFocus","biIndicator"]){
+    $("biPeriod").addEventListener("change",()=>{
+      const choice=$("biPeriod").value;
+      if(choice==="month"&&$("biMonthFilter").value==="all"){
+        const year=$("biYear").value;
+        const last=data.months.map(r=>monthKey(r.mes)).filter(k=>k.startsWith(year+"-")).at(-1);
+        $("biMonthFilter").value=(last||`${year}-12`).slice(5,7);
+      }else if(choice!=="month"){
+        $("biMonthFilter").value="all";
+      }
+      render();
+    });
+    $("biMonthFilter").addEventListener("change",()=>{
+      $("biPeriod").value=$("biMonthFilter").value==="all"?"year":"month";
+      render();
+    });
+    for(const id of ["biYear","biWorkFilter","biFocus","biIndicator"]){
       $(id).addEventListener("change",()=>render());
     }
+    $("biApp").addEventListener("click",event=>{
+      const button=event.target.closest("[data-kpi-key],[data-insight-index],[data-work-id],[data-expand-chart]");
+      if(!button)return;
+      if(button.dataset.kpiKey)openKpiDetail(button.dataset.kpiKey);
+      else if(button.dataset.insightIndex!==undefined)openInsightDetail(Number(button.dataset.insightIndex));
+      else if(button.dataset.workId)openWorkDetail(button.dataset.workId);
+      else if(button.dataset.expandChart)openChartDetail(button.dataset.expandChart);
+    });
+    $("biApp").addEventListener("pointermove",event=>{
+      if(event.pointerType==="touch")return;
+      const card=event.target.closest(".bi-kpi,.bi-chart-card,.bi-insight,.bi-work-item");
+      if(!card)return;
+      const rect=card.getBoundingClientRect();
+      card.style.setProperty("--shine-x",`${event.clientX-rect.left}px`);
+      card.style.setProperty("--shine-y",`${event.clientY-rect.top}px`);
+    });
+    $("biDialogClose").addEventListener("click",()=>$("biDetailDialog").close());
+    $("biDetailDialog").addEventListener("click",event=>{
+      if(event.target===$("biDetailDialog"))$("biDetailDialog").close();
+    });
+    $("biDetailDialog").addEventListener("close",hideTooltip);
     $("biRefresh").addEventListener("click",refreshData);
     $("biPrint").addEventListener("click",()=>window.print());
     $("biPresentation").addEventListener("click",()=>setPresentation(true));
@@ -480,6 +903,7 @@
       authorized=true;
       $("biApp").hidden=false;
       $("biSplash").hidden=true;
+      installExpandControls();
       bindEvents();
       await refreshData();
     }catch(err){
