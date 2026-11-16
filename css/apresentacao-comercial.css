@@ -539,3 +539,158 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,[t
 }
 @keyframes biSoftOrbit{50%{filter:drop-shadow(0 0 14px #75b3ff55)}}
 @media(prefers-reduced-motion:reduce){.bi-impact-gauge.bi-impact-orb{animation:none!important}}
+
+
+/* ==========================================================================
+   V7.0.3 — Transição premium da apresentação de detalhes
+   Visual apenas; sem solicitações adicionais e sem modificar os dados.
+   ========================================================================== */
+.bi-detail-transition[hidden]{display:none!important}
+.bi-detail-transition{
+  position:fixed;inset:0;z-index:9999;isolation:isolate;
+  display:grid;place-items:center;overflow:hidden;
+  opacity:0;visibility:hidden;pointer-events:none;
+  background:
+    radial-gradient(ellipse 530px 350px at 50% 47%, #1b3453 0%, #0a172b 65%, transparent 100%),
+    radial-gradient(ellipse 840px 580px at 52% 50%, #203c5e 0%, #071020 75%),
+    #071020;
+  transition:opacity .19s ease, visibility .19s ease;
+}
+.bi-detail-transition.is-active{
+  opacity:1;visibility:visible;pointer-events:all
+}
+.bi-detail-transition.is-active.is-leaving{
+  opacity:0;pointer-events:none
+}
+.bi-transition-atmosphere{
+  position:absolute;inset:-30%;opacity:.65;pointer-events:none;
+  background:
+    radial-gradient(circle at 22% 42%,#54b9ff20 0 2px,transparent 3px),
+    radial-gradient(circle at 74% 24%,#ffdc852d 0 1px,transparent 3px),
+    radial-gradient(circle at 75% 78%,#4ad2bb36 0 2px,transparent 4px),
+    repeating-linear-gradient(0deg,transparent 0 54px,#9db8de07 55px,transparent 56px),
+    repeating-linear-gradient(90deg,transparent 0 54px,#9db8de07 55px,transparent 56px);
+  transform:rotate(-8deg) scale(1.1);
+  animation:biTransitionAtmosphere 7s linear infinite
+}
+.bi-detail-transition:before,
+.bi-detail-transition:after{
+  content:"";position:absolute;border-radius:50%;pointer-events:none;
+  width:60vmax;height:60vmax;max-width:1000px;max-height:1000px;
+  border:1px solid #7fa9d61d;
+  box-shadow:0 0 140px #4c8cd00d,inset 0 0 100px #608bb20d
+}
+.bi-detail-transition:after{
+  width:36vmax;height:36vmax;max-width:590px;max-height:590px;
+  border-color:#ffce7830
+}
+.bi-transition-inner{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:center;
+  width:min(440px,calc(100vw - 36px));text-align:center;
+}
+.bi-transition-eyebrow{
+  font-weight:800;letter-spacing:.22em;font-size:10px;color:#f7cd77;
+  text-shadow:0 0 22px #f3c46748;
+  margin-bottom:5px
+}
+.bi-transition-brand{
+  position:relative;display:grid;place-items:center;
+  width:256px;height:244px;max-width:76vw
+}
+.bi-transition-halo{
+  position:absolute;inset:20px;border-radius:50%;
+  border:1px solid transparent;
+  background:linear-gradient(#0d1b30,#0d1b30) padding-box,
+    conic-gradient(from 0deg,transparent 2%,#f6c76c 16%,transparent 35%,
+      #4ad2bb 52%,transparent 70%,#7ea7ff 84%,transparent 100%) border-box;
+  opacity:.67;box-shadow:0 0 40px #6a9ad51d
+}
+.bi-transition-halo-one{
+  inset:14px;animation:biTransitionSpin 3s linear infinite
+}
+.bi-transition-halo-two{
+  inset:34px;opacity:.48;animation:biTransitionSpin 2.3s linear infinite reverse
+}
+.bi-transition-halo-three{
+  inset:50px;border:1px solid #ffc86f40;background:#15253c;
+  opacity:.85;box-shadow:0 0 34px #f5c36c20,inset 0 0 40px #6f8aaf2c;
+  animation:biTransitionPulse 1.1s ease-in-out infinite alternate
+}
+.bi-transition-logo-holder{
+  position:relative;z-index:2;display:grid;place-items:center;
+  width:182px;height:112px;filter:drop-shadow(0 0 18px #f6cf775c);
+  animation:biTransitionLogo .88s cubic-bezier(.2,.85,.2,1) both
+}
+.bi-transition-logo-holder img{
+  width:180px;max-width:100%;height:90px;object-fit:contain
+}
+.bi-transition-orbit-light{
+  position:absolute;z-index:2;width:8px;height:8px;border-radius:50%;
+  top:11px;left:calc(50% - 4px);background:#ffe2a0;
+  box-shadow:0 0 12px 4px #eab9567a;
+  transform-origin:4px 111px;
+  animation:biTransitionSpin 1.4s linear infinite
+}
+.bi-transition-orbit-light-two{
+  width:5px;height:5px;top:31px;left:calc(50% - 2.5px);
+  background:#62e8da;box-shadow:0 0 10px 3px #59cfc77a;
+  transform-origin:2.5px 91px;animation-duration:2s;animation-direction:reverse
+}
+.bi-transition-title{
+  font-size:clamp(20px,4.3vw,25px);
+  letter-spacing:-.025em;line-height:1.25;color:#f2f7ff;
+  margin:-1px 0 8px;animation:biTransitionTextIn .48s ease both
+}
+.bi-transition-message{
+  font-size:13px;color:#aac3dd;min-height:20px;
+  animation:biTransitionTextIn .65s ease both
+}
+.bi-transition-progress{
+  width:min(300px,75vw);height:4px;border-radius:99px;
+  background:#344f6b;overflow:hidden;margin-top:22px;
+  box-shadow:0 0 0 1px #93beed17
+}
+.bi-transition-progress>span{
+  display:block;width:100%;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,#4ad2bb,#80b4ff 54%,#f7c76b);
+  box-shadow:0 0 14px #70b5fc80;
+  transform:scaleX(0);transform-origin:left
+}
+.bi-detail-transition.is-active .bi-transition-progress>span{
+  animation:biTransitionFill .88s cubic-bezier(.17,.56,.38,1) both
+}
+.bi-transition-signature{
+  font-size:10px;letter-spacing:.2em;color:#7897b8;
+  margin-top:18px;font-weight:700
+}
+@keyframes biTransitionSpin{to{transform:rotate(360deg)}}
+@keyframes biTransitionPulse{to{filter:brightness(1.45);box-shadow:0 0 40px #ffcb7a32,inset 0 0 45px #83a5e044}}
+@keyframes biTransitionAtmosphere{to{transform:rotate(1deg) scale(1.14)}}
+@keyframes biTransitionLogo{
+  0%{opacity:0;transform:scale(.75);filter:blur(7px)}
+  70%{opacity:1;transform:scale(1.07);filter:blur(0)}
+  100%{opacity:1;transform:scale(1);filter:blur(0)}
+}
+@keyframes biTransitionTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes biTransitionFill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media(max-width:520px){
+  .bi-transition-brand{width:216px;height:210px}
+  .bi-transition-halo-one{inset:10px}
+  .bi-transition-halo-two{inset:26px}
+  .bi-transition-halo-three{inset:43px}
+  .bi-transition-orbit-light{top:9px;transform-origin:4px 96px}
+  .bi-transition-orbit-light-two{top:25px;transform-origin:2.5px 80px}
+  .bi-transition-logo-holder{width:150px}
+  .bi-transition-logo-holder img{width:148px}
+  .bi-transition-eyebrow{font-size:9px;letter-spacing:.12em}
+}
+@media(prefers-reduced-motion:reduce){
+  .bi-detail-transition,.bi-transition-atmosphere,.bi-transition-halo,
+  .bi-transition-logo-holder,.bi-transition-orbit-light,
+  .bi-transition-title,.bi-transition-message,
+  .bi-transition-progress>span{animation:none!important;transition:none!important}
+}
+@media print{
+  .bi-detail-transition{display:none!important}
+}

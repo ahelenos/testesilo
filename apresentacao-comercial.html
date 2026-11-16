@@ -6,14 +6,14 @@
   <meta name="theme-color" content="#0b1426">
   <link rel="icon" href="favicon.ico">
   <title>Inteligência Administrativa VIGAS ENGENHARIA | Gestão de Fábrica</title>
-  <link rel="stylesheet" href="css/apresentacao-comercial.css?v=7.0.2">
+  <link rel="stylesheet" href="css/apresentacao-comercial.css?v=7.0.3">
 </head>
 <body>
   <div class="bi-app" id="biApp" hidden>
     <header class="bi-topbar">
       <a class="bi-brand" href="index.html" aria-label="Voltar à Central da Fábrica">
         <img src="assets/vigas-amarelo.png" alt="VIGAS Engenharia em Pré-Moldados">
-        <span class="bi-brand-text"><strong>VIGAS <em>/ BI EXECUTIVO</em></strong><small>Gestão de Fábrica · V7.0.2</small></span>
+        <span class="bi-brand-text"><strong>VIGAS <em>/ BI EXECUTIVO</em></strong><small>Gestão de Fábrica · V7.0.3</small></span>
       </a>
       <nav aria-label="Seções do dashboard" class="bi-nav">
         <a href="#biPerformance">Performance</a>
@@ -31,7 +31,7 @@
     <main class="bi-main">
       <section class="bi-intro">
         <div>
-          <p class="bi-eyebrow"><span class="bi-small-line"></span> INTELIGÊNCIA EXECUTIVA · V7.0.2</p>
+          <p class="bi-eyebrow"><span class="bi-small-line"></span> INTELIGÊNCIA EXECUTIVA · V7.0.3</p>
           <h1>Inteligência Administrativa <span>VIGAS ENGENHARIA</span></h1>
           <p class="bi-intro-description">Performance, eficiência, qualidade e obras — transformando os dados reais da fábrica em inteligência estratégica.</p>
         </div>
@@ -193,7 +193,7 @@
       </section>
       <p class="bi-disclaimer">Os indicadores mensais referem-se à fábrica como um todo. Dados por obra estão limitados a pilares e consoles. Meses sem fechamento não entram nas médias. Referência de meta: 550 m³.</p>
     </main>
-    <footer class="bi-footer"><span>VIGAS Engenharia em Pré-Moldados</span><span>Inteligência Administrativa · V7.0.2 · Somente leitura</span></footer>
+    <footer class="bi-footer"><span>VIGAS Engenharia em Pré-Moldados</span><span>Inteligência Administrativa · V7.0.3 · Somente leitura</span></footer>
   </div>
 
   <dialog id="biDetailDialog" class="bi-detail-dialog" aria-labelledby="biDialogTitle">
@@ -207,6 +207,29 @@
       <div id="biDialogBody" class="bi-dialog-body"></div>
     </div>
   </dialog>
+
+  <!-- V7.0.3: transição cinematográfica somente para abertura de detalhes.
+       Não faz consultas extras e não interfere nos registros do Supabase. -->
+  <div id="biDetailTransition" class="bi-detail-transition" role="presentation" aria-hidden="true" hidden>
+    <div class="bi-transition-atmosphere" aria-hidden="true"></div>
+    <div class="bi-transition-inner">
+      <span class="bi-transition-eyebrow">VIGAS ENGENHARIA · INTELIGÊNCIA EXECUTIVA</span>
+      <div class="bi-transition-brand" aria-hidden="true">
+        <div class="bi-transition-halo bi-transition-halo-one"></div>
+        <div class="bi-transition-halo bi-transition-halo-two"></div>
+        <div class="bi-transition-halo bi-transition-halo-three"></div>
+        <div class="bi-transition-logo-holder">
+          <img src="assets/vigas-amarelo.png" alt="" width="180" height="90">
+        </div>
+        <span class="bi-transition-orbit-light bi-transition-orbit-light-one"></span>
+        <span class="bi-transition-orbit-light bi-transition-orbit-light-two"></span>
+      </div>
+      <strong class="bi-transition-title">Preparando análise executiva</strong>
+      <span id="biTransitionMessage" class="bi-transition-message">Carregando informações…</span>
+      <div class="bi-transition-progress" aria-hidden="true"><span></span></div>
+      <small class="bi-transition-signature">BUSINESS INTELLIGENCE · VIGAS</small>
+    </div>
+  </div>
   <div id="biFloatingTooltip" class="bi-floating-tooltip" role="tooltip" hidden></div>
 
   <div id="biSplash" class="bi-splash" role="status" aria-live="polite">
@@ -216,6 +239,6 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase.js?v=6.0.9"></script>
-  <script src="js/apresentacao-comercial.js?v=7.0.2"></script>
+  <script src="js/apresentacao-comercial.js?v=7.0.3"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/* Gestão de Fábrica V7.0.2 · Inteligência Administrativa · somente leitura */
+/* Gestão de Fábrica V7.0.3 · Inteligência Administrativa · somente leitura */
 (() => {
   "use strict";
   const $ = id => document.getElementById(id);
@@ -789,15 +789,77 @@
       <tbody>${rows.map(row=>`<tr>${row.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody>
       </table></div>`;
   }
+  // V7.0.3: transição leve para a abertura de detalhes. A análise já está
+  // pronta quando o usuário clica; a animação é somente apresentação visual.
+  // Um único ponto de entrada abrange indicadores, obras, insights e gráficos.
+  const DETAIL_TRANSITION_MS=880;
+  const DETAIL_FADE_MS=190;
+  const DETAIL_MESSAGES=[
+    "Carregando informações…",
+    "Preparando painel executivo…",
+    "Organizando indicadores…",
+    "Montando visão analítica…"
+  ];
+  let detailTransitionSeq=0;
+  let detailTimer=null;
+  let detailFadeTimer=null;
+  let detailMessageIndex=0;
+
+  function resetDetailTransition(){
+    ++detailTransitionSeq;
+    clearTimeout(detailTimer);
+    clearTimeout(detailFadeTimer);
+    detailTimer=null;
+    detailFadeTimer=null;
+    const overlay=$("biDetailTransition");
+    if(overlay){
+      overlay.classList.remove("is-active","is-leaving");
+      overlay.hidden=true;
+    }
+  }
+
   function openDialog(kicker,title,subtitle,body){
     hideTooltip();
     const dialog=$("biDetailDialog");
-    $("biDialogKicker").textContent=kicker;
-    $("biDialogTitle").textContent=title;
-    $("biDialogSubtitle").textContent=subtitle;
-    $("biDialogBody").innerHTML=body;
-    if(!dialog.open)dialog.showModal();
-    dialog.scrollTop=0;
+    const reveal=()=>{
+      $("biDialogKicker").textContent=kicker;
+      $("biDialogTitle").textContent=title;
+      $("biDialogSubtitle").textContent=subtitle;
+      $("biDialogBody").innerHTML=body;
+      if(!dialog.open)dialog.showModal();
+      dialog.scrollTop=0;
+    };
+    const overlay=$("biDetailTransition");
+    // Em movimento reduzido (ou aba oculta), abre imediatamente.
+    // Não há espera artificial para pessoas que não querem animações.
+    if(!overlay||dialog.open||!motionAllowed()||document.hidden){
+      resetDetailTransition();
+      reveal();
+      return;
+    }
+
+    resetDetailTransition();
+    const seq=detailTransitionSeq;
+    $("biTransitionMessage").textContent=
+      DETAIL_MESSAGES[detailMessageIndex++ % DETAIL_MESSAGES.length];
+    overlay.hidden=false;
+    // Reinicia as animações CSS mesmo em cliques consecutivos.
+    void overlay.offsetWidth;
+    overlay.classList.add("is-active");
+
+    detailTimer=window.setTimeout(()=>{
+      if(seq!==detailTransitionSeq)return;
+      overlay.classList.add("is-leaving");
+      // A abertura da janela acontece no final da transição.
+      reveal();
+      detailFadeTimer=window.setTimeout(()=>{
+        if(seq!==detailTransitionSeq)return;
+        overlay.classList.remove("is-active","is-leaving");
+        overlay.hidden=true;
+        detailTimer=null;
+        detailFadeTimer=null;
+      },DETAIL_FADE_MS);
+    },DETAIL_TRANSITION_MS);
   }
   function openKpiDetail(key,context=""){
     const range=params(),rows=filteredMonths(range),aggregated=aggregateMonths(rows);
@@ -1110,7 +1172,12 @@
     $("biDetailDialog").addEventListener("click",event=>{
       if(event.target===$("biDetailDialog"))$("biDetailDialog").close();
     });
-    $("biDetailDialog").addEventListener("close",hideTooltip);
+    $("biDetailDialog").addEventListener("close",()=>{
+      hideTooltip();
+      resetDetailTransition();
+    });
+    window.addEventListener("pagehide",resetDetailTransition);
+    window.addEventListener("beforeprint",resetDetailTransition);
     $("biRefresh").addEventListener("click",refreshData);
     $("biPrint").addEventListener("click",()=>window.print());
     $("biPresentation").addEventListener("click",()=>setPresentation(true));
