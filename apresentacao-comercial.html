@@ -6,14 +6,14 @@
   <meta name="theme-color" content="#0b1426">
   <link rel="icon" href="favicon.ico">
   <title>Inteligência Administrativa VIGAS ENGENHARIA | Gestão de Fábrica</title>
-  <link rel="stylesheet" href="css/apresentacao-comercial.css?v=7.0.1">
+  <link rel="stylesheet" href="css/apresentacao-comercial.css?v=7.0.2">
 </head>
 <body>
   <div class="bi-app" id="biApp" hidden>
     <header class="bi-topbar">
       <a class="bi-brand" href="index.html" aria-label="Voltar à Central da Fábrica">
         <img src="assets/vigas-amarelo.png" alt="VIGAS Engenharia em Pré-Moldados">
-        <span class="bi-brand-text"><strong>VIGAS <em>/ BI EXECUTIVO</em></strong><small>Gestão de Fábrica · V7.0.1</small></span>
+        <span class="bi-brand-text"><strong>VIGAS <em>/ BI EXECUTIVO</em></strong><small>Gestão de Fábrica · V7.0.2</small></span>
       </a>
       <nav aria-label="Seções do dashboard" class="bi-nav">
         <a href="#biPerformance">Performance</a>
@@ -31,7 +31,7 @@
     <main class="bi-main">
       <section class="bi-intro">
         <div>
-          <p class="bi-eyebrow"><span class="bi-small-line"></span> INTELIGÊNCIA EXECUTIVA · V7.0.1</p>
+          <p class="bi-eyebrow"><span class="bi-small-line"></span> INTELIGÊNCIA EXECUTIVA · V7.0.2</p>
           <h1>Inteligência Administrativa <span>VIGAS ENGENHARIA</span></h1>
           <p class="bi-intro-description">Performance, eficiência, qualidade e obras — transformando os dados reais da fábrica em inteligência estratégica.</p>
         </div>
@@ -91,6 +91,21 @@
 
       <div id="biStatus" class="bi-status" role="status" aria-live="polite">Buscando dados consolidados no Supabase…</div>
       <div id="biPulseBar" class="bi-pulse-bar" aria-label="Pulso executivo do período"></div>
+
+      <section class="bi-impact-section" aria-label="Painel executivo de impacto">
+        <div class="bi-impact-heading">
+          <div><span class="bi-eyebrow">PAINEL DE IMPACTO · VIGAS</span><h2>Os dados ganham dimensão</h2>
+          <p>Medidores interativos do período; selecione uma análise para expandir.</p></div>
+          <span class="bi-impact-live"><i></i> INTELIGÊNCIA EM TEMPO REAL</span>
+        </div>
+        <div id="biImpactGrid" class="bi-impact-grid"></div>
+      </section>
+
+      <section class="bi-timeline-section" aria-label="Navegação temporal executiva">
+        <div class="bi-timeline-title"><span>EXPLORAR A JORNADA DO ANO</span>
+          <small>Escolha um mês para detalhar ou volte ao consolidado anual.</small></div>
+        <div class="bi-timeline-scroll" id="biTimeline" role="group" aria-label="Meses com dados"></div>
+      </section>
 
       <section class="bi-section bi-summary-section" id="biOverview">
         <div class="bi-section-heading">
@@ -160,7 +175,8 @@
         <div class="bi-section-heading"><div><span class="bi-eyebrow">04 · INTELIGÊNCIA POR OBRA</span><h2>Execução de consoles</h2><p>Avanço das obras e quantidade de pilares concluídos.</p></div><span class="bi-section-tag" id="biWorksBadge">Todas as obras</span></div>
         <div class="bi-works-stat-grid" id="biWorksStats"></div>
         <div class="bi-chart-grid">
-          <article class="bi-chart-card"><div class="bi-card-head"><div><span class="bi-mini-label">CONTROLE CONSOLES</span><h3>Consoles por mês</h3><p>Consoles executados no intervalo selecionado.</p></div><span class="bi-corner-dot gold"></span></div><div id="biConsolesChart" class="bi-chart-canvas"></div><div id="biConsolesDetail" class="bi-chart-detail" aria-live="polite"></div></article>
+          <article class="bi-chart-card"><div class="bi-card-head"><div><span class="bi-mini-label">CONTROLE CONSOLES</span><h3>Consoles por mês</h3><p>Histórico preservado dos fechamentos + execuções atuais sem fechamento.</p></div><span class="bi-corner-dot gold"></span></div><div id="biConsolesChart" class="bi-chart-canvas"></div><div id="biConsolesDetail" class="bi-chart-detail" aria-live="polite"></div>
+            <div id="biConsolesSource" class="bi-consoles-source" aria-live="polite"></div></article>
           <article class="bi-chart-card"><div class="bi-card-head"><div><span class="bi-mini-label">ANDAMENTO DAS OBRAS</span><h3>Ranking de conclusão</h3><p>Percentual de pilares com consoles por obra.</p></div><span class="bi-corner-dot teal"></span></div><div id="biWorksRanking" class="bi-work-ranking"></div></article>
         </div>
         <article class="bi-chart-card bi-worklist-card">
@@ -172,11 +188,12 @@
       <section class="bi-section bi-insights-section" id="biInsightsSection">
         <div class="bi-section-heading"><div><span class="bi-eyebrow">05 · NARRATIVA EXECUTIVA</span><h2>Destaques do período</h2><p>Resultados, oportunidades e comparativos reais — clique nos destaques para aprofundar.</p></div><span class="bi-section-tag">INSIGHTS FACTUAIS</span></div>
         <div id="biInsightsSummary" class="bi-insights-summary"></div>
+        <div id="biStorySpotlight" class="bi-story-spotlight" aria-live="polite"></div>
         <div id="biInsights" class="bi-insights"></div>
       </section>
       <p class="bi-disclaimer">Os indicadores mensais referem-se à fábrica como um todo. Dados por obra estão limitados a pilares e consoles. Meses sem fechamento não entram nas médias. Referência de meta: 550 m³.</p>
     </main>
-    <footer class="bi-footer"><span>VIGAS Engenharia em Pré-Moldados</span><span>Inteligência Administrativa · V7.0.1 · Somente leitura</span></footer>
+    <footer class="bi-footer"><span>VIGAS Engenharia em Pré-Moldados</span><span>Inteligência Administrativa · V7.0.2 · Somente leitura</span></footer>
   </div>
 
   <dialog id="biDetailDialog" class="bi-detail-dialog" aria-labelledby="biDialogTitle">
@@ -199,6 +216,6 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase.js?v=6.0.9"></script>
-  <script src="js/apresentacao-comercial.js?v=7.0.1"></script>
+  <script src="js/apresentacao-comercial.js?v=7.0.2"></script>
 </body>
 </html>

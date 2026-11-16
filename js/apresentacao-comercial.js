@@ -1,4 +1,4 @@
-/* Gestão de Fábrica V7.0.1 · Inteligência Administrativa · somente leitura */
+/* Gestão de Fábrica V7.0.2 · Inteligência Administrativa · somente leitura */
 (() => {
   "use strict";
   const $ = id => document.getElementById(id);
@@ -103,6 +103,41 @@
       map.set(key,prev);
     });
     return Array.from(map.values()).sort((a,b)=>a.mes.localeCompare(b.mes));
+  }
+  // Consoles: fechos historicos sao imutaveis. Para meses sem fechamento,
+  // usa-se o Controle Consoles atual. Ao filtrar uma obra, somente os
+  // registros daquela obra sao pertinentes (fechamentos nao tem obra).
+  function consolesTimeline(range=params()){
+    const byMonth=new Map();
+    monthWorkTotals(range).forEach(r=>{
+      byMonth.set(monthKey(r.mes),{
+        mes:monthKey(r.mes),consoles:val(r.consoles),pilares:val(r.pilares),
+        source:"controle"
+      });
+    });
+    if(range.workId==="all"){
+      filteredMonths(range).forEach(r=>{
+        byMonth.set(monthKey(r.mes),{
+          mes:monthKey(r.mes),
+          consoles:val(r.consoles_consoles_qtd),
+          pilares:val(r.consoles_pecas_qtd),
+          source:"fechamento"
+        });
+      });
+    }
+    return [...byMonth.values()].sort((a,b)=>a.mes.localeCompare(b.mes));
+  }
+  function consolesBreakdown(range=params()){
+    const series=consolesTimeline(range);
+    const historico=series.filter(r=>r.source==="fechamento");
+    const controle=series.filter(r=>r.source==="controle");
+    const sum=list=>list.reduce((acc,r)=>acc+val(r.consoles),0);
+    return {series,historico,controle,total:sum(series),
+      totalHistorico:sum(historico),totalControle:sum(controle)};
+  }
+  function consolesOrigin(row){
+    return row.source==="fechamento"
+      ?"Fechamento mensal preservado":"Controle Consoles · execução por obra";
   }
   function efficiency(m){
     const v=val(m.producao_total_m3),dias=val(m.dias_trabalhados),workers=val(m.media_funcionarios_dia);
@@ -213,6 +248,85 @@
     $("biPulseBar").innerHTML=items.map(([label,value])=>
       `<span class="bi-pulse-item"><small>${esc(label)}</small><strong>${esc(value)}</strong></span>`).join("");
   }
+  function miniSpark(values,color){
+    if(!values.length)return '<div class="bi-spark-empty">Aguardando registros do período</div>';
+    const max=Math.max(1,...values.map(val)),w=230,h=54,left=4,right=226;
+    const points=values.map((v,i)=>{
+      const x=values.length===1?115:left+(right-left)*i/(values.length-1);
+      return [x,49-(val(v)/max)*38];
+    });
+    const d=points.map(([x,y],i)=>`${i?"L":"M"} ${x.toFixed(2)} ${y.toFixed(2)}`).join(" ");
+    const [x,y]=points[points.length-1];
+    return `<svg class="bi-impact-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+      <path d="${d}" stroke="${color}" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" class="bi-animated-line" pathLength="1"/>
+      <circle cx="${x}" cy="${y}" r="4.3" fill="${color}" stroke="#13263d" stroke-width="2"/>
+    </svg>`;
+  }
+  function renderImpact(rows,range){
+    const summary=aggregateMonths(rows),breakdown=consolesBreakdown(range);
+    const total=val(summary.producao_total_m3);
+    const effective=val(summary.producao_efetiva_m3);
+    const targetBase=rows.length*TARGET_M3;
+    const targetPct=targetBase>0?total/targetBase*100:0;
+    const yieldPct=total>0?effective/total*100:0;
+    const days=val(summary.dias_trabalhados);
+    const productivity=val(summary.eficiencia);
+    const items=[
+      {label:"RITMO INDUSTRIAL",title:rows.length?`${nf(targetPct,1)}%`:"—",
+       subtitle:`Produção acumulada sobre ${nf(targetBase,0)} m³ de referência (${nf(rows.length)} fechamento(s) × 550 m³)`,
+       color:"#f5c56f",pct:targetPct,
+       trend:rows.map(r=>val(r.producao_total_m3)/TARGET_M3*100),focus:"producao_total_m3",note:"META POR COMPETÊNCIA"},
+      {label:"ÍNDICE DE APROVEITAMENTO",title:total?`${nf(yieldPct,2)}%`:"—",
+       subtitle:`${nf(effective,3)} m³ de produção efetiva em ${nf(total,3)} m³ produzidos`,
+       color:"#4bd8c8",pct:yieldPct,
+       trend:rows.map(r=>val(r.producao_total_m3)?val(r.producao_efetiva_m3)/val(r.producao_total_m3)*100:0),
+       focus:"producao_efetiva_m3",note:"QUALIDADE"},
+      {label:"EFICIÊNCIA POR EQUIPE",title:days?`${nf(productivity,2)}`:"—",
+       subtitle:`m³ por funcionário/dia · ${nf(days)} dias trabalhados analisados`,
+       color:"#b9a3ff",pct:null,
+       trend:rows.map(r=>efficiency(r)),focus:"eficiencia",note:"PRODUTIVIDADE"},
+      {label:"CONSOLES DOCUMENTADOS",title:nf(breakdown.total),
+       subtitle:range.workId==="all"
+          ?`${nf(breakdown.totalHistorico)} históricos · ${nf(breakdown.totalControle)} em meses sem fechamento`
+          :`Consoles da obra selecionada no período`,
+       color:"#73aaff",pct:null,
+       trend:breakdown.series.map(r=>r.consoles),focus:"consoles",note:"SÉRIE HISTÓRICA"}
+    ];
+    $("biImpactGrid").innerHTML=items.map((it,i)=>{
+      const pct=it.pct===null?0:Math.max(0,Math.min(100,it.pct));
+      return `<button type="button" class="bi-impact-card" data-stage-focus="${esc(it.focus)}"
+       style="--impact-color:${it.color};--impact-progress:${pct}%"
+       aria-label="${esc(it.label)} ${esc(it.title)}. Explorar indicador">
+       <div class="bi-impact-card-top"><span>${esc(it.label)}</span><span class="bi-impact-index">0${i+1}</span></div>
+       <div class="bi-impact-body">
+         <div class="bi-impact-gauge ${it.pct===null?"bi-impact-orb":""}"><div class="bi-impact-gauge-core"><strong>${esc(it.title)}</strong></div></div>
+         ${miniSpark(it.trend,it.color)}
+       </div>
+       <p>${esc(it.subtitle)}</p>
+       <footer><span>${esc(it.note)}</span><span>EXPLORAR ↗</span></footer>
+      </button>`;
+    }).join("");
+  }
+  function renderTimeline(range){
+    const year=String(range.year);
+    const keys=new Set([
+      ...data.months.map(r=>monthKey(r.mes)),
+      ...data.work_months.map(r=>monthKey(r.mes))
+    ].filter(k=>k.startsWith(`${year}-`)));
+    const monthKeys=[...keys].sort();
+    const choices=[`<button type="button" class="bi-timeline-chip ${range.mode==="year"?"active":""}"
+        data-timeline-month="all" aria-pressed="${range.mode==="year"}">
+        <span class="bi-timeline-dot"></span> ANO COMPLETO</button>`];
+    monthKeys.forEach(k=>{
+      const closing=data.months.some(r=>monthKey(r.mes)===k);
+      const selected=range.mode==="month"&&range.end===k;
+      choices.push(`<button type="button" class="bi-timeline-chip ${selected?"active":""}"
+        data-timeline-month="${esc(k.slice(5))}" aria-pressed="${selected}" title="${closing?"Fechamento registrado":"Dados de consoles"}">
+        <span class="bi-timeline-dot ${closing?"closing":"execution"}"></span> ${esc(fmtMonth(k))}</button>`);
+    });
+    $("biTimeline").innerHTML=choices.join("")+
+      (monthKeys.length?"":'<span class="bi-timeline-none">Sem meses cadastrados neste ano.</span>');
+  }
   function axisNice(max){
     if(max<=0 || !Number.isFinite(max))return 1;
     const base=Math.pow(10,Math.floor(Math.log10(max)));
@@ -252,6 +366,18 @@
     const tip=$("biFloatingTooltip");
     if(tip)tip.hidden=true;
   }
+  let highlightedMonth="";
+  function synchronizeMonth(month){
+    if(highlightedMonth===month)return;
+    highlightedMonth=month||"";
+    document.querySelectorAll(".bi-chart-canvas [data-point-month]").forEach(node=>{
+      const active=Boolean(month)&&node.getAttribute("data-point-month")===month;
+      node.classList.toggle("bi-synced-point",active);
+    });
+    document.querySelectorAll(".bi-timeline-chip[data-timeline-month]").forEach(chip=>{
+      chip.classList.toggle("bi-timeline-hover",Boolean(month)&&chip.dataset.timelineMonth===month.slice(5,7));
+    });
+  }
   function chartEventBinding(chartId,detailId,initial){
     const el=$(chartId);
     if($(detailId))$(detailId).textContent=initial||"Clique ou toque em uma barra ou ponto para detalhes.";
@@ -269,18 +395,21 @@
     };
     el.onpointermove=e=>{
       const mark=show(e.target);
-      if(mark&&e.pointerType!=="touch")updateTooltip(mark.dataset.chartDetail||"—",e.clientX,e.clientY);
-      else hideTooltip();
+      if(mark&&e.pointerType!=="touch"){
+        updateTooltip(mark.dataset.chartDetail||"—",e.clientX,e.clientY);
+        synchronizeMonth(mark.dataset.pointMonth||"");
+      }else{hideTooltip();synchronizeMonth("");}
     };
-    el.onpointerleave=hideTooltip;
+    el.onpointerleave=()=>{hideTooltip();synchronizeMonth("");};
     el.onfocusin=e=>{
       const mark=show(e.target);
       if(mark){
         const rect=mark.getBoundingClientRect();
         updateTooltip(mark.dataset.chartDetail||"—",rect.left,rect.top);
+        synchronizeMonth(mark.dataset.pointMonth||"");
       }
     };
-    el.onfocusout=hideTooltip;
+    el.onfocusout=()=>{hideTooltip();synchronizeMonth("");};
     el.onkeydown=e=>{
       const mark=markFor(e.target);
       if((e.key==="Enter"||e.key===" ")&&mark){
@@ -311,7 +440,7 @@
     $(chartId).innerHTML=svgBody+chartLegend(legend);
     chartEventBinding(chartId,detailId,message);
   }
-  function barChart(chartId,detailId,rows,{key,label,color="#72a7ff",suffix="",decimals=0,target=null,mean=true,zeroHidden=true,percent=false}){
+  function barChart(chartId,detailId,rows,{key,label,color="#72a7ff",suffix="",decimals=0,target=null,mean=true,zeroHidden=true,percent=false,colorFor=null,detailFor=null,legendOverride=null}){
     const points=rows.filter(r=>!zeroHidden || metric(r,key)>0);
     if(!points.length){emptyChart(chartId);chartEventBinding(chartId,detailId,"Sem dados para este gráfico.");return;}
     const values=points.map(r=>metric(r,key));
@@ -322,9 +451,10 @@
     const group= f.innerW/points.length;
     const bars=points.map((r,i)=>{
       const v=values[i], x=f.X(i)-Math.min(28,group*.32),y=f.Y(v),h=f.Y(0)-y;
-      const detail=`${fmtMonth(r.mes)} · ${label}: ${nf(v,decimals)}${suffix}`;
+      const detail=detailFor?detailFor(r,v):`${fmtMonth(r.mes)} · ${label}: ${nf(v,decimals)}${suffix}`;
+      const barColor=colorFor?colorFor(r):color;
       return `<rect class="bi-animated-bar" x="${x}" y="${y}" width="${Math.min(56,group*.64)}" height="${Math.max(h,.5)}" rx="5"
-          fill="${color}" opacity=".91" role="button" tabindex="0" data-chart-point="1"
+          fill="${barColor}" opacity=".91" role="button" tabindex="0" data-chart-point="1"
           data-point-month="${esc(monthKey(r.mes))}" data-point-key="${esc(key)}"
           data-chart-detail="${esc(detail)}" aria-label="${esc(detail)}"><title>${esc(detail)}</title></rect>`;
     }).join("");
@@ -336,7 +466,7 @@
       <text x="${f.pad.left+4}" y="${Math.max(15,targetY-7)}" text-anchor="start" font-size="11" fill="#ff9299">META</text>`;
     const svg=`<svg viewBox="0 0 ${f.width} ${f.height}" style="min-width:${points.length>14?Math.min(width,1250):0}px" role="group"
         aria-label="${esc(label)} — barras mensais">${f.grid}${bars}${averageLine}${targetLine}${f.ticks}</svg>`;
-    const leg=[[label,color],...(mean?[["Média","#f6c96b"]]:[]),...(target!==null?[["Meta","#ff6878"]]:[])];
+    const leg=[...(legendOverride||[[label,color]]),...(mean?[["Média","#f6c96b"]]:[]),...(target!==null?[["Meta","#ff6878"]]:[])];
     graphSvg(chartId,detailId,svg,leg,`Média dos meses com dados: ${nf(average,decimals)}${suffix} · ${points.length} meses.`);
   }
   function lineChart(chartId,detailId,rows,keys){
@@ -439,9 +569,25 @@
     barChart("biPeopleChart","biPeopleDetail",rows,{
       key:"media_funcionarios_dia",label:"Funcionários/dia",color:"#ad99fd",suffix:" funcionários",decimals:2
     });
-    barChart("biConsolesChart","biConsolesDetail",monthWorkTotals(range),{
-      key:"consoles",label:"Consoles executados",color:"#f5c56f",suffix:" un.",decimals:0
+    const consolidatedConsoles=consolesBreakdown(range);
+    barChart("biConsolesChart","biConsolesDetail",consolidatedConsoles.series,{
+      key:"consoles",label:"Consoles registrados",color:"#f5c56f",
+      suffix:" un.",decimals:0,zeroHidden:false,
+      colorFor:r=>r.source==="fechamento"?"#f5c56f":"#4bd8c8",
+      detailFor:(r,v)=>`${fmtMonth(r.mes)} · ${nf(v)} consoles · ${consolesOrigin(r)} · ${nf(r.pilares)} pilares/peças`,
+      legendOverride:range.workId==="all"
+        ?[["Fechamentos históricos","#f5c56f"],["Controle Consoles (meses sem fechamento)","#4bd8c8"]]
+        :[["Execuções da obra","#4bd8c8"]]
     });
+    const explanation=$("biConsolesSource");
+    if(explanation){
+      explanation.innerHTML=range.workId==="all"
+        ?`<span class="bi-source-dot gold"></span> ${nf(consolidatedConsoles.historico.length)} ${consolidatedConsoles.historico.length===1?"mês":"meses"} do Fechamentos de Mês ·
+          <span class="bi-source-dot teal"></span> ${nf(consolidatedConsoles.controle.length)} ${consolidatedConsoles.controle.length===1?"mês":"meses"} sem fechamento (Controle Consoles).
+          <strong>Total: ${nf(consolidatedConsoles.total)} consoles.</strong>`
+        :`<span class="bi-source-dot teal"></span> Filtro por obra: somente execuções registradas no Controle Consoles.
+          <strong>${nf(consolidatedConsoles.total)} consoles no período.</strong>`;
+    }
   }
   function renderWorks(range){
     const works=worksInScope(range),periodRows=filteredWorkMonths(range);
@@ -454,7 +600,7 @@
       ["Obras analisadas",works.length],
       ["Pilares cadastrados",totalAll],
       ["Pilares concluídos (acumulado)",doneAll],
-      ["Consoles no período",consolesPeriod]
+      ["Consoles no controle (período)",consolesPeriod]
     ].map(([label,n])=>`<div class="bi-work-stat"><small>${esc(label)}</small><strong>${nf(n)}</strong></div>`).join("");
     const ranked=[...works].filter(w=>val(w.pilares_total)>0).sort((a,b)=>{
       const ap=val(a.pilares_concluidos)/val(a.pilares_total),bp=val(b.pilares_concluidos)/val(b.pilares_total);
@@ -511,6 +657,29 @@
       if(bestDispatch)add("Pico de expedição",`${fmtMonth(bestDispatch.mes)}`,
         `${nf(metric(bestDispatch,"expedicao_m3"),3)} m³ expedidos no mês de destaque.`,
         "expedicao_m3","gold","↗");
+      const maquillage=metric(summary,"maquiagem_m3");
+      if(maquillage>0)add("Acabamento industrial",`${nf(maquillage,3)} m³`,
+        `Volume de maquiagem acumulado nos ${rows.length} fechamentos, sem estimar serviços fora do sistema.`,
+        "maquiagem_m3","purple","✧");
+      if(rows.length){
+        const monthlyMean=rows.filter(r=>metric(r,"producao_total_m3")>0);
+        if(monthlyMean.length){
+          const meanVolume=total/monthlyMean.length,difference=meanVolume-TARGET_M3;
+          add("Distância da meta mensal",`${difference>=0?"+":""}${nf(difference,2)} m³`,
+            `Média mensal de ${nf(meanVolume,2)} m³ em ${monthlyMean.length} mês(es) com produção; diferença para a meta de 550 m³.`,
+            "producao_total_m3",difference>=0?"teal":"coral","◎");
+        }
+      }
+      const qualityMonths=rows.filter(r=>metric(r,"producao_total_m3")>0);
+      if(qualityMonths.length){
+        const best=[...qualityMonths].sort((a,b)=>
+          (metric(b,"producao_efetiva_m3")/metric(b,"producao_total_m3"))-
+          (metric(a,"producao_efetiva_m3")/metric(a,"producao_total_m3")))[0];
+        const rate=metric(best,"producao_efetiva_m3")/metric(best,"producao_total_m3")*100;
+        add("Melhor aproveitamento",`${nf(rate,2)}% · ${fmtMonth(best.mes)}`,
+          `Percentual de produção efetiva sobre o total no melhor mês com volume positivo.`,
+          "producao_efetiva_m3","teal","✦");
+      }
       const productiveMonths=rows.filter(r=>efficiency(r)>0);
       if(productiveMonths.length){
         const best=[...productiveMonths].sort((a,b)=>efficiency(b)-efficiency(a))[0];
@@ -540,8 +709,12 @@
       add("Carteira de obras",`${nf(donePct,1)}% dos pilares`,
         `${nf(workInfo.doneAll)} pilares concluídos de ${nf(workInfo.totalAll)} cadastrados; avanço acumulado, não restrito ao ano.`,
         "works","teal","▦");
-      add("Execução de consoles",`${nf(workInfo.consolesPeriod)} consoles`,
-        `Quantidade de consoles executados no intervalo selecionado, considerando as obras filtradas.`,
+      const historic=consolesBreakdown(range);
+      add(range.workId==="all"?"Consoles · visão integrada":"Consoles · obra selecionada",
+        `${nf(historic.total)} consoles`,
+        range.workId==="all"
+          ?`${nf(historic.totalHistorico)} consoles preservados nos fechamentos e ${nf(historic.totalControle)} de meses sem fechamento. Sem duplicar competências.`
+          :`Execuções da obra selecionada no período. Os fechamentos pertencem à fábrica inteira.`,
         "works","gold","▣");
       const most=[...workInfo.works].sort((a,b)=>val(b.consoles_total)-val(a.consoles_total))[0];
       if(most&&val(most.consoles_total)>0)add("Obra em destaque",most.nome,
@@ -567,6 +740,37 @@
     ).join(""):'<div class="bi-empty">Os destaques aparecerão quando houver fechamentos e execuções cadastradas.</div>';
   }
 
+  let storyIndex=0;
+  function renderStorySpotlight(){
+    const host=$("biStorySpotlight");
+    if(!host)return;
+    if(!insightsCache.length){host.innerHTML="";return;}
+    storyIndex=(storyIndex+insightsCache.length)%insightsCache.length;
+    const it=insightsCache[storyIndex];
+    const progress=(storyIndex+1)/insightsCache.length*100;
+    host.innerHTML=`<div class="bi-story-left">
+      <span class="bi-eyebrow">EXPERIÊNCIA EXECUTIVA · DESTAQUE ${storyIndex+1} / ${insightsCache.length}</span>
+      <h3>${esc(it.kind)}</h3><strong>${esc(it.title)}</strong>
+      <p>${esc(it.description)}</p>
+      <button type="button" class="bi-story-open" data-story-open="1">Abrir análise completa ↗</button>
+      </div>
+      <div class="bi-story-right">
+        <div class="bi-story-orb" aria-hidden="true"><span>${esc(it.icon)}</span></div>
+        <div class="bi-story-nav">
+          <button type="button" data-story-nav="-1" aria-label="Destaque anterior">←</button>
+          <span>${String(storyIndex+1).padStart(2,"0")} / ${String(insightsCache.length).padStart(2,"0")}</span>
+          <button type="button" data-story-nav="1" aria-label="Próximo destaque">→</button>
+        </div>
+      </div>
+      <div class="bi-story-track" aria-hidden="true"><span style="width:${progress}%"></span></div>`;
+    document.querySelectorAll(".bi-insight[data-insight-index]").forEach(el=>
+      el.classList.toggle("bi-insight-featured",Number(el.dataset.insightIndex)===storyIndex));
+  }
+  function navigateStory(step){
+    if(!insightsCache.length)return;
+    storyIndex=(storyIndex+step+insightsCache.length)%insightsCache.length;
+    renderStorySpotlight();
+  }
   function formatMetric(key,value){
     const decimals=key==="eficiencia"||key==="media_funcionarios_dia"?2:
       key==="consoles_consoles_qtd"||key==="dias_trabalhados"?0:3;
@@ -647,16 +851,17 @@
     const chartCard=target.closest(".bi-chart-card");
     const title=chartCard?.querySelector("h3")?.textContent||"Análise detalhada";
     const range=params();
-    const rows=chartId==="biConsolesChart"?monthWorkTotals(range):filteredMonths(range);
+    const rows=chartId==="biConsolesChart"?consolesTimeline(range):filteredMonths(range);
     const keys=chartId==="biHeroChart"?
       ($("biIndicator").value==="all"?CHART_KEYS.biHeroChart:[$("biIndicator").value]):
       (CHART_KEYS[chartId]||[]);
     const chartMarkup=target.innerHTML;
     const tableRows=rows.map(r=>[fmtMonth(r.mes),...keys.map(key=>
-      key==="consoles"?`${nf(val(r.consoles))} un.`:formatMetric(key,metric(r,key)))]);
+      key==="consoles"?`${nf(val(r.consoles))} un.`:formatMetric(key,metric(r,key))),
+      ...(chartId==="biConsolesChart"?[consolesOrigin(r)]:[])]);
     const body=`<div class="bi-dialog-chart">${chartMarkup}</div>
       <h3>Valores mensais</h3>
-      ${keys.length?(tableRows.length?modalTable(["Mês",...keys.map(metricTitle)],tableRows):
+      ${keys.length?(tableRows.length?modalTable(["Mês",...keys.map(metricTitle),...(chartId==="biConsolesChart"?["Origem dos dados"]:[])],tableRows):
         '<div class="bi-empty">Sem dados mensais.</div>'):
         '<p class="bi-dialog-note">Selecione uma obra no ranking para examinar seu avanço acumulado e execução mensal.</p>'}
       <p class="bi-dialog-note">Referência de meta de produção: 550 m³ mensais. As linhas e as tabelas representam somente registros existentes.</p>`;
@@ -667,7 +872,7 @@
     const key=mark.dataset.pointKey;
     if(!month){openChartDetail(chartId);return;}
     const row=data.months.find(m=>monthKey(m.mes)===month);
-    const workTotals=monthWorkTotals(params()).find(m=>monthKey(m.mes)===month);
+    const workTotals=consolesTimeline(params()).find(m=>monthKey(m.mes)===month);
     const parts=[];
     if(row){
       for(const k of ["producao_total_m3","producao_efetiva_m3","expedicao_m3",
@@ -675,7 +880,10 @@
         "media_funcionarios_dia","eficiencia"])
         parts.push(statPanel(metricTitle(k),formatMetric(k,metric(row,k))));
     }
-    if(workTotals)parts.push(statPanel("Consoles executados",`${nf(workTotals.consoles)} un.`));
+    if(workTotals){
+      parts.push(statPanel("Consoles no mês",`${nf(workTotals.consoles)} un.`,consolesOrigin(workTotals)));
+      parts.push(statPanel("Pilares/peças (Consoles)",nf(workTotals.pilares)));
+    }
     const body=`<p class="bi-dialog-callout">${esc(detail)}</p>
       <div class="bi-dialog-stats">${parts.join("")||statPanel("Situação","Sem dados adicionais")}</div>
       <p class="bi-dialog-note">Clique em outro ponto do gráfico para consultar outro mês. Os dados por obra não são atribuídos aos volumes da fábrica.</p>`;
@@ -755,6 +963,7 @@
     $("biInsightsSection").hidden=false;
   }
   function render(){
+    highlightedMonth="";
     const range=params();
     const months=filteredMonths(range);
     $("biSnapshotLabel").textContent=range.mode==="year"
@@ -765,6 +974,10 @@
     const worksInfo=renderWorks(range);
     renderPulse(months,range,worksInfo);
     renderInsights(months,worksInfo,range);
+    renderImpact(months,range);
+    renderTimeline(range);
+    storyIndex=0;
+    renderStorySpotlight();
     focusSections();
     observeReveals();
     if(!data.months.length && !data.works.length)notify("Sem dados cadastrados ainda. Os gráficos serão preenchidos à medida que os módulos forem utilizados.","ok");
@@ -852,16 +1065,42 @@
       $(id).addEventListener("change",()=>render());
     }
     $("biApp").addEventListener("click",event=>{
-      const button=event.target.closest("[data-kpi-key],[data-insight-index],[data-work-id],[data-expand-chart]");
+      const button=event.target.closest("[data-kpi-key],[data-insight-index],[data-work-id],[data-expand-chart],[data-stage-focus],[data-timeline-month],[data-story-nav],[data-story-open]");
       if(!button)return;
       if(button.dataset.kpiKey)openKpiDetail(button.dataset.kpiKey);
       else if(button.dataset.insightIndex!==undefined)openInsightDetail(Number(button.dataset.insightIndex));
       else if(button.dataset.workId)openWorkDetail(button.dataset.workId);
       else if(button.dataset.expandChart)openChartDetail(button.dataset.expandChart);
+      else if(button.dataset.stageFocus){
+        if(button.dataset.stageFocus==="consoles")openChartDetail("biConsolesChart");
+        else openKpiDetail(button.dataset.stageFocus);
+      }else if(button.dataset.timelineMonth){
+        const m=button.dataset.timelineMonth;
+        $("biMonthFilter").value=m;
+        $("biPeriod").value=m==="all"?"year":"month";
+        render();
+      }else if(button.dataset.storyNav)navigateStory(Number(button.dataset.storyNav));
+      else if(button.dataset.storyOpen)openInsightDetail(storyIndex);
+    });
+    $("biApp").addEventListener("pointerover",event=>{
+      if(event.pointerType==="touch")return;
+      const insight=event.target.closest(".bi-insight[data-insight-index]");
+      if(insight){
+        const i=Number(insight.dataset.insightIndex);
+        if(Number.isInteger(i)&&i!==storyIndex){
+          storyIndex=i;
+          renderStorySpotlight();
+        }
+      }
+    });
+    $("biStorySpotlight").addEventListener("keydown",event=>{
+      if(event.key==="ArrowRight"||event.key==="ArrowLeft"){
+        event.preventDefault();navigateStory(event.key==="ArrowRight"?1:-1);
+      }
     });
     $("biApp").addEventListener("pointermove",event=>{
       if(event.pointerType==="touch")return;
-      const card=event.target.closest(".bi-kpi,.bi-chart-card,.bi-insight,.bi-work-item");
+      const card=event.target.closest(".bi-kpi,.bi-chart-card,.bi-insight,.bi-work-item,.bi-impact-card");
       if(!card)return;
       const rect=card.getBoundingClientRect();
       card.style.setProperty("--shine-x",`${event.clientX-rect.left}px`);
