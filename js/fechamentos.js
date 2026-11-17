@@ -1,4 +1,4 @@
-const APP_VERSION = "6.0.4";
+const APP_VERSION = "7.0.5";
 
 (() => {
 "use strict";
@@ -33,6 +33,8 @@ const INTEGER_FIELDS = [
 
 function esc(value){return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]));}
 function isAdmin(){return state.permission==="admin";}
+// A gravação climática continua protegida pelas políticas RLS do Supabase.
+window.FechamentosIsAdmin = isAdmin;
 function currentMonth(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;}
 function monthLabel(month){
   if(!month)return "—";
@@ -231,7 +233,9 @@ function montagemByMonth(rows){
   return new Map(rows.map(r=>[String(r.mes).slice(0,7),r]));
 }
 
-async function loadClosing(){
+async function loadClosing({refreshClimate=false}={}){
+  // A consulta de chuva roda em paralelo e nunca bloqueia os indicadores existentes.
+  void window.FechamentosClima?.load(state.month,{force:refreshClimate});
   $("currentMonthLabel").textContent=monthLabel(state.month).replace(/ de /g,"/");$("formTitle").textContent=`Dados de ${monthLabel(state.month)}`;$("monthPicker").value=state.month;$("closingError").textContent="";
   loading(`Carregando fechamento de ${monthLabel(state.month)}...`);
   try{
@@ -870,6 +874,7 @@ function renderReport(){
   const cards=metrics.map(([a,b,c])=>`<div class="fm-report-metric"><span>${esc(a)}</span><strong>${esc(b)}</strong><small>${esc(c)}</small></div>`).join("");
   $("reportContent").innerHTML=`<div class="fm-report-header"><div><strong>Gestão de Fábrica</strong><span>Fechamento mensal · ${esc(monthLabel(state.month))}</span></div><span>${new Date().toLocaleDateString("pt-BR")}</span></div>
   <div class="fm-report-metrics">${cards}</div>
+  ${window.FechamentosClima?.reportHtml(state.month)||""}
   <h3>Comparativo com ${esc(monthLabel(previousMonth(state.month)))}</h3>
   <div class="fm-report-comparison">${previous?renderReportComparison(previous):`<p>Não há fechamento do mês anterior para comparação.</p>`}</div>
   ${reportEvolutionCharts()}`;
@@ -901,7 +906,7 @@ async function boot(){
 
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginError").textContent="";try{const r=await SiloSupabase.signIn($("loginEmail").value.trim(),$("loginPassword").value);if(r?.error)throw r.error;await boot();}catch(error){$("loginError").textContent=translateError(error);}});
 $("monthPicker").addEventListener("change",()=>{const v=$("monthPicker").value;if(v){state.month=v;loadClosing();loadHistory();}});
-$("refreshBtn").addEventListener("click",async()=>{await loadClosing();await loadHistory();});
+$("refreshBtn").addEventListener("click",async()=>{await loadClosing({refreshClimate:true});await loadHistory();});
 $("resetBtn").addEventListener("click",resetChanges);
 $("deleteClosingBtn").addEventListener("click",deleteClosing);
 $("closingForm").addEventListener("submit",saveClosing);

@@ -8,7 +8,7 @@
 <title>Fechamentos de Mês · Gestão de Fábrica</title>
 <link rel="stylesheet" href="css/style.css?v=5.1.42">
 <link rel="stylesheet" href="css/loading.css?v=5.1.42">
-<link rel="stylesheet" href="css/fechamentos.css?v=6.0.9">
+<link rel="stylesheet" href="css/fechamentos.css?v=7.0.5">
 </head>
 <body>
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -139,7 +139,7 @@
   </div>
   <div class="header-actions">
     <a class="btn ghost" href="index.html" aria-label="Voltar para a Central da fábrica">← Central</a>
-    <span class="home-version">V6.0.0</span>
+    <span class="home-version">V7.0.5</span>
     <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
   </div>
 </header>
@@ -198,6 +198,41 @@
       <strong id="kpiProdutividade">—</strong>
       <small id="kpiProdutividadeDetalhe">m³/funcionário/dia</small>
     </article>
+  </section>
+
+  <section class="fm-panel panel fm-climate-panel" id="climatePanel" aria-labelledby="climateTitle">
+    <div class="fm-panel-head fm-climate-heading">
+      <div>
+        <span class="eyebrow">CONDIÇÕES CLIMÁTICAS</span>
+        <h2 id="climateTitle">Resumo de chuvas do mês</h2>
+        <p id="climateInfo" class="fm-climate-info" aria-live="polite">Consultando histórico meteorológico...</p>
+      </div>
+      <div class="fm-climate-heading-side">
+        <span class="fm-climate-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 16.5A4.5 4.5 0 0 0 18 8a6 6 0 0 0-11.6 1.7A4 4 0 0 0 6 17h1"/>
+            <path d="M10 15v5M14 15v5M18 15v5"/>
+          </svg>
+        </span>
+        <span id="climateBadge" class="fm-climate-badge">Aguardando</span>
+      </div>
+    </div>
+    <div class="fm-climate-stats" aria-live="polite">
+      <div class="fm-climate-stat"><span>Dias com chuva</span><div><strong id="climateRainDays">—</strong><small>dias ≥ 1 mm</small></div></div>
+      <div class="fm-climate-stat"><span>Chuva acumulada</span><div><strong id="climateRainTotal">—</strong><small>mm</small></div></div>
+    </div>
+    <div class="fm-climate-calendar-header">
+      <h3>Distribuição diária</h3>
+      <span>Calendário de precipitação</span>
+    </div>
+    <div class="fm-climate-weekdays" aria-hidden="true">
+      <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+    </div>
+    <div id="climateCalendar" class="fm-climate-calendar" aria-label="Calendário de chuva do mês"></div>
+    <div class="fm-climate-footer">
+      <p>Os dias com <strong>1 mm ou mais</strong> de chuva aparecem em azul. Passe o mouse ou selecione uma data com o teclado para ver o volume diário.</p>
+      <span class="fm-climate-source">Fonte: <a href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · ERA5 · estimativas meteorológicas</span>
+    </div>
   </section>
 
   <section class="fm-panel panel fm-section-form">
@@ -576,6 +611,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=5.1.42"></script>
 <script src="js/loading.js?v=5.1.42"></script>
-<script src="js/fechamentos.js?v=6.0.9"></script>
+<script src="js/fechamentos-clima.js?v=7.0.5"></script>
+<script src="js/fechamentos.js?v=7.0.5"></script>
 </body>
 </html>
