@@ -1,7 +1,37 @@
-const APP_VERSION = "7.0.0";
+const APP_VERSION = "7.0.4";
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
+
+const ALINE_DIRECTOR_EMAIL = "aline@vigasengenharia.com.br";
+const DIRECTOR_WELCOME_MS = 3000;
+
+function installDirectorWelcome(user){
+  const card = $("apresentacaoComercialModuleCard");
+  if(!card || card.dataset.directorWelcomeBound === "1") return;
+
+  // Somente o e-mail da sessão Supabase autenticada pode ativar a recepção.
+  if(String(user?.email || "").trim().toLowerCase() !== ALINE_DIRECTOR_EMAIL) return;
+  card.dataset.directorWelcomeBound = "1";
+
+  card.addEventListener("click", event => {
+    // Preserva abrir em nova aba e outros comportamentos naturais do link.
+    if(event.defaultPrevented || event.button !== 0 ||
+       event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    if(card.classList.contains("hidden")) return;
+
+    const welcome = $("vigasDirectorWelcome");
+    if(!welcome) return; // fallback: navegação padrão
+    event.preventDefault();
+    if(!welcome.hidden) return; // evita múltiplos timers e cliques
+    welcome.hidden = false;
+    document.body.classList.add("vigas-director-entering");
+
+    window.setTimeout(() => {
+      window.location.assign(card.href);
+    }, DIRECTOR_WELCOME_MS);
+  });
+}
 
 function translateAuthError(message){
   const m=String(message||"");
@@ -86,6 +116,9 @@ async function boot(){
         console.warn(`Não foi possível verificar o acesso ao módulo ${module}.`,moduleError);
       }
     }
+
+    // Aplica a recepção somente após a checagem de acesso aos módulos.
+    installDirectorWelcome(user);
   }catch(err){
     console.error("Inicialização da Gestão de Fábrica:",err);
     $("loginScreen").classList.remove("hidden");

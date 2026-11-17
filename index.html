@@ -7,7 +7,7 @@
   <link rel="icon" type="image/x-icon" href="./favicon.ico?v=5.1.37">
   <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico?v=5.1.37">
   <title>Gestão de Fábrica</title>
-  <link rel="stylesheet" href="css/style.css?v=5.1.37">
+  <link rel="stylesheet" href="css/style.css?v=7.0.4">
   <link rel="stylesheet" href="css/loading.css?v=5.1.37">
 </head>
 <body class="factory-home">
@@ -34,7 +34,7 @@
       <button class="btn primary">Entrar</button>
       <div id="loginError" class="error"></div>
     </form>
-    <div class="system-meta"><span>V7.0.0</span><span>Desenvolvido por Eng. Adilson Heleno da Silva</span></div>
+    <div class="system-meta"><span>V7.0.4</span><span>Desenvolvido por Eng. Adilson Heleno da Silva</span></div>
   </div>
 </div>
 
@@ -48,7 +48,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <span class="home-version">V7.0.0</span>
+      <span class="home-version">V7.0.4</span>
       <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
     </div>
   </header>
@@ -58,7 +58,7 @@
       <div>
         <div class="dashboard-heading">
           <span class="eyebrow">GESTÃO DE FÁBRICA</span>
-          <span class="version-badge">V7.0.0</span>
+          <span class="version-badge">V7.0.4</span>
         </div>
         <h1>Central da fábrica</h1>
         <p>Acesse os módulos para acompanhar e administrar as rotinas da fábrica.</p>
@@ -140,8 +140,8 @@
         <div class="module-icon">✦</div>
         <div class="module-content">
           <span class="module-eyebrow">V7 · BUSINESS INTELLIGENCE</span>
-          <h2>Apresentação Comercial</h2>
-          <p>Dashboard executivo premium, indicadores industriais, qualidade, obras e apresentações.</p>
+          <h2>Inteligência Administrativa</h2>
+          <p>Dados gerenciais inteligentes</p>
         </div>
         <span class="module-arrow">→</span>
       </a>
@@ -166,12 +166,31 @@
     </section>
   </main>
 
-  <footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V7.0.0</footer>
+  <footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V7.0.4</footer>
+</div>
+
+
+<!-- V7.0.4 — recepção visual no acesso à Inteligência Administrativa;
+     acionada exclusivamente para a conta autenticada da Diretora Aline. -->
+<div id="vigasDirectorWelcome" class="vigas-welcome" role="status" aria-live="polite" aria-atomic="true" hidden>
+  <div class="vigas-welcome__ambient" aria-hidden="true"></div>
+  <div class="vigas-welcome__panel">
+    <span class="vigas-welcome__eyebrow">VIGAS ENGENHARIA · INTELIGÊNCIA ADMINISTRATIVA</span>
+    <div class="vigas-welcome__symbol" aria-hidden="true">
+      <span class="vigas-welcome__orbit vigas-welcome__orbit--a"></span>
+      <span class="vigas-welcome__orbit vigas-welcome__orbit--b"></span>
+      <img src="assets/vigas-amarelo.png" alt="" class="vigas-welcome__logo">
+    </div>
+    <h2 class="vigas-welcome__title">Bem-Vinda Diretora Aline Goerck,</h2>
+    <p class="vigas-welcome__subtitle">vamos carregar as informações da VIGAS ENGENHARIA em instantes</p>
+    <div class="vigas-welcome__progress" aria-hidden="true"><span></span></div>
+    <span class="vigas-welcome__footnote">Preparando sua experiência executiva...</span>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=5.1.37"></script>
 <script src="js/loading.js?v=5.1.37"></script>
-<script src="js/home.js?v=7.0.0"></script>
+<script src="js/home.js?v=7.0.4"></script>
 </body>
 </html>
