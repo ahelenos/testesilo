@@ -1,4 +1,4 @@
-/* V7.0.5 — Condições Climáticas: dados independentes dos fechamentos de produção.
+/* V7.0.6 — Condições Climáticas: dados independentes dos fechamentos de produção.
    O endpoint aberto do Open-Meteo é destinado à avaliação/não-comercial.
    Para uso comercial, configurar um proxy no servidor com plano licenciado.
    Nunca colocar uma chave comercial no JavaScript distribuído. */
@@ -115,11 +115,18 @@
       const status = valid ? `${formatMm(mm)} mm de chuva` : pending ? "Dia ainda não consolidado" : "Dados não disponíveis";
       const label = `${weekNames[new Date(`${date}T12:00:00Z`).getUTCDay()]}, ${formatDate(date)}: ${status}`;
       const css = `fm-climate-day${wet?" is-rainy":lightRain?" is-light-rain":valid?" is-dry":" is-missing"}`;
+      // O valor diario permanece visivel tambem em telas sem hover e no relatorio/PDF.
+      // "0,0 mm" indica ausencia de chuva; "—" significa que nao ha dados disponiveis.
+      const amount = valid
+        ? `<span class="fm-climate-amount">${formatMm(mm)}</span><span class="fm-climate-unit"> mm</span>`
+        : "—";
+      const content = `<span class="fm-climate-day-number" aria-hidden="true">${Number(date.slice(-2))}</span>` +
+        `<small class="fm-climate-day-value" aria-hidden="true">${amount}</small>`;
       if (opts.report) {
-        return `<span class="${css}" aria-label="${label}"><b>${Number(date.slice(-2))}</b><small>${valid?(wet?`${formatMm(mm)} mm`:""):"—"}</small></span>`;
+        return `<span class="${css}" aria-label="${label}">${content}</span>`;
       }
-      // data-tooltip permite consulta por mouse; tabindex habilita teclado.
-      return `<span class="${css}" tabindex="0" data-tooltip="${formatDate(date)} · ${status}" aria-label="${label}">${Number(date.slice(-2))}</span>`;
+      // O tooltip original continua disponivel no mouse e no foco do teclado.
+      return `<span class="${css}" tabindex="0" data-tooltip="${formatDate(date)} · ${status}" aria-label="${label}">${content}</span>`;
     });
     return blank+cells.join("");
   }

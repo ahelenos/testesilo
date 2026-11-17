@@ -1684,7 +1684,7 @@
 
 
 /* =========================================================
-   V7.0.5 — Condições Climáticas · fechamento mensal
+   V7.0.6 — Condições Climáticas · fechamento mensal
    ========================================================= */
 .fm-climate-panel{padding:22px 24px}
 .fm-climate-heading{align-items:center;margin-bottom:16px}
@@ -1706,7 +1706,12 @@
 .fm-climate-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-bottom:5px}
 .fm-climate-weekdays > span{font-size:10px;font-weight:750;color:#667085;text-align:center;padding:4px 2px}
 .fm-climate-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
-.fm-climate-day{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;height:42px;min-width:0;border:1px solid #e1e7f0;border-radius:8px;background:#edf2f9;color:#344054;font-size:13px;font-weight:700;outline-offset:1px}
+.fm-climate-day{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:54px;min-width:0;border:1px solid #e1e7f0;border-radius:8px;background:#edf2f9;color:#344054;font-size:13px;font-weight:700;outline-offset:1px}
+.fm-climate-day-number{display:block;font-size:13px;line-height:1.15;font-weight:800;font-variant-numeric:tabular-nums}
+.fm-climate-day-value{display:block;max-width:100%;font-size:10px;line-height:1.15;font-weight:650;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#667085;font-variant-numeric:tabular-nums}
+.fm-climate-day.is-rainy .fm-climate-day-value{color:#fff}
+.fm-climate-day.is-light-rain .fm-climate-day-value{color:#194d9c}
+.fm-climate-day.is-missing .fm-climate-day-value{color:#98a2b3}
 .fm-climate-day[tabindex]{cursor:help}
 .fm-climate-day.is-blank{border-color:transparent;background:transparent}
 .fm-climate-day.is-rainy{background:#327aee;border-color:#327aee;color:#fff}
@@ -1732,15 +1737,18 @@
 .fm-report-weather-summary span{font-size:10px;color:#667085}
 .fm-report-weather-summary strong{font-size:16px;margin-top:4px}
 .fm-climate-calendar.is-report{gap:4px}
-.fm-climate-calendar.is-report .fm-climate-day{height:36px;font-size:10px;gap:1px}
-.fm-climate-calendar.is-report .fm-climate-day small{font-size:8px;color:inherit;font-weight:650;line-height:1}
+.fm-climate-calendar.is-report .fm-climate-day{height:39px;gap:2px}
+.fm-climate-calendar.is-report .fm-climate-day-number{font-size:10px}
+.fm-climate-calendar.is-report .fm-climate-day-value{font-size:8px;line-height:1.05}
 .fm-report-weather-note{font-size:9px;line-height:1.5;color:#667085;margin:10px 0 0}
 @media(max-width:700px){
   .fm-climate-panel{padding:17px 14px}
   .fm-climate-stats{gap:8px}
   .fm-climate-stat{padding:12px}
   .fm-climate-stat strong{font-size:23px}
-  .fm-climate-day{height:38px;font-size:11px}
+  .fm-climate-day{height:48px;gap:2px}
+  .fm-climate-day-number{font-size:12px}
+  .fm-climate-day-value{font-size:9px;letter-spacing:0}
   .fm-climate-calendar-header > span{font-size:10px}
   .fm-climate-footer{flex-direction:column}
   .fm-climate-source{text-align:left;white-space:normal}
@@ -1748,11 +1756,18 @@
   .fm-climate-day:nth-child(7n+1)[data-tooltip]:is(:hover,:focus-visible)::after{left:0;transform:none}
   .fm-climate-day:nth-child(7n)[data-tooltip]:is(:hover,:focus-visible)::after{left:auto;right:0;transform:none}
 }
+@media(max-width:390px){
+  .fm-climate-calendar,.fm-climate-weekdays{gap:3px}
+  .fm-climate-day{height:57px;border-radius:6px;gap:1px}
+  .fm-climate-day-value{font-size:9px;letter-spacing:0;white-space:normal;overflow:visible;line-height:1.1}
+  .fm-climate-unit{display:block;font-size:8px;line-height:1.1}
+}
 @media print{
   #reportDialog .fm-report-weather{break-inside:avoid!important;border-color:#cbd5e1!important;padding:8px!important}
   #reportDialog .fm-report-weather-summary > div{padding:5px!important}
   #reportDialog .fm-report-weather-summary strong{font-size:12px!important}
-  #reportDialog .fm-climate-calendar.is-report .fm-climate-day{height:28px!important}
+  #reportDialog .fm-climate-calendar.is-report .fm-climate-day{height:34px!important}
+  #reportDialog .fm-climate-calendar.is-report .fm-climate-day-value{font-size:8px!important}
   #reportDialog .fm-report-weather-note{font-size:8px!important}
   #reportDialog .fm-climate-day.is-rainy{background:#327aee!important;color:#fff!important}
 }
