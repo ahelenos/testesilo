@@ -42,6 +42,7 @@ async function loadAll(silent=false){
   if(a.error)throw a.error;if(b.error)throw b.error;if(c.error)throw c.error;
   state.works=a.data||[];state.pillars=b.data||[];state.executions=c.data||[];
   render();
+  document.dispatchEvent(new Event("cc:execucoes-carregadas"));
   if($("pillarsDialog").open)renderPillars();
  }catch(err){console.error(err);msg(err.message||"Erro ao carregar os dados.",true);}
  finally{if(!silent)busy(false);}

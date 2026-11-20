@@ -1,0 +1,184 @@
+/* V7.0.7 — Produção diária no Controle Consoles. Isolado do restante da aplicação. */
+.cc-trend-panel{
+  background:#fff;
+  border:1px solid #e1e8f2;
+  border-radius:19px;
+  padding:22px 24px 18px;
+  margin:0 0 22px;
+  box-shadow:0 8px 26px rgba(34,58,98,.025);
+  min-width:0;
+}
+.cc-trend-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:20px;
+  flex-wrap:wrap;
+}
+.cc-trend-heading .eyebrow{color:#6682a6;font-size:11px;letter-spacing:.11em}
+.cc-trend-heading h2{margin:7px 0 5px;font-size:21px;color:#10213f}
+.cc-trend-heading p{margin:0;font-size:12px;color:#7283a0}
+.cc-trend-summary{display:flex;gap:10px;flex-wrap:wrap}
+.cc-trend-total{
+  display:grid;
+  grid-template-columns:9px minmax(0,auto) auto;
+  align-items:center;
+  gap:8px;
+  padding:12px 15px;
+  border:1px solid #e3ebf5;
+  border-radius:13px;
+  background:#f7faff;
+  color:#60728e;
+  font-size:12px;
+}
+.cc-trend-total strong{color:#142944;font-size:21px;font-weight:800;margin-left:9px;font-variant-numeric:tabular-nums}
+.cc-trend-dot{width:9px;height:9px;border-radius:3px;display:inline-block}
+.cc-trend-dot-pillars{background:#2863e8}
+.cc-trend-dot-consoles{background:#109c86}
+.cc-trend-status{font-size:12px;line-height:1.5;color:#617591;min-height:18px;margin:16px 0 8px}
+.cc-trend-status.cc-trend-error{color:#b91c1c}
+.cc-trend-chart{display:flex;align-items:flex-start;gap:12px;width:100%;min-width:0}
+.cc-trend-axis{
+  height:212px;
+  flex:0 0 34px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  align-items:flex-end;
+  font-size:11px;
+  font-variant-numeric:tabular-nums;
+  line-height:1;
+  color:#7385a1;
+  padding:0 0 0 0;
+}
+.cc-trend-axis span{transform:translateY(-50%)}
+.cc-trend-axis span:last-child{transform:translateY(50%)}
+.cc-trend-scroll{flex:1 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;padding:0 0 7px;scrollbar-color:#b9c9df #edf2f8;scrollbar-width:thin}
+.cc-trend-scroll:focus-visible{outline:2px solid #2563eb;outline-offset:2px;border-radius:6px}
+.cc-trend-plot{position:relative;min-width:900px}
+.cc-trend-gridlines{
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:212px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  pointer-events:none;
+}
+.cc-trend-gridlines span{height:0;border-top:1px dashed #e3eaf4}
+.cc-trend-gridlines span:last-child{border-color:#b8c8df;border-top-style:solid}
+.cc-trend-columns{
+  display:grid;
+  grid-template-columns:repeat(30,minmax(0,1fr));
+  column-gap:3px;
+  height:212px;
+  position:relative;
+}
+.cc-trend-day{
+  position:relative;
+  display:flex;
+  flex-direction:row;
+  align-items:flex-end;
+  justify-content:center;
+  gap:3px;
+  border:0;
+  border-radius:5px 5px 0 0;
+  background:transparent;
+  padding:0 3px;
+  margin:0;
+  min-width:0;
+  width:100%;
+  height:100%;
+  cursor:help;
+  appearance:none;
+  -webkit-appearance:none;
+  transition:background-color .15s ease;
+}
+.cc-trend-day:hover,.cc-trend-day:focus-visible{background:rgba(37,99,235,.07);outline:0}
+.cc-trend-day:focus-visible{box-shadow:inset 0 0 0 2px #2563eb}
+.cc-trend-bar{
+  display:block;
+  width:9px;
+  flex:0 1 9px;
+  min-width:5px;
+  border-radius:4px 4px 0 0;
+  transition:filter .15s ease;
+  position:relative;
+  z-index:1;
+}
+.cc-trend-bar-pillars{background:#2863e8}
+.cc-trend-bar-consoles{background:#109c86}
+.cc-trend-day:hover .cc-trend-bar,.cc-trend-day:focus-visible .cc-trend-bar{filter:brightness(.86)}
+.cc-trend-tooltip{
+  position:absolute;
+  z-index:5;
+  top:12px;
+  left:50%;
+  transform:translate(-50%,-5px);
+  border:1px solid #253d66;
+  box-shadow:0 10px 24px rgba(8,22,44,.17);
+  background:#152a4b;
+  border-radius:9px;
+  color:#fff;
+  pointer-events:none;
+  padding:10px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  min-width:132px;
+  text-align:left;
+  font-size:11px;
+  line-height:1.4;
+  opacity:0;
+  visibility:hidden;
+  white-space:nowrap;
+}
+.cc-trend-tooltip strong{font-size:12px;margin-bottom:2px}
+.cc-trend-day:hover .cc-trend-tooltip,
+.cc-trend-day:focus-visible .cc-trend-tooltip{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.cc-trend-day:nth-child(-n+3) .cc-trend-tooltip{left:0;transform:translate(0,-5px)}
+.cc-trend-day:nth-child(-n+3):hover .cc-trend-tooltip,
+.cc-trend-day:nth-child(-n+3):focus-visible .cc-trend-tooltip{transform:translate(0,0)}
+.cc-trend-day:nth-last-child(-n+3) .cc-trend-tooltip{left:auto;right:0;transform:translate(0,-5px)}
+.cc-trend-day:nth-last-child(-n+3):hover .cc-trend-tooltip,
+.cc-trend-day:nth-last-child(-n+3):focus-visible .cc-trend-tooltip{transform:translate(0,0)}
+.cc-trend-dates{
+  display:grid;
+  grid-template-columns:repeat(30,minmax(0,1fr));
+  column-gap:3px;
+  height:23px;
+  margin-top:8px;
+  font-size:10px;
+  font-variant-numeric:tabular-nums;
+  color:#7284a0;
+  text-align:center;
+  white-space:nowrap;
+}
+.cc-trend-footer{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  margin-top:10px;
+  flex-wrap:wrap;
+}
+.cc-trend-footer p{color:#75849d;font-size:11px;line-height:1.55;margin:0}
+.cc-trend-footer strong{color:#405775}
+.cc-trend-mobile-hint{display:none}
+.cc-trend-retry{font-size:12px;padding:8px 11px}
+@media(max-width:740px){
+  .cc-trend-panel{padding:17px 15px 14px}
+  .cc-trend-heading h2{font-size:19px}
+  .cc-trend-summary{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .cc-trend-total{display:flex;flex-wrap:wrap;gap:6px;padding:10px 11px;font-size:11px}
+  .cc-trend-total strong{display:block;flex-basis:100%;margin:2px 0 0 15px;font-size:20px}
+  .cc-trend-chart{gap:6px}
+  .cc-trend-axis{flex-basis:30px}
+  .cc-trend-plot{min-width:870px}
+  .cc-trend-mobile-hint{display:inline}
+}
+@media(prefers-reduced-motion:reduce){
+  .cc-trend-day,.cc-trend-bar{transition:none}
+}
