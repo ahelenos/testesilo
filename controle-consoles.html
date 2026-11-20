@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="css/style.css?v=6.0.4">
   <link rel="stylesheet" href="css/loading.css?v=6.0.4">
   <link rel="stylesheet" href="css/controle-consoles.css?v=6.0.6">
-  <link rel="stylesheet" href="css/controle-consoles-grafico.css?v=7.0.7">
+  <link rel="stylesheet" href="css/controle-consoles-grafico.css?v=7.0.8">
 </head>
 <body class="cc-page">
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -29,7 +29,7 @@
   <div class="brand"><img class="vigas-header-logo" src="assets/vigas-amarelo.png" alt="VIGAS">
     <div class="brand-text"><strong>Gestão de Fábrica</strong><span id="userRole">—</span><span id="userEmail" class="user-email"></span></div>
   </div>
-  <div class="header-actions"><a class="btn ghost" href="index.html">← Central</a><span class="home-version">V7.0.7</span><button class="btn ghost" id="logoutBtn" type="button">Sair</button></div>
+  <div class="header-actions"><a class="btn ghost" href="index.html">← Central</a><span class="home-version">V7.0.8</span><button class="btn ghost" id="logoutBtn" type="button">Sair</button></div>
 </header>
 <main class="cc-main">
  <section class="cc-hero">
@@ -58,11 +58,12 @@
    </div>
   </div>
   <p class="cc-trend-status" id="ccTrendStatus" role="status" aria-live="polite">Carregando produção diária...</p>
-  <div class="cc-trend-chart hidden" id="ccTrendChart" aria-label="Gráfico de produção diária dos últimos 30 dias">
+  <div class="cc-trend-chart hidden" id="ccTrendChart" aria-label="Gráfico de linhas da produção diária dos últimos 30 dias">
    <div class="cc-trend-axis" id="ccTrendAxis" aria-hidden="true"></div>
    <div class="cc-trend-scroll" tabindex="0" aria-label="Role horizontalmente para visualizar todos os 30 dias">
     <div class="cc-trend-plot">
      <div class="cc-trend-gridlines" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+     <div class="cc-trend-series" id="ccTrendSeries" aria-hidden="true"></div>
      <div class="cc-trend-columns" id="ccTrendColumns" role="group" aria-label="Produção por dia. Selecione uma data para consultar os valores."></div>
      <div class="cc-trend-dates" id="ccTrendDates" aria-hidden="true"></div>
     </div>
@@ -153,6 +154,6 @@
 <script src="js/supabase.js?v=6.0.4"></script>
 <script src="js/loading.js?v=6.0.4"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="js/controle-consoles-grafico.js?v=7.0.7"></script>
+<script src="js/controle-consoles-grafico.js?v=7.0.8"></script>
 <script src="js/controle-consoles.js?v=7.0.7"></script>
 </body></html>
