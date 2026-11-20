@@ -1,4 +1,4 @@
-/* Controle Consoles — gráfico de linhas da produção diária (V7.0.9).
+/* Controle Consoles — gráfico de linhas da produção diária (V7.0.10).
  * Somente leitura. Um registro de cc_execucoes = um pilar concluído;
  * consoles executados = SUM(quantidade).
  * A consulta cobre 30 dias; somente datas com produção aparecem no gráfico.
@@ -13,6 +13,9 @@
   const MAX_ROWS = 100000;
   const TIME_ZONE = "America/Sao_Paulo";
   const formatNumber = new Intl.NumberFormat("pt-BR");
+  const formatAverage = new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 1, maximumFractionDigits: 1
+  });
   let requestNumber = 0;
 
   function factoryToday() {
@@ -219,8 +222,15 @@
       return sum;
     }, { pillars: 0, consoles: 0, activeDays: 0 });
 
-    $("ccTrendPillars").textContent = formatNumber.format(totals.pillars);
-    $("ccTrendConsoles").textContent = formatNumber.format(totals.consoles);
+    // Médias por dia com produção, sem incluir dias zerados no denominador.
+    const productionDays = totals.activeDays;
+    $("ccTrendPillars").textContent = productionDays
+      ? formatAverage.format(totals.pillars / productionDays) : "—";
+    $("ccTrendConsoles").textContent = productionDays
+      ? formatAverage.format(totals.consoles / productionDays) : "—";
+    $("ccTrendBasis").textContent = productionDays
+      ? `Base: ${productionDays} ${productionDays === 1 ? "dia" : "dias"} com produção nos últimos ${DAYS} dias.`
+      : `Base: nenhum dia com produção nos últimos ${DAYS} dias.`;
     $("ccTrendPeriod").textContent =
       `${br(from)} a ${br(to)} · Todas as obras · Horário de Brasília`;
 
@@ -266,6 +276,7 @@
       $("ccTrendChart").classList.add("hidden");
       $("ccTrendPillars").textContent = "—";
       $("ccTrendConsoles").textContent = "—";
+      $("ccTrendBasis").textContent = "Base de cálculo indisponível.";
       setStatus("Não foi possível carregar o gráfico diário. Os demais controles continuam disponíveis.", true);
       $("ccTrendRetry").classList.remove("hidden");
     }

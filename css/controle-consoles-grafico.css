@@ -1,4 +1,4 @@
-/* V7.0.9 — gráfico de linhas de produção diária do Controle Consoles.
+/* V7.0.10 — gráfico de linhas de produção diária do Controle Consoles.
    Estilos isolados; não modificam os demais módulos. */
 .cc-trend-panel{
   background:#fff;
@@ -19,7 +19,12 @@
 .cc-trend-heading .eyebrow{color:#6682a6;font-size:11px;letter-spacing:.11em}
 .cc-trend-heading h2{margin:7px 0 5px;font-size:21px;color:#10213f}
 .cc-trend-heading p{margin:0;font-size:12px;color:#7283a0}
-.cc-trend-summary{display:flex;gap:10px;flex-wrap:wrap}
+.cc-trend-summary{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(194px,1fr));
+  gap:9px 10px;
+  align-items:stretch;
+}
 .cc-trend-total{
   display:grid;
   grid-template-columns:9px minmax(0,auto) auto;
@@ -38,6 +43,14 @@
   font-weight:800;
   margin-left:9px;
   font-variant-numeric:tabular-nums;
+}
+.cc-trend-basis{
+  grid-column:1 / -1;
+  justify-self:end;
+  margin:0 2px;
+  font-size:11px;
+  line-height:1.35;
+  color:#71839e;
 }
 .cc-trend-dot{width:9px;height:9px;border-radius:50%;display:inline-block}
 .cc-trend-dot-pillars{background:#2863e8}
@@ -215,8 +228,21 @@
   .cc-trend-panel{padding:17px 15px 14px}
   .cc-trend-heading h2{font-size:19px}
   .cc-trend-summary{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .cc-trend-total{display:flex;flex-wrap:wrap;gap:6px;padding:10px 11px;font-size:11px}
-  .cc-trend-total strong{display:block;flex-basis:100%;margin:2px 0 0 15px;font-size:20px}
+  .cc-trend-total{
+    display:grid;
+    grid-template-columns:9px minmax(0,1fr);
+    align-items:start;
+    gap:6px;
+    padding:10px 11px;
+    font-size:11px;
+  }
+  .cc-trend-total strong{
+    grid-column:2;
+    display:block;
+    margin:2px 0 0;
+    font-size:21px;
+  }
+  .cc-trend-basis{justify-self:start;margin:1px 0 0}
   .cc-trend-chart{gap:6px}
   .cc-trend-axis{flex-basis:30px}
   .cc-trend-plot{min-width:900px}
