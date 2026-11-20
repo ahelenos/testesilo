@@ -1,4 +1,4 @@
-/* V7.0.8 — gráfico de linhas de produção diária do Controle Consoles.
+/* V7.0.9 — gráfico de linhas de produção diária do Controle Consoles.
    Estilos isolados; não modificam os demais módulos. */
 .cc-trend-panel{
   background:#fff;
@@ -184,6 +184,17 @@
 .cc-trend-day:nth-last-child(-n+3):hover .cc-trend-tooltip,
 .cc-trend-day:nth-last-child(-n+3):focus-visible .cc-trend-tooltip,
 .cc-trend-day:nth-last-child(-n+3).cc-trend-active .cc-trend-tooltip{transform:translate(0,0)}
+/* Quando há poucos dias com execução, mantenha o tooltip sobre o ponto. */
+.cc-trend-columns.cc-trend-few-days .cc-trend-tooltip{
+  left:50%;
+  right:auto;
+  transform:translate(-50%,-5px);
+}
+.cc-trend-columns.cc-trend-few-days .cc-trend-day:hover .cc-trend-tooltip,
+.cc-trend-columns.cc-trend-few-days .cc-trend-day:focus-visible .cc-trend-tooltip,
+.cc-trend-columns.cc-trend-few-days .cc-trend-day.cc-trend-active .cc-trend-tooltip{
+  transform:translate(-50%,0);
+}
 .cc-trend-dates{
   display:grid;
   grid-template-columns:repeat(30,minmax(0,1fr));

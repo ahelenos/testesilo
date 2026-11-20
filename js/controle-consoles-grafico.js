@@ -1,6 +1,7 @@
-/* Controle Consoles — gráfico de linhas da produção diária (V7.0.8).
- * Somente leitura. A quantidade de pilares é a contagem de registros
- * em cc_execucoes (um registro por pilar); consoles = SUM(quantidade).
+/* Controle Consoles — gráfico de linhas da produção diária (V7.0.9).
+ * Somente leitura. Um registro de cc_execucoes = um pilar concluído;
+ * consoles executados = SUM(quantidade).
+ * A consulta cobre 30 dias; somente datas com produção aparecem no gráfico.
  * Usa o calendário da fábrica em America/Sao_Paulo.
  */
 (() => {
@@ -115,11 +116,13 @@
   }
 
   function lineCoordinates(days, key, max) {
+    // O eixo horizontal possui apenas as datas com produção; o período
+    // consultado continua sendo de 30 dias corridos.
     return days.map((day, i) => {
-      const x = (i + 0.5) * GRAPH_WIDTH / DAYS;
+      const x = (i + 0.5) * GRAPH_WIDTH / days.length;
       const y = CHART_BOTTOM - (day[key] / max) * (CHART_BOTTOM - CHART_TOP);
       return { x, y, value: day[key] };
-    });
+    }).filter(point => point.value > 0);
   }
 
   function renderLineChart(days, max) {
@@ -147,7 +150,6 @@
       svg.append(path);
 
       for (const point of points) {
-        if (!point.value) continue; // Evita ruído visual em dias sem produção.
         svg.append(svgElement("circle", {
           cx: point.x.toFixed(2),
           cy: point.y.toFixed(2),
@@ -158,6 +160,13 @@
       }
     }
     $("ccTrendSeries").replaceChildren(svg);
+
+    const columns = $("ccTrendColumns");
+    const dates = $("ccTrendDates");
+    const gridColumns = `repeat(${days.length}, minmax(0, 1fr))`;
+    columns.style.gridTemplateColumns = gridColumns;
+    dates.style.gridTemplateColumns = gridColumns;
+    columns.classList.toggle("cc-trend-few-days", days.length <= 3);
 
     const buttons = days.map((day, i) => {
       const pillarText = `${formatNumber.format(day.pillars)} ${day.pillars === 1 ? "pilar concluído" : "pilares concluídos"}`;
@@ -190,14 +199,16 @@
       });
       return button;
     });
-    $("ccTrendColumns").replaceChildren(...buttons);
+    columns.replaceChildren(...buttons);
 
+    const labelStep = days.length <= 12 ? 1 : Math.ceil(days.length / 8);
     const labels = days.map((day, i) => {
       const label = document.createElement("span");
-      label.textContent = i === 0 || i === DAYS - 1 || i % 4 === 0 ? compactDate(day.date) : "";
+      label.textContent = i === 0 || i === days.length - 1 || i % labelStep === 0
+        ? compactDate(day.date) : "";
       return label;
     });
-    $("ccTrendDates").replaceChildren(...labels);
+    dates.replaceChildren(...labels);
   }
 
   function render(days, from, to) {
@@ -213,21 +224,30 @@
     $("ccTrendPeriod").textContent =
       `${br(from)} a ${br(to)} · Todas as obras · Horário de Brasília`;
 
-    const largest = Math.max(...days.map(day => Math.max(day.pillars, day.consoles)));
-    const { top, step } = niceScale(largest);
-    $("ccTrendAxis").replaceChildren();
-    for (let i = 4; i >= 0; i--) {
-      const tick = document.createElement("span");
-      tick.textContent = formatNumber.format(step * i);
-      $("ccTrendAxis").append(tick);
+    // As datas sem pilares e sem consoles não geram pontos, trechos na
+    // linha nem rótulos. Os totais ainda refletem o período inteiro.
+    const activeDays = days.filter(day => day.pillars > 0 || day.consoles > 0);
+    if (activeDays.length) {
+      const largest = Math.max(...activeDays.map(day => Math.max(day.pillars, day.consoles)));
+      const { top, step } = niceScale(largest);
+      $("ccTrendAxis").replaceChildren();
+      for (let i = 4; i >= 0; i--) {
+        const tick = document.createElement("span");
+        tick.textContent = formatNumber.format(step * i);
+        $("ccTrendAxis").append(tick);
+      }
+      renderLineChart(activeDays, top);
+    } else {
+      $("ccTrendAxis").replaceChildren();
+      $("ccTrendSeries").replaceChildren();
+      $("ccTrendColumns").replaceChildren();
+      $("ccTrendDates").replaceChildren();
     }
 
-    renderLineChart(days, top);
-
-    $("ccTrendChart").classList.remove("hidden");
+    $("ccTrendChart").classList.toggle("hidden", !activeDays.length);
     $("ccTrendRetry").classList.add("hidden");
-    setStatus(totals.activeDays
-      ? `Execuções registradas em ${totals.activeDays} de ${DAYS} dias. Toque ou passe o mouse sobre o gráfico para consultar cada data.`
+    setStatus(activeDays.length
+      ? `Produção registrada em ${activeDays.length} dos últimos ${DAYS} dias. Datas sem execução não aparecem no gráfico.`
       : "Nenhuma execução registrada nos últimos 30 dias.");
   }
 
