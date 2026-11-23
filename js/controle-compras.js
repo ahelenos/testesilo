@@ -112,23 +112,23 @@ function itemAttention(item){
   if(late(item)){
     return {id:item.id,requestId:item.solicitacao_id,level:"danger",
       label:`Entrega atrasada ${elapsed(item.previsao_entrega)} dia(s)`,
-      sub:`${refNo(request)} · ${item.descricao} · previsão ${br(item.previsao_entrega)}`,weight:0};
+      sub:`${item.descricao} · previsão ${br(item.previsao_entrega)}`,weight:0};
   }
   if(item.status==="encomendado"&&!item.previsao_entrega){
     return {id:item.id,requestId:item.solicitacao_id,level:"info",
       label:"Encomendado sem previsão de entrega",
-      sub:`${refNo(request)} · ${item.descricao} · solicite o prazo ao setor de compras`,weight:1};
+      sub:`${item.descricao} · solicite o prazo ao setor de compras`,weight:1};
   }
   if(item.proxima_cobranca && item.proxima_cobranca<=todayISO()){
     return {id:item.id,requestId:item.solicitacao_id,level:"info",
       label:"Cobrança programada para "+br(item.proxima_cobranca),
-      sub:`${refNo(request)} · ${item.descricao}`,weight:1};
+      sub:`${item.descricao}`,weight:1};
   }
   const days=elapsed(timestampISO(item.updated_at)||request.data_solicitacao);
   if(["solicitado","cotacao"].includes(item.status)&&days>=4){
     return {id:item.id,requestId:item.solicitacao_id,level:"info",
       label:`${days} dias sem atualização`,
-      sub:`${refNo(request)} · ${item.descricao} · ${statusNames[item.status]}`,weight:2};
+      sub:`${item.descricao} · ${statusNames[item.status]}`,weight:2};
   }
   return null;
 }
@@ -187,7 +187,7 @@ function renderRequests(){
        </small></div>${itemStatusChip(i)}
       </div>`).join("");
     return `<article class="cm-request">
-      <div class="cm-request-head"><div><h3>${esc(refNo(r))}</h3><span class="cm-request-meta">Solicitado em ${esc(br(r.data_solicitacao))} · ${items.length} item(ns)</span></div>${priorityChip(r.prioridade)}</div>
+      <div class="cm-request-head"><div><h3>Pedido de compra</h3><span class="cm-request-meta">Solicitado em ${esc(br(r.data_solicitacao))} · ${items.length} item(ns)</span></div>${priorityChip(r.prioridade)}</div>
       <div class="cm-request-items">${preview}</div>
       <div class="cm-request-foot"><small>${completed} de ${items.length} item(ns) concluído(s) ou cancelado(s)</small>
        <button class="btn secondary" type="button" data-open-request="${esc(r.id)}">Ver detalhes</button></div>
@@ -228,7 +228,7 @@ function detailItem(i){
 function renderDetails(){
   const r=requestById(state.requestId);
   if(!r){close("detailsDialog");return;}
-  $("detailsTitle").textContent=refNo(r);
+  $("detailsTitle").textContent="Detalhes do pedido";
   $("detailsSubtitle").textContent=`Solicitado em ${br(r.data_solicitacao)} · ${requestItems(r.id).length} itens`;
   $("detailsMeta").innerHTML=`${priorityChip(r.prioridade)} <span class="cm-muted">· Criado em ${esc(timestamp(r.created_at))}</span>
     ${r.observacoes?`<p class="cm-detail-notes">${esc(r.observacoes)}</p>`:""}`;
