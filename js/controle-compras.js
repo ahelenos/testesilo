@@ -187,7 +187,7 @@ function renderRequests(){
        </small></div>${itemStatusChip(i)}
       </div>`).join("");
     return `<article class="cm-request">
-      <div class="cm-request-head"><div><h3>Pedido de compra</h3><span class="cm-request-meta">Solicitado em ${esc(br(r.data_solicitacao))} · ${items.length} item(ns)</span></div>${priorityChip(r.prioridade)}</div>
+      <div class="cm-request-head"><div><h3>Solicitado em ${esc(br(r.data_solicitacao))}</h3><span class="cm-request-meta">${items.length} ${items.length === 1 ? "item solicitado" : "itens solicitados"}</span></div>${priorityChip(r.prioridade)}</div>
       <div class="cm-request-items">${preview}</div>
       <div class="cm-request-foot"><small>${completed} de ${items.length} item(ns) concluído(s) ou cancelado(s)</small>
        <button class="btn secondary" type="button" data-open-request="${esc(r.id)}">Ver detalhes</button></div>
