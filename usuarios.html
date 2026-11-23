@@ -8,7 +8,7 @@
   <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico?v=5.1.37">
   <title>Usuários · Gestão de Fábrica</title>
   <link rel="stylesheet" href="css/style.css?v=5.1.37">
-  <link rel="stylesheet" href="css/usuarios.css?v=6.0.2">
+  <link rel="stylesheet" href="css/usuarios.css?v=8.0.0">
   <link rel="stylesheet" href="css/loading.css?v=5.1.37">
 </head>
 <body class="users-page">
@@ -29,7 +29,7 @@
     </div>
   </div>
   <div class="header-actions">
-    <span class="home-version">V7.0.0</span>
+    <span class="home-version">V8.0</span>
     <a class="btn ghost" href="index.html">← Gestão de Fábrica</a>
     <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
   </div>
@@ -83,6 +83,7 @@
             <th>Corpo de Prova</th>
             <th>Fechamentos de Mês</th>
             <th>Controle Consoles</th>
+            <th>Controle Compras</th>
              <th>Apresentação Comercial</th>
             <th scope="col" class="users-actions-head">Ações</th>
           </tr>
@@ -198,7 +199,15 @@
             <option value="admin">Administrar</option>
           </select>
         </div>
-         <div>
+                  <div>
+           <label for="newControleCompras">Controle Compras</label>
+           <select id="newControleCompras">
+             <option value="none">Sem acesso</option>
+             <option value="viewer">Visualizar</option>
+             <option value="admin">Administrar</option>
+           </select>
+         </div>
+<div>
            <label for="newApresentacaoComercial">Apresentação Comercial</label>
            <select id="newApresentacaoComercial" name="newApresentacaoComercial">
              <option value="none">Sem acesso</option>
@@ -309,7 +318,15 @@
             <option value="admin">Administrar</option>
           </select>
         </div>
-         <div>
+                  <div>
+           <label for="editControleCompras">Controle Compras</label>
+           <select id="editControleCompras">
+             <option value="none">Sem acesso</option>
+             <option value="viewer">Visualizar</option>
+             <option value="admin">Administrar</option>
+           </select>
+         </div>
+<div>
            <label for="editApresentacaoComercial">Apresentação Comercial</label>
            <select id="editApresentacaoComercial" name="editApresentacaoComercial">
              <option value="none">Sem acesso</option>
@@ -374,11 +391,11 @@
   </div>
 </dialog>
 
-<footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V7.0.0</footer>
+<footer class="app-footer">Desenvolvido por Eng. Adilson Heleno da Silva <span>•</span> V8.0</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=5.1.37"></script>
 <script src="js/loading.js?v=5.1.37"></script>
-<script src="js/usuarios.js?v=7.0.0"></script>
+<script src="js/usuarios.js?v=8.0.0"></script>
 </body>
 </html>

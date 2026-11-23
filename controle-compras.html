@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <title>Controle Compras · Gestão de Fábrica</title>
+  <link rel="stylesheet" href="css/style.css?v=8.0.0">
+  <link rel="stylesheet" href="css/loading.css?v=8.0.0">
+  <link rel="stylesheet" href="css/controle-compras.css?v=8.0.0">
+</head>
+<body class="cm-page">
+<div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
+ <div class="global-loading-card" role="status"><span class="loading-spinner" aria-hidden="true"></span><strong id="globalLoadingText">Carregando...</strong></div>
+</div>
+<div id="loginScreen" class="login-screen">
+ <div class="login-box">
+  <img class="vigas-login-logo" src="assets/vigas-preto.png" alt="VIGAS Engenharia">
+  <div class="login-divider"></div>
+  <span class="eyebrow">GESTÃO DE FÁBRICA</span><h1>Controle Compras</h1>
+  <p>Acompanhe solicitações, encomendas, prazos e recebimentos.</p>
+  <form id="loginForm">
+   <label for="loginEmail">E-mail</label><input id="loginEmail" type="email" autocomplete="username" required>
+   <label for="loginPassword">Senha</label><input id="loginPassword" type="password" autocomplete="current-password" required>
+   <button type="submit" class="btn primary">Entrar</button><p id="loginError" class="cm-error" role="alert"></p>
+  </form>
+ </div>
+</div>
+<div id="appScreen" class="hidden">
+ <header class="cm-header">
+  <div class="brand"><img class="vigas-header-logo" src="assets/vigas-amarelo.png" alt="VIGAS">
+   <div class="brand-text"><strong>Gestão de Fábrica</strong><span id="userRole">—</span><span id="userEmail" class="user-email"></span></div>
+  </div>
+  <div class="header-actions"><a class="btn ghost" href="index.html">← Central</a><span class="home-version">V8.0</span><button class="btn ghost" type="button" id="logoutBtn">Sair</button></div>
+ </header>
+ <main class="cm-main">
+  <section class="cm-hero">
+   <div><a href="index.html" class="cm-back">← Central da fábrica</a><span class="eyebrow">GESTÃO · SUPRIMENTOS</span>
+    <h1>Controle Compras</h1><p>Do pedido ao recebimento: acompanhe cada material sem depender de planilhas.</p></div>
+   <div class="cm-hero-actions"><button class="btn secondary" id="printBtn" type="button">Imprimir relatório</button><button class="btn primary cm-admin-only" id="newRequestBtn" type="button">+ Nova solicitação</button></div>
+  </section>
+  <div id="cmMessage" role="status" aria-live="polite" class="cm-message"></div>
+  <section class="cm-summary" aria-label="Indicadores de compras">
+   <article><div class="cm-kpi-top"><span>Aguardando compras</span><span class="cm-kpi-icon warning">◷</span></div><strong id="kpiPending">—</strong><small>Itens ainda não encomendados</small></article>
+   <article><div class="cm-kpi-top"><span>Encomendados</span><span class="cm-kpi-icon info">↗</span></div><strong id="kpiOrdered">—</strong><small>Aguardando recebimento completo</small></article>
+   <article><div class="cm-kpi-top"><span>Entregas atrasadas</span><span class="cm-kpi-icon danger">!</span></div><strong id="kpiLate">—</strong><small>Previsão vencida e saldo pendente</small></article>
+   <article><div class="cm-kpi-top"><span>Recebidos no mês</span><span class="cm-kpi-icon success">✓</span></div><strong id="kpiReceived">—</strong><small>Itens com entrega registrada no mês</small></article>
+  </section>
+  <section class="cm-focus cm-panel" aria-labelledby="attentionHeading">
+   <div class="cm-section-head"><div><span class="eyebrow">PRIORIDADES</span><h2 id="attentionHeading">Pendências que exigem atenção</h2></div><span id="attentionCount" class="cm-muted">—</span></div>
+   <div id="attentionList" class="cm-attention-list"><p class="cm-empty-small">Carregando pendências...</p></div>
+  </section>
+  <section class="cm-panel" aria-labelledby="requestsHeading">
+   <div class="cm-section-head"><div><span class="eyebrow">SOLICITAÇÕES</span><h2 id="requestsHeading">Pedidos em acompanhamento</h2></div><span id="requestCount" class="cm-muted">—</span></div>
+   <div class="cm-filters">
+    <label>Pesquisar pedido ou material<input id="searchInput" type="search" placeholder="Nº da solicitação, item, fornecedor..." maxlength="200"></label>
+    <label>Situação<select id="statusFilter">
+     <option value="todos">Todas as situações</option><option value="pendente">Aguardando compra / cotação</option>
+     <option value="encomendado">Encomendados</option><option value="parcial">Recebidos parcialmente</option>
+     <option value="atrasado">Entregas atrasadas</option><option value="recebido">Recebidos</option>
+     <option value="cancelado">Cancelados</option>
+    </select></label>
+    <label>Prioridade<select id="priorityFilter">
+     <option value="todos">Todas as prioridades</option><option value="urgente">Urgente</option><option value="alta">Alta</option><option value="normal">Normal</option>
+    </select></label>
+   </div>
+   <div id="requestsList" class="cm-request-list"><div class="cm-empty">Carregando solicitações...</div></div>
+  </section>
+  <p class="cm-footnote">Os alertas são calculados com base nas datas registradas. Recebimentos são informativos e não movimentam automaticamente o estoque de outros módulos.</p>
+ </main>
+ <footer class="cm-footer">Desenvolvido por Eng. Adilson Heleno da Silva · V8.0</footer>
+</div>
+<!-- Novo pedido com vários itens -->
+<dialog id="requestDialog" class="cm-dialog cm-dialog-wide">
+ <form id="requestForm" class="cm-dialog-card">
+  <div class="cm-dialog-head"><div><span class="eyebrow">NOVA SOLICITAÇÃO</span><h2>Solicitar materiais, produtos ou ferramentas</h2><p>Inclua quantos itens precisar. Cada item será acompanhado individualmente.</p></div><button class="cm-close" type="button" data-close="requestDialog" aria-label="Fechar">×</button></div>
+  <div class="cm-form-grid">
+   <label>Data da solicitação<input id="requestDate" type="date" required></label>
+   <label>Prioridade<select id="requestPriority"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
+  </div>
+  <label>Observações gerais<textarea id="requestNotes" rows="2" maxlength="3000" placeholder="Ex.: necessidade de entrega para obra específica (opcional)"></textarea></label>
+  <div class="cm-items-title"><h3>Itens solicitados</h3><button id="addNewItem" type="button" class="btn secondary">+ Adicionar item</button></div>
+  <div id="newItems" class="cm-new-items"></div>
+  <p class="cm-hint">As quantidades e unidades são registradas separadamente. Ex.: 10 sacos; 1 unidade; 1000 litros.</p>
+  <div id="requestError" class="cm-form-error" role="alert"></div>
+  <div class="cm-dialog-actions"><button type="button" class="btn secondary" data-close="requestDialog">Cancelar</button><button type="submit" id="requestSave" class="btn primary">Criar solicitação</button></div>
+ </form>
+</dialog>
+<!-- Detalhes e histórico de um pedido -->
+<dialog id="detailsDialog" class="cm-dialog cm-dialog-full">
+ <div class="cm-dialog-card">
+  <div class="cm-dialog-head"><div><span class="eyebrow">ACOMPANHAMENTO DO PEDIDO</span><h2 id="detailsTitle">Solicitação</h2><p id="detailsSubtitle"></p></div><button class="cm-close" type="button" data-close="detailsDialog" aria-label="Fechar">×</button></div>
+  <div class="cm-detail-top"><div id="detailsMeta"></div><button type="button" id="editRequestBtn" class="btn secondary cm-admin-only">Editar informações</button></div>
+  <div class="cm-items-title"><h3>Itens e entregas</h3><button type="button" id="addItemBtn" class="btn secondary cm-admin-only">+ Incluir item</button></div>
+  <div id="detailsItems" class="cm-details-items"></div>
+  <div class="cm-items-title cm-history-title"><h3>Histórico e cobranças</h3><span class="cm-muted">Registros permanentes</span></div>
+  <div id="detailsHistory" class="cm-history"></div>
+  <div class="cm-dialog-actions"><button type="button" class="btn secondary" data-close="detailsDialog">Fechar</button></div>
+ </div>
+</dialog>
+<!-- Editar dados gerais -->
+<dialog id="editRequestDialog" class="cm-dialog">
+ <form id="editRequestForm" class="cm-dialog-card">
+  <div class="cm-dialog-head"><div><span class="eyebrow">SOLICITAÇÃO</span><h2>Editar informações gerais</h2></div><button class="cm-close" type="button" data-close="editRequestDialog" aria-label="Fechar">×</button></div>
+  <label>Prioridade<select id="editRequestPriority"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
+  <label>Observações<textarea id="editRequestNotes" maxlength="3000" rows="4"></textarea></label>
+  <div id="editRequestError" class="cm-form-error" role="alert"></div>
+  <div class="cm-dialog-actions"><button type="button" class="btn secondary" data-close="editRequestDialog">Cancelar</button><button class="btn primary" type="submit">Salvar alterações</button></div>
+ </form>
+</dialog>
+<!-- Editar andamento do item -->
+<dialog id="itemDialog" class="cm-dialog cm-dialog-wide">
+ <form id="itemForm" class="cm-dialog-card">
+  <div class="cm-dialog-head"><div><span class="eyebrow">ACOMPANHAMENTO DO ITEM</span><h2 id="itemDialogTitle">Atualizar material</h2></div><button class="cm-close" type="button" data-close="itemDialog" aria-label="Fechar">×</button></div>
+  <div class="cm-form-grid">
+   <label>Descrição do item<input id="itemDescription" maxlength="200" required></label>
+   <label>Quantidade solicitada<input id="itemQuantity" type="number" step="0.001" min="0.001" max="999999999" required></label>
+   <label>Unidade<input id="itemUnit" maxlength="30" list="unitOptions" required></label>
+   <label>Situação<select id="itemStatus">
+    <option value="solicitado">Aguardando compras</option><option value="cotacao">Em cotação</option><option value="encomendado">Encomendado</option><option value="cancelado">Cancelado</option>
+   </select></label>
+   <label>Fornecedor<input id="itemSupplier" maxlength="200" placeholder="Opcional"></label>
+   <label>Data da encomenda<input id="itemOrderedDate" type="date"></label>
+   <label>Previsão de entrega<input id="itemExpected" type="date"></label>
+   <label>Próxima cobrança<input id="itemFollowup" type="date"></label>
+  </div>
+  <label>Observações do item<textarea id="itemNotes" rows="3" maxlength="3000"></textarea></label>
+  <p class="cm-hint">A situação "Recebido" ou "Recebido parcialmente" é calculada pelos recebimentos registrados. Não é possível cancelar um item que já recebeu material.</p>
+  <div id="itemError" class="cm-form-error" role="alert"></div>
+  <div class="cm-dialog-actions"><button type="button" class="btn secondary" data-close="itemDialog">Cancelar</button><button class="btn primary" type="submit" id="itemSave">Salvar item</button></div>
+ </form>
+</dialog>
+<!-- Cobranças -->
+<dialog id="followupDialog" class="cm-dialog">
+ <form id="followupForm" class="cm-dialog-card">
+  <div class="cm-dialog-head"><div><span class="eyebrow">CONTATO COM COMPRAS</span><h2>Registrar cobrança / retorno</h2><p id="followupItemLabel"></p></div><button class="cm-close" type="button" data-close="followupDialog" aria-label="Fechar">×</button></div>
+  <label>O que foi cobrado ou respondido?<textarea id="followupText" rows="4" maxlength="1500" minlength="3" required placeholder="Ex.: Cobrei prazo; setor informou que aguarda proposta do fornecedor."></textarea></label>
+  <label>Próxima cobrança (opcional)<input id="followupDate" type="date"></label>
+  <div id="followupError" class="cm-form-error" role="alert"></div>
+  <div class="cm-dialog-actions"><button type="button" class="btn secondary" data-close="followupDialog">Cancelar</button><button class="btn primary" type="submit">Registrar</button></div>
+ </form>
+</dialog>
+<!-- Recebimento -->
+<dialog id="receiveDialog" class="cm-dialog">
+ <form id="receiveForm" class="cm-dialog-card">
+  <div class="cm-dialog-head"><div><span class="eyebrow">RECEBIMENTO NA FÁBRICA</span><h2>Registrar entrega</h2><p id="receiveItemLabel"></p></div><button class="cm-close" type="button" data-close="receiveDialog" aria-label="Fechar">×</button></div>
+  <p class="cm-hint" id="receiveBalance"></p>
+  <div class="cm-form-grid"><label>Quantidade recebida<input id="receiveQuantity" type="number" step="0.001" min="0.001" required></label><label>Data do recebimento<input id="receiveDate" type="date" required></label></div>
+  <label>Observações<textarea id="receiveNotes" rows="3" maxlength="2000" placeholder="Ex.: entrega parcial, número da nota..."></textarea></label>
+  <div id="receiveError" class="cm-form-error" role="alert"></div>
+  <div class="cm-dialog-actions"><button type="button" class="btn secondary" data-close="receiveDialog">Cancelar</button><button class="btn primary" type="submit">Confirmar recebimento</button></div>
+ </form>
+</dialog>
+<!-- Lista de unidades para ajudar no cadastro -->
+<datalist id="unitOptions"><option value="unidade"><option value="saco"><option value="litro"><option value="kg"><option value="metro"><option value="caixa"><option value="galão"><option value="peça"><option value="m³"></datalist>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js?v=8.0.0"></script>
+<script src="js/loading.js?v=8.0.0"></script>
+<script src="js/controle-compras.js?v=8.0.0"></script>
+</body>
+</html>

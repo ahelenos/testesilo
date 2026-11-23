@@ -663,3 +663,8 @@
   .vigas-welcome__symbol{width:150px;height:120px}
   .vigas-welcome__logo{width:124px;max-height:80px}
 }
+
+/* Controle Compras V8.0 — cartão da Central */
+.module-controle-compras:before{background:#0d9488}
+.module-controle-compras .module-icon{background:#e8faf6}
+.module-controle-compras .module-arrow{color:#0d9488}
