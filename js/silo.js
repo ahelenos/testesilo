@@ -1,4 +1,4 @@
-﻿const APP_VERSION = "5.1.24";
+﻿const APP_VERSION = "5.1.25";
 (() => {
 "use strict";
 try {
@@ -77,12 +77,47 @@ const canEdit=()=>isAdmin()&&!isMobile();
 const escapeHtml=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 const fmtKg=v=>`${Number(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})} kg`;
 const fmtNum=v=>Number(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
-const monthNow=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`};
+// O Silo opera no horário da fábrica (Brasília), independentemente do fuso do dispositivo.
+// A coluna movements.date no Supabase é timestamptz: enviar horário com deslocamento explícito.
+const SILO_TIME_ZONE = "America/Sao_Paulo";
+const siloClock = new Intl.DateTimeFormat("en-GB", {
+  timeZone: SILO_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+});
+function siloDateParts(value){
+  const d = value instanceof Date ? value : new Date(value);
+  if(!Number.isFinite(d.getTime())) return null;
+  const parts = {};
+  for(const part of siloClock.formatToParts(d)){
+    if(["year","month","day","hour","minute"].includes(part.type)) parts[part.type] = part.value;
+  }
+  if(!parts.year||!parts.month||!parts.day||!parts.hour||!parts.minute) return null;
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${parts.hour}:${parts.minute}`,
+    formatted: `${parts.day}/${parts.month}/${parts.year} ${parts.hour}:${parts.minute}`
+  };
+}
+const siloDateKey = value => siloDateParts(value)?.date || "";
+const siloDateTimeLabel = value => siloDateParts(value)?.formatted || "—";
+function siloTimestampForSave(dateText,timeText){
+  // Desde 2019 São Paulo não adota horário de verão (UTC-03:00).
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(dateText)||!/^\d{2}:\d{2}$/.test(timeText)){
+    throw new Error("Informe data e hora válidas.");
+  }
+  const timestamp = `${dateText}T${timeText}:00-03:00`;
+  const confirm = siloDateParts(timestamp);
+  if(!confirm||confirm.date!==dateText||confirm.time!==timeText){
+    throw new Error("A data ou hora informada é inválida.");
+  }
+  return timestamp;
+}
+const monthNow=()=>siloDateKey(new Date()).slice(0,7);
 const normalizeMonth=m=>/^\d{4}-(0[1-9]|1[0-2])$/.test(String(m||""))?String(m):monthNow();
 const monthLabel=m=>{const safe=normalizeMonth(m);const [y,mo]=safe.split("-").map(Number);const d=new Date(y,mo-1,1);return Number.isNaN(d.getTime())?"":d.toLocaleDateString("pt-BR",{month:"long",year:"numeric"})};
-const monthMovements=()=>state.movements.filter(m=>String(m.date||"").slice(0,7)===state.month);
+const monthMovements=()=>state.movements.filter(m=>siloDateKey(m.date).slice(0,7)===state.month);
 const stock=()=>state.movements.reduce((s,m)=>s+(m.type==="entrada"?Number(m.quantity||0):-Number(m.quantity||0)),0);
-function dailyConsumption(movs){const map=new Map();movs.filter(m=>m.type==="consumo").forEach(m=>{const d=String(m.date).slice(0,10);map.set(d,(map.get(d)||0)+Number(m.quantity||0));});return map}
+function dailyConsumption(movs){const map=new Map();movs.filter(m=>m.type==="consumo").forEach(m=>{const d=siloDateKey(m.date);if(d)map.set(d,(map.get(d)||0)+Number(m.quantity||0));});return map}
 function totalConcrete(movs){return movs.filter(m=>m.type==="consumo").reduce((s,m)=>s+Number(m.concretagem_m3||0),0)}
 function concreteRatio(movs){
  const kg=movs.filter(m=>m.type==="consumo").reduce((s,m)=>s+Number(m.quantity||0),0);
@@ -148,8 +183,7 @@ function renderStockAlert(allStock){
 function getDeliveryStatus(dateValue){
  const raw=String(dateValue||"").slice(0,10);
  if(!raw) return {key:"none",label:"Próxima entrega de cimento",date:"Sem data de próxima entrega",note:"Data prevista"};
- const today=new Date();
- const todayIso=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+ const todayIso=siloDateKey(new Date());
  if(raw===todayIso) return {key:"today",label:"Entrega hoje",date:new Date(`${raw}T00:00:00`).toLocaleDateString("pt-BR"),note:"Programada para hoje"};
  if(raw<todayIso) return {key:"pending",label:"Entrega pendente",date:new Date(`${raw}T00:00:00`).toLocaleDateString("pt-BR"),note:"Data prevista já passou"};
  return {key:"upcoming",label:"Próxima entrega de cimento",date:new Date(`${raw}T00:00:00`).toLocaleDateString("pt-BR"),note:"Data prevista"};
@@ -233,7 +267,7 @@ function renderTop(){
          : "Capacidade disponível";
  $("stockStatus").textContent=status;
  if(stockCaptionStatus)stockCaptionStatus.textContent=status;
- const prev=state.movements.filter(m=>String(m.date||"").slice(0,7)===previousMonth(state.month));
+ const prev=state.movements.filter(m=>siloDateKey(m.date).slice(0,7)===previousMonth(state.month));
  const pa=monthlyAverage(prev), diff=percent(avg,pa);
  $("trendValue").textContent=diff===null?"—":`${diff>=0?"↑":"↓"} ${Math.abs(diff).toLocaleString("pt-BR",{maximumFractionDigits:1})}%`;
  $("trendText").textContent=diff===null?"Sem comparação":`vs. ${monthLabel(previousMonth(state.month))}`;
@@ -252,8 +286,7 @@ function exportMovementsCsv(){
  const header=["Data","Tipo","Quantidade (kg)","Concretagem (m³)","Observação"];
  const lines=[header.map(csvCell).join(";")];
  rows.forEach(m=>{
-   const d=new Date(m.date);
-   const date=Number.isNaN(d.getTime())?String(m.date||""):d.toLocaleString("pt-BR");
+   const date=siloDateTimeLabel(m.date);
    const type=m.type==="entrada"?"Entrada":"Consumo";
    lines.push([
      date,
@@ -267,7 +300,7 @@ function exportMovementsCsv(){
  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
  const url=URL.createObjectURL(blob);
  const a=document.createElement("a");
- const stamp=new Date().toISOString().slice(0,10);
+ const stamp=siloDateKey(new Date());
  a.href=url;
  a.download=`controle-silo-movimentacoes-${stamp}.csv`;
  document.body.appendChild(a);
@@ -277,7 +310,7 @@ function exportMovementsCsv(){
 }
 function renderHistory(){
  const mm=monthMovements().slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
- $("historyBody").innerHTML=mm.map(m=>`<tr><td>${new Date(m.date).toLocaleDateString("pt-BR")} ${new Date(m.date).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</td><td><span class="pill ${m.type}">${m.type==="entrada"?"Entrada":"Consumo"}</span></td><td>${fmtKg(m.quantity)}</td><td>${m.type==="consumo"?(m.concretagem_m3!=null?`${fmtNum(m.concretagem_m3)} m³`:"—"):"—"}</td><td>${escapeHtml(m.observation||"")}</td>${isAdmin()?`<td><button class="tiny" data-edit="${escapeHtml(m.id)}">Editar</button><button class="tiny danger" data-delete="${escapeHtml(m.id)}">Excluir</button></td>`:""}</tr>`).join("")||`<tr><td colspan="6" class="empty">Nenhuma movimentação neste mês.</td></tr>`;
+ $("historyBody").innerHTML=mm.map(m=>`<tr><td>${siloDateTimeLabel(m.date)}</td><td><span class="pill ${m.type}">${m.type==="entrada"?"Entrada":"Consumo"}</span></td><td>${fmtKg(m.quantity)}</td><td>${m.type==="consumo"?(m.concretagem_m3!=null?`${fmtNum(m.concretagem_m3)} m³`:"—"):"—"}</td><td>${escapeHtml(m.observation||"")}</td>${isAdmin()?`<td><button class="tiny" data-edit="${escapeHtml(m.id)}">Editar</button><button class="tiny danger" data-delete="${escapeHtml(m.id)}">Excluir</button></td>`:""}</tr>`).join("")||`<tr><td colspan="6" class="empty">Nenhuma movimentação neste mês.</td></tr>`;
 }
 function drawConsumptionChart(){
  const c=$("consumptionChart"),ctx=c.getContext("2d"),rect=c.getBoundingClientRect(),dpr=devicePixelRatio||1,w=Math.max(300,rect.width),h=300;
@@ -398,7 +431,7 @@ function render(){renderRole(); $("userRole").textContent=isMobile()?"VISUALIZA�
  $("siloMinimum").value=state.settings?.minimum_stock??"";
  $("siloCritical").value=state.settings?.critical_stock??"";
  $("siloNextDelivery").value=state.settings?.next_delivery_date||""}
-function setDateTime(){const d=new Date();$("movementDate").value=d.toISOString().slice(0,10);$("movementTime").value=d.toTimeString().slice(0,5)}
+function setDateTime(){const now=siloDateParts(new Date());if(!now)return;$("movementDate").value=now.date;$("movementTime").value=now.time}
 function toggleConcreteField(){
  const field=$("movementConcreteField"), input=$("movementConcrete");
  const isConsumption=$("movementType").value==="consumo";
@@ -630,7 +663,7 @@ $("nextMonth").addEventListener("click",()=>{state.month=normalizeMonth(state.mo
 $("movementForm").addEventListener("submit",async e=>{e.preventDefault();if(!canEdit())return;try{
  const type=$("movementType").value;
  const concrete=Number($("movementConcrete").value);
- const m={type,quantity:Number($("movementQuantity").value),concretagem_m3:type==="consumo"?concrete:null,date:`${$("movementDate").value}T${$("movementTime").value}:00`,observation:$("movementObservation").value.trim()},id=$("movementId").value;
+ const m={type,quantity:Number($("movementQuantity").value),concretagem_m3:type==="consumo"?concrete:null,date:siloTimestampForSave($("movementDate").value,$("movementTime").value),observation:$("movementObservation").value.trim()},id=$("movementId").value;
  if(!m.quantity||m.quantity<=0)throw Error("Informe uma quantidade válida.");
  if(type==="consumo"&&(!Number.isFinite(concrete)||concrete<=0))throw Error("Informe a quantidade de concretagem em m³.");
  id?await SiloSupabase.updateMovement(id,m):await SiloSupabase.insertMovement(m);
@@ -638,7 +671,7 @@ $("movementForm").addEventListener("submit",async e=>{e.preventDefault();if(!can
 }catch(x){$("movementError").textContent=x.message||"Erro ao salvar."}});
 $("cancelEdit").addEventListener("click",resetForm);
 $("movementType").addEventListener("change",toggleConcreteField);
-if(!isMobile()){ $("historyBody").addEventListener("click",async e=>{const edit=e.target.closest("[data-edit]"),del=e.target.closest("[data-delete]");if(edit){const m=state.movements.find(x=>String(x.id)===edit.dataset.edit);if(!m)return;const d=new Date(m.date);$("movementId").value=m.id;$("movementType").value=m.type;$("movementQuantity").value=m.quantity;$("movementDate").value=String(m.date).slice(0,10);$("movementTime").value=d.toTimeString().slice(0,5);$("movementObservation").value=m.observation||"";$("movementConcrete").value=m.concretagem_m3??"";$("cancelEdit").classList.remove("hidden");toggleConcreteField();window.scrollTo({top:0,behavior:"smooth"})}if(del&&confirm("Excluir esta movimentação?")){try{await SiloSupabase.deleteMovement(del.dataset.delete);await refresh()}catch(x){alert(x.message)}}}); }
+if(!isMobile()){ $("historyBody").addEventListener("click",async e=>{const edit=e.target.closest("[data-edit]"),del=e.target.closest("[data-delete]");if(edit){const m=state.movements.find(x=>String(x.id)===edit.dataset.edit);if(!m)return;const when=siloDateParts(m.date);if(!when){alert("Data da movimentação inválida.");return;}$("movementId").value=m.id;$("movementType").value=m.type;$("movementQuantity").value=m.quantity;$("movementDate").value=when.date;$("movementTime").value=when.time;$("movementObservation").value=m.observation||"";$("movementConcrete").value=m.concretagem_m3??"";$("cancelEdit").classList.remove("hidden");toggleConcreteField();window.scrollTo({top:0,behavior:"smooth"})}if(del&&confirm("Excluir esta movimentação?")){try{await SiloSupabase.deleteMovement(del.dataset.delete);await refresh()}catch(x){alert(x.message)}}}); }
 document.addEventListener("click",e=>{
  const btn=e.target.closest(".btn-delete-delivery");
  if(btn) deleteDeliveryRecord(btn.dataset.deliveryId);
