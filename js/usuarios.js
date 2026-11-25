@@ -1,5 +1,5 @@
 
-const APP_VERSION = "8.0.0";
+const APP_VERSION = "8.0.5";
 
 (() => {
 "use strict";
@@ -92,8 +92,8 @@ function renderUsers(){
       <td>${pill(permissionText(u.corpo_prova),u.corpo_prova==="admin"?"access-admin":(u.corpo_prova==="viewer"?"access-viewer":"access-none"))}</td>
       <td>${pill(permissionText(u.fechamentos_mes),u.fechamentos_mes==="admin"?"access-admin":(u.fechamentos_mes==="viewer"?"access-viewer":"access-none"))}</td>
       <td>${pill(permissionText(u.controle_consoles),u.controle_consoles==="admin"?"access-admin":(u.controle_consoles==="viewer"?"access-viewer":"access-none"))}</td>
-      <td>${pill(permissionText(u.apresentacao_comercial),u.apresentacao_comercial==="admin"?"access-admin":(u.apresentacao_comercial==="viewer"?"access-viewer":"access-none"))}</td>
       <td>${pill(permissionText(u.controle_compras),u.controle_compras==="admin"?"access-admin":(u.controle_compras==="viewer"?"access-viewer":"access-none"))}</td>
+      <td>${pill(permissionText(u.apresentacao_comercial),u.apresentacao_comercial==="admin"?"access-admin":(u.apresentacao_comercial==="viewer"?"access-viewer":"access-none"))}</td>
       <td>
         <div class="row-actions">
           <button class="row-action edit-user" data-id="${u.id}" type="button">Editar</button>

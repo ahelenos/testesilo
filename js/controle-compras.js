@@ -1,4 +1,4 @@
-/* Controle Compras V8.0 — Supabase, pedidos, acompanhamento e recebimentos */
+/* Controle Compras V8.0.4 — Supabase, pedidos, acompanhamento e recebimentos */
 (() => {
 "use strict";
 const $ = id => document.getElementById(id);
@@ -132,6 +132,87 @@ function itemAttention(item){
   }
   return null;
 }
+// V8.0.4 · Resumo textual, calculado a partir dos pedidos já carregados.
+function shortBr(date){
+  const d=String(date||"").slice(0,10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(d)
+    ? `${d.slice(8,10)}/${d.slice(5,7)}/${d.slice(2,4)}` : "data não informada";
+}
+function readableUnit(unit,amount){
+  const base=String(unit||"unidade").trim();
+  if(Math.abs(Number(amount))===1)return base;
+  const plurals={
+    unidade:"unidades",saco:"sacos",litro:"litros",caixa:"caixas",galão:"galões",
+    metro:"metros",peça:"peças",pacote:"pacotes",jogo:"jogos",
+    kg:"kg","m³":"m³"
+  };
+  return plurals[base.toLocaleLowerCase("pt-BR")]||base;
+}
+function summaryLine(item,request,isOrdered){
+  const received=receivedMilli(item.id);
+  const openQty=received>0?remaining(item):Number(item.quantidade);
+  const amount=`${moneyless(openQty)} ${readableUnit(item.unidade,openQty)} de ${String(item.descricao||"").trim()}`;
+  if(!isOrdered)return `- ${amount} - Solicitado dia ${shortBr(request.data_solicitacao)}`;
+  const itemLabel=received>0
+    ? `Faltam ${amount} (pedido original: ${moneyless(item.quantidade)} ${readableUnit(item.unidade,item.quantidade)})`
+    : amount;
+  const delivery=item.previsao_entrega
+    ? `Previsão de entrega: ${shortBr(item.previsao_entrega)}${late(item)?" (atrasado)":""}`
+    : `Sem previsão de entrega (solicitado dia ${shortBr(request.data_solicitacao)})`;
+  return `- ${itemLabel} - ${delivery}`;
+}
+function ordersSummary(){
+  const rows=state.items.filter(item=>{
+    if(!isOpen(item)||status(item)==="recebido")return false;
+    return !!requestById(item.solicitacao_id);
+  }).sort((a,b)=>{
+    const ra=requestById(a.solicitacao_id),rb=requestById(b.solicitacao_id);
+    return String(ra.data_solicitacao).localeCompare(String(rb.data_solicitacao))
+      ||Number(a.ordem||0)-Number(b.ordem||0)
+      ||String(a.id).localeCompare(String(b.id));
+  });
+  const waiting=[],ordered=[];
+  for(const item of rows){
+    const request=requestById(item.solicitacao_id);
+    const received=receivedMilli(item.id);
+    if(["solicitado","cotacao"].includes(item.status)&&received===0)
+      waiting.push(summaryLine(item,request,false));
+    else if(item.status==="encomendado"||received>0)
+      ordered.push(summaryLine(item,request,true));
+  }
+  return {
+    text:`Pedidos aguardando retorno:\n\n${waiting.length?waiting.join("\n"):"Nenhum item pendente."}`
+      +`\n\nPedidos aguardando entrega:\n\n${ordered.length?ordered.join("\n"):"Nenhum item pendente."}`,
+    waiting:waiting.length,ordered:ordered.length
+  };
+}
+function renderOrdersSummary(){
+  const result=ordersSummary();
+  $("ordersSummaryText").value=result.text;
+  $("ordersSummaryPrint").textContent=result.text;
+  $("ordersSummaryCount").textContent=`${result.waiting} aguardando retorno · ${result.ordered} aguardando entrega`;
+  $("ordersSummaryFeedback").textContent="";
+}
+async function copyOrdersSummary(){
+  const text=$("ordersSummaryText").value;
+  const feedback=$("ordersSummaryFeedback");
+  try{
+    if(navigator.clipboard&&typeof navigator.clipboard.writeText==="function"){
+      await navigator.clipboard.writeText(text);
+    }else{
+      const textarea=$("ordersSummaryText");
+      textarea.focus();textarea.select();
+      if(typeof document.execCommand!=="function"||!document.execCommand("copy"))
+        throw new Error("Cópia não permitida.");
+      textarea.setSelectionRange(0,0);
+    }
+    feedback.textContent="Resumo copiado.";
+  }catch(error){
+    feedback.textContent="Selecione o texto para copiar manualmente.";
+    $("ordersSummaryText").focus();
+    $("ordersSummaryText").select();
+  }
+}
 function renderKPIs(){
   const k=totalInfo();
   $("kpiPending").textContent=k.pending;
@@ -197,6 +278,7 @@ function renderRequests(){
 function render(){
   renderKPIs();
   renderAttention();
+  renderOrdersSummary();
   renderRequests();
   if($("detailsDialog").open&&state.requestId)renderDetails();
 }
@@ -457,6 +539,7 @@ $("logoutBtn").addEventListener("click",async()=>{await SiloSupabase.signOut();w
 $("newRequestBtn").addEventListener("click",openNewRequest);
 $("addNewItem").addEventListener("click",newItemRow);
 $("printBtn").addEventListener("click",()=>window.print());
+$("copyOrdersSummaryBtn").addEventListener("click",copyOrdersSummary);
 ["searchInput","statusFilter","priorityFilter"].forEach(id=>
   $(id).addEventListener(id==="searchInput"?"input":"change",renderRequests)
 );

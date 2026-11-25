@@ -156,3 +156,30 @@
  .cm-request-item{background:#fff}
  dialog{display:none!important}
 }
+
+
+/* V8.0.4 · Resumo textual dos pedidos, sem alterar as regras de compras */
+.cm-orders-summary .cm-section-head{align-items:center;margin-bottom:8px}
+.cm-orders-summary-description{color:#6d809e;font-size:12px;line-height:1.6;margin:0 0 14px}
+.cm-copy-summary-btn{flex-shrink:0;white-space:nowrap}
+.cm-orders-summary-text{box-sizing:border-box;display:block;width:100%;min-height:224px;max-height:380px;
+  padding:17px 18px;border:1px solid #dbe5f1;border-radius:12px;background:#f8fafd;
+  color:#24344d;font:500 13px/1.85 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+  white-space:pre-wrap;overflow:auto;resize:vertical}
+.cm-orders-summary-text:focus{outline:2px solid #2761f4;outline-offset:2px}
+.cm-orders-summary-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  flex-wrap:wrap;margin-top:10px}
+.cm-orders-summary-feedback{font-size:12px;color:#147746;min-height:17px}
+.cm-orders-summary-print{display:none}
+@media(max-width:650px){
+ .cm-orders-summary .cm-section-head{align-items:flex-start}
+ .cm-copy-summary-btn{font-size:12px;padding:9px 11px}
+ .cm-orders-summary-text{font-size:12px;line-height:1.75;padding:14px;min-height:255px}
+}
+@media print{
+ .cm-copy-summary-btn,.cm-orders-summary-text,.cm-orders-summary-bottom,
+ .cm-orders-summary-description{display:none!important}
+ .cm-orders-summary-print{display:block;white-space:pre-wrap;overflow-wrap:anywhere;
+   font-size:10pt;line-height:1.5;margin:4px 0 0;color:#202b3c;font-family:inherit}
+ .cm-orders-summary{break-inside:auto}
+}

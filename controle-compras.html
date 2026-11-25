@@ -7,7 +7,7 @@
   <title>Controle Compras · Gestão de Fábrica</title>
   <link rel="stylesheet" href="css/style.css?v=8.0.0">
   <link rel="stylesheet" href="css/loading.css?v=8.0.0">
-  <link rel="stylesheet" href="css/controle-compras.css?v=8.0.0">
+  <link rel="stylesheet" href="css/controle-compras.css?v=8.0.4">
 </head>
 <body class="cm-page">
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -31,7 +31,7 @@
   <div class="brand"><img class="vigas-header-logo" src="assets/vigas-amarelo.png" alt="VIGAS">
    <div class="brand-text"><strong>Gestão de Fábrica</strong><span id="userRole">—</span><span id="userEmail" class="user-email"></span></div>
   </div>
-  <div class="header-actions"><a class="btn ghost" href="index.html">← Central</a><span class="home-version">V8.0.2</span><button class="btn ghost" type="button" id="logoutBtn">Sair</button></div>
+  <div class="header-actions"><a class="btn ghost" href="index.html">← Central</a><span class="home-version">V8.0.4</span><button class="btn ghost" type="button" id="logoutBtn">Sair</button></div>
  </header>
  <main class="cm-main">
   <section class="cm-hero">
@@ -49,6 +49,19 @@
   <section class="cm-focus cm-panel" aria-labelledby="attentionHeading">
    <div class="cm-section-head"><div><span class="eyebrow">PRIORIDADES</span><h2 id="attentionHeading">Pendências que exigem atenção</h2></div><span id="attentionCount" class="cm-muted">—</span></div>
    <div id="attentionList" class="cm-attention-list"><p class="cm-empty-small">Carregando pendências...</p></div>
+  </section>
+  <section class="cm-panel cm-orders-summary" aria-labelledby="ordersSummaryHeading">
+   <div class="cm-section-head">
+    <div><span class="eyebrow">ACOMPANHAMENTO</span><h2 id="ordersSummaryHeading">Resumo dos pedidos</h2></div>
+    <button class="btn secondary cm-copy-summary-btn" id="copyOrdersSummaryBtn" type="button">Copiar resumo</button>
+   </div>
+   <p class="cm-orders-summary-description">Texto gerado automaticamente com os materiais pendentes de retorno e de entrega. Ideal para compartilhar com o setor de compras.</p>
+   <textarea id="ordersSummaryText" class="cm-orders-summary-text" aria-label="Resumo dos pedidos" readonly spellcheck="false" rows="9">Carregando pedidos...</textarea>
+   <div class="cm-orders-summary-bottom">
+    <span id="ordersSummaryCount" class="cm-muted">—</span>
+    <span id="ordersSummaryFeedback" class="cm-orders-summary-feedback" role="status" aria-live="polite"></span>
+   </div>
+   <pre id="ordersSummaryPrint" class="cm-orders-summary-print" aria-hidden="true"></pre>
   </section>
   <section class="cm-panel" aria-labelledby="requestsHeading">
    <div class="cm-section-head"><div><span class="eyebrow">SOLICITAÇÕES</span><h2 id="requestsHeading">Pedidos em acompanhamento</h2></div><span id="requestCount" class="cm-muted">—</span></div>
@@ -68,7 +81,7 @@
   </section>
   <p class="cm-footnote">Os alertas são calculados com base nas datas registradas. Recebimentos são informativos e não movimentam automaticamente o estoque de outros módulos.</p>
  </main>
- <footer class="cm-footer">Desenvolvido por Eng. Adilson Heleno da Silva · V8.0.2</footer>
+ <footer class="cm-footer">Desenvolvido por Eng. Adilson Heleno da Silva · V8.0.4</footer>
 </div>
 <!-- Novo pedido com vários itens -->
 <dialog id="requestDialog" class="cm-dialog cm-dialog-wide">
@@ -156,6 +169,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js?v=8.0.0"></script>
 <script src="js/loading.js?v=8.0.0"></script>
-<script src="js/controle-compras.js?v=8.0.2"></script>
+<script src="js/controle-compras.js?v=8.0.4"></script>
 </body>
 </html>
