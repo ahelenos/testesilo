@@ -1,4 +1,4 @@
-/* V8.0.8 — Produção diária do mês: totais agregados do Silo e da Presença.
+/* V8.0.9 — Produção diária do mês: médias por dia com atividade.
    Sem leitura de movimentos individuais ou dados pessoais no navegador. */
 (() => {
   "use strict";
@@ -30,7 +30,9 @@
   }
 
   function formatM3(value) {
-    return Number(value).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:2});
+    // Evita arredondar 18,175 para 18,17 por imprecisão binária.
+    const rounded = Math.round((Number(value) + 1e-9) * 100) / 100;
+    return rounded.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:2});
   }
   function formatPeople(value) {
     return Number(value).toLocaleString("pt-BR",{maximumFractionDigits:0});
@@ -73,17 +75,19 @@
   }
 
   function summary(days) {
-    const produced = days.filter(day=>day.recordedConcrete && day.m3 > 0);
-    const attendance = days.filter(day=>day.recordedPresence);
-    const total = produced.reduce((sum,day)=>sum+day.m3,0);
-    const people = attendance.reduce((sum,day)=>sum+day.people,0);
+    // A base das DUAS médias é a mesma utilizada pelo calendário:
+    // dia ativo = concretagem positiva OU pelo menos um funcionário presente.
+    // Uma linha SQL de presença com 0 pessoas não transforma um dia sem
+    // atividade em dia produtivo. Não excluímos registros da fonte.
+    const active = days.filter(day => (day.m3 ?? 0) > 0 || (day.people ?? 0) > 0);
+    const total = days.reduce((sum,day)=>sum+(day.m3 ?? 0),0);
+    const people = active.reduce((sum,day)=>sum+(day.people ?? 0),0);
+    const activeDays = active.length;
     return {
       total,
-      averageConcrete:produced.length ? total/produced.length : null,
-      averagePeople:attendance.length ? people/attendance.length : null,
-      productionDays:produced.length,
-      attendanceDays:attendance.length,
-      availableDays:days.filter(day=>day.recordedConcrete||day.recordedPresence).length
+      averageConcrete:activeDays ? total/activeDays : null,
+      averagePeople:activeDays ? people/activeDays : null,
+      activeDays
     };
   }
 
@@ -95,9 +99,9 @@
       const hasData = day.m3 !== null || day.people !== null;
       const hasRecords = day.recordedConcrete || day.recordedPresence;
       const producing = day.m3 !== null && day.m3 > 0;
-      // O dia pode ter apenas lançamentos de ausência (0 presentes).
-      // Nesse caso não existe atividade operacional, então exibimos traços
-      // sem apagar os registros nem alterar médias e totais já calculados.
+      // Lançamentos com 0 m³ e 0 presentes não representam atividade:
+      // exibimos traços e excluímos esse dia da base das médias.
+      // O histórico original do Supabase permanece intacto.
       const idle = hasRecords && !producing && !(day.people > 0);
       const css = `fm-op-day ${producing?"is-producing":idle?"is-idle":hasData?"is-registered":"is-missing"}`;
       const m3 = idle || day.m3 === null ? "—" : `${formatM3(day.m3)} m³`;
@@ -131,25 +135,25 @@
     const badge = $("operationBadge");
     if (badge) badge.textContent = state.loading ? "Consultando" :
       state.error ? "Consulta indisponível" :
-      `${totals.availableDays} de ${state.days.length} dias com registros`;
+      `${totals.activeDays} de ${state.days.length} dias com atividade`;
     if (info) {
       info.textContent = state.loading ? "Consultando dados operacionais do mês..." :
         state.error ? `Dados operacionais indisponíveis: ${state.error}` :
-        totals.availableDays===0 ? "Nenhum registro de concretagem ou presença neste mês." :
+        totals.activeDays===0 ? "Nenhum dia com concretagem ou presença positiva neste mês." :
         "Volume do Silo e presença registrada na fábrica, atualizados ao consultar o mês.";
       info.classList.toggle("is-warning",Boolean(state.error));
     }
     const hasResult = !state.loading && !state.error && state.days.length>0;
-    if ($("operationTotal")) $("operationTotal").textContent = hasResult && totals.availableDays>0 ? formatM3(totals.total) : "—";
+    if ($("operationTotal")) $("operationTotal").textContent = hasResult && totals.activeDays>0 ? formatM3(totals.total) : "—";
     if ($("operationAvgM3")) $("operationAvgM3").textContent =
       hasResult && totals.averageConcrete!==null ? formatM3(totals.averageConcrete) : "—";
     if ($("operationAvgPresence")) $("operationAvgPresence").textContent =
       hasResult && totals.averagePeople!==null
         ? totals.averagePeople.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}) : "—";
     if ($("operationProductionDays")) $("operationProductionDays").textContent =
-      hasResult ? `${totals.productionDays} ${totals.productionDays===1?"dia com concretagem":"dias com concretagem"}` : "—";
+      hasResult ? `${totals.activeDays} ${totals.activeDays===1?"dia com atividade":"dias com atividade"}` : "—";
     if ($("operationAttendanceDays")) $("operationAttendanceDays").textContent =
-      hasResult ? `${totals.attendanceDays} ${totals.attendanceDays===1?"dia com registro":"dias com registro"}` : "—";
+      hasResult ? `${totals.activeDays} ${totals.activeDays===1?"dia com atividade":"dias com atividade"}` : "—";
     if ($("operationCalendar")) $("operationCalendar").innerHTML = calendar(month,state.days);
     refreshReport();
   }
@@ -189,17 +193,18 @@
     const days = month === state.month ? state.days : normalize(month,[]);
     const totals = summary(days);
     const ready = month===state.month && !state.loading && !state.error;
-    const totalText = ready && totals.availableDays>0 ? `${formatM3(totals.total)} m³` : "—";
+    const totalText = ready && totals.activeDays>0 ? `${formatM3(totals.total)} m³` : "—";
     const avgM3 = ready && totals.averageConcrete!==null
-      ? `${formatM3(totals.averageConcrete)} m³` : "—";
+      ? `${formatM3(totals.averageConcrete)} m³/dia` : "—";
     const avgPeople = ready && totals.averagePeople!==null
       ? totals.averagePeople.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}) : "—";
+    const daysBase = ready ? `${totals.activeDays} ${totals.activeDays===1?"dia com atividade":"dias com atividade"}` : "—";
     return `<section class="fm-report-operation" data-fm-operation-report>
       <h3>Produção diária do mês</h3>
       <div class="fm-report-op-summary">
         <div><span>Concretagem no mês</span><strong>${totalText}</strong></div>
-        <div><span>Média por dia com concretagem</span><strong>${avgM3}</strong></div>
-        <div><span>Média de presentes por dia registrado</span><strong>${avgPeople}</strong></div>
+        <div><span>Média de concretagem por dia ativo</span><strong>${avgM3}</strong><small>${daysBase}</small></div>
+        <div><span>Média de presentes por dia ativo</span><strong>${avgPeople}</strong><small>${daysBase}</small></div>
       </div>
       <h4>Calendário operacional</h4>
       <div class="fm-op-weekdays" aria-hidden="true">
@@ -208,7 +213,8 @@
       <div class="fm-op-calendar is-report">${calendar(month,days,true)}</div>
       <p class="fm-report-op-note">Concretagem: soma de m³ dos consumos do Silo por dia, no horário de Brasília.
       Presentes: colaboradores com manhã e tarde registradas no Controle de Presença, sem os ajustes do Fechamento.
-      — indica ausência de dados ou dia com 0 m³ e 0 presentes; neste último caso os registros permanecem nos indicadores.
+      As duas médias consideram apenas os dias com concretagem maior que zero ou ao menos um presente.
+      — indica ausência de atividade (0 m³ e 0 presentes) ou falta de registro, sem excluir registros históricos.
       0,0 m³ indica presença registrada sem concretagem.</p>
     </section>`;
   }

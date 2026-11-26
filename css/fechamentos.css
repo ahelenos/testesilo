@@ -1774,7 +1774,7 @@
 
 
 /* =========================================================
-   V8.0.8 — Produção diária do mês (Silo + Presença)
+   V8.0.9 — Produção diária do mês (Silo + Presença)
    ========================================================= */
 .fm-op-panel{padding:22px 24px}
 .fm-op-heading{align-items:center;margin-bottom:16px}
@@ -1828,6 +1828,7 @@
 .fm-report-op-summary span,.fm-report-op-summary strong{display:block}
 .fm-report-op-summary span{font-size:10px;color:#667085}
 .fm-report-op-summary strong{font-size:16px;margin-top:4px}
+.fm-report-op-summary small{display:block;color:#64748b;font-size:9px;margin-top:3px}
 .fm-op-calendar.is-report{gap:4px}
 .fm-op-calendar.is-report .fm-op-day{height:45px;gap:1px}
 .fm-op-calendar.is-report .fm-op-number{font-size:10px}
