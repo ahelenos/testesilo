@@ -1774,7 +1774,7 @@
 
 
 /* =========================================================
-   V8.0.7 — Produção diária do mês (Silo + Presença)
+   V8.0.8 — Produção diária do mês (Silo + Presença)
    ========================================================= */
 .fm-op-panel{padding:22px 24px}
 .fm-op-heading{align-items:center;margin-bottom:16px}
@@ -1801,11 +1801,12 @@
 .fm-op-day.is-blank{background:transparent;border-color:transparent}
 .fm-op-day.is-producing{background:#327aee;border-color:#327aee;color:#fff}
 .fm-op-day.is-registered{background:#eef3fa;border-color:#dce5f1;color:#344054}
-.fm-op-day.is-missing{background:#f8fafc;color:#98a2b3;border-style:dashed}
+.fm-op-day.is-missing,.fm-op-day.is-idle{background:#f8fafc;color:#98a2b3;border-style:dashed}
 .fm-op-number{font-size:13px;font-weight:800;line-height:1.1}
 .fm-op-volume{font-size:11px;font-weight:800;white-space:nowrap;line-height:1.15}
 .fm-op-attendance{font-size:10px;line-height:1.1;font-weight:650;white-space:nowrap}
-.fm-op-day.is-missing .fm-op-volume,.fm-op-day.is-missing .fm-op-attendance{color:#98a2b3}
+.fm-op-day.is-missing .fm-op-volume,.fm-op-day.is-missing .fm-op-attendance,
+.fm-op-day.is-idle .fm-op-volume,.fm-op-day.is-idle .fm-op-attendance{color:#98a2b3}
 .fm-op-attendance-short,.fm-op-attendance-mini{display:none}
 .fm-op-day[tabindex]{cursor:help}
 .fm-op-day:not(.is-blank):focus-visible{outline:3px solid #f59e0b;z-index:3}

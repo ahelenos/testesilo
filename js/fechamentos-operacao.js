@@ -1,4 +1,4 @@
-/* V8.0.7 — Produção diária do mês: totais agregados do Silo e da Presença.
+/* V8.0.8 — Produção diária do mês: totais agregados do Silo e da Presença.
    Sem leitura de movimentos individuais ou dados pessoais no navegador. */
 (() => {
   "use strict";
@@ -93,14 +93,21 @@
     const blank = Array.from({length:first},()=>'<span class="fm-op-day is-blank" aria-hidden="true"></span>').join("");
     return blank + days.map(day => {
       const hasData = day.m3 !== null || day.people !== null;
+      const hasRecords = day.recordedConcrete || day.recordedPresence;
       const producing = day.m3 !== null && day.m3 > 0;
-      const css = `fm-op-day ${producing?"is-producing":hasData?"is-registered":"is-missing"}`;
-      const m3 = day.m3 === null ? "—" : `${formatM3(day.m3)} m³`;
-      const attendance = day.people === null ? "—" : formatPeople(day.people);
+      // O dia pode ter apenas lançamentos de ausência (0 presentes).
+      // Nesse caso não existe atividade operacional, então exibimos traços
+      // sem apagar os registros nem alterar médias e totais já calculados.
+      const idle = hasRecords && !producing && !(day.people > 0);
+      const css = `fm-op-day ${producing?"is-producing":idle?"is-idle":hasData?"is-registered":"is-missing"}`;
+      const m3 = idle || day.m3 === null ? "—" : `${formatM3(day.m3)} m³`;
+      const attendance = idle || day.people === null ? "—" : formatPeople(day.people);
       const peopleDescription = day.people === null ? "presença sem registro" :
-        `${attendance} ${day.people===1?"funcionário presente":"funcionários presentes"}`;
-      const label = `${WEEK[new Date(`${day.date}T12:00:00Z`).getUTCDay()]}, ${formatDate(day.date)}: `+
-        `${day.m3===null?"concretagem sem registro":`${formatM3(day.m3)} m³ concretados`}; ${peopleDescription}`;
+        `${formatPeople(day.people)} ${day.people===1?"funcionário presente":"funcionários presentes"}`;
+      const dayLabel = `${WEEK[new Date(`${day.date}T12:00:00Z`).getUTCDay()]}, ${formatDate(day.date)}: `;
+      const label = idle
+        ? dayLabel+"sem concretagem e sem funcionários presentes (0 m³ e 0 presentes); há lançamentos registrados neste dia."
+        : dayLabel+`${day.m3===null?"concretagem sem registro":`${formatM3(day.m3)} m³ concretados`}; ${peopleDescription}`;
       const text = `<span class="fm-op-number" aria-hidden="true">${Number(day.date.slice(-2))}</span>`+
         `<span class="fm-op-volume" aria-hidden="true">${m3}</span>`+
         `<span class="fm-op-attendance" aria-hidden="true">${attendance=== "—" ? "—" : attendance+
@@ -201,7 +208,8 @@
       <div class="fm-op-calendar is-report">${calendar(month,days,true)}</div>
       <p class="fm-report-op-note">Concretagem: soma de m³ dos consumos do Silo por dia, no horário de Brasília.
       Presentes: colaboradores com manhã e tarde registradas no Controle de Presença, sem os ajustes do Fechamento.
-      — indica ausência de registros; 0,0 m³ indica presença registrada sem concretagem.</p>
+      — indica ausência de dados ou dia com 0 m³ e 0 presentes; neste último caso os registros permanecem nos indicadores.
+      0,0 m³ indica presença registrada sem concretagem.</p>
     </section>`;
   }
 

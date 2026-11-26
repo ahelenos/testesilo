@@ -8,7 +8,7 @@
 <title>Fechamentos de Mês · Gestão de Fábrica</title>
 <link rel="stylesheet" href="css/style.css?v=5.1.42">
 <link rel="stylesheet" href="css/loading.css?v=5.1.42">
-<link rel="stylesheet" href="css/fechamentos.css?v=8.0.7">
+<link rel="stylesheet" href="css/fechamentos.css?v=8.0.8">
 </head>
 <body>
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -139,7 +139,7 @@
   </div>
   <div class="header-actions">
     <a class="btn ghost" href="index.html" aria-label="Voltar para a Central da fábrica">← Central</a>
-    <span class="home-version">V8.0.7</span>
+    <span class="home-version">V8.0.8</span>
     <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
   </div>
 </header>
@@ -280,7 +280,8 @@
     <div class="fm-op-footer">
       <p>Os dias com concretagem aparecem em <strong>azul</strong>. O valor superior é o volume em <strong>m³</strong>;
       abaixo está o número de <strong>presentes</strong>. <strong>0,0 m³</strong> indica presença registrada sem
-      concretagem; <strong>—</strong> indica ausência de registro.</p>
+      concretagem; <strong>—</strong> indica ausência de dados ou ambos os valores zerados.
+      Dias com zero nos dois indicadores continuam considerados nos cálculos quando houver registros.</p>
       <span>Fontes: Silo e Controle de Presença · Horário de Brasília</span>
     </div>
     <p class="fm-op-method">Presença: colaboradores com manhã e tarde registradas, sem aplicar o ajuste manual do Fechamento de Mês.</p>
@@ -663,7 +664,7 @@
 <script src="js/supabase.js?v=5.1.42"></script>
 <script src="js/loading.js?v=5.1.42"></script>
 <script src="js/fechamentos-clima.js?v=7.0.6"></script>
-<script src="js/fechamentos-operacao.js?v=8.0.7"></script>
-<script src="js/fechamentos.js?v=8.0.7"></script>
+<script src="js/fechamentos-operacao.js?v=8.0.8"></script>
+<script src="js/fechamentos.js?v=8.0.8"></script>
 </body>
 </html>
