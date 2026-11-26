@@ -8,7 +8,7 @@
 <title>Fechamentos de Mês · Gestão de Fábrica</title>
 <link rel="stylesheet" href="css/style.css?v=5.1.42">
 <link rel="stylesheet" href="css/loading.css?v=5.1.42">
-<link rel="stylesheet" href="css/fechamentos.css?v=7.0.6">
+<link rel="stylesheet" href="css/fechamentos.css?v=8.0.7">
 </head>
 <body>
 <div id="globalLoading" class="global-loading hidden" aria-live="polite" aria-busy="true">
@@ -139,7 +139,7 @@
   </div>
   <div class="header-actions">
     <a class="btn ghost" href="index.html" aria-label="Voltar para a Central da fábrica">← Central</a>
-    <span class="home-version">V7.0.6</span>
+    <span class="home-version">V8.0.7</span>
     <button id="logoutBtn" class="btn ghost" type="button">Sair</button>
   </div>
 </header>
@@ -233,6 +233,57 @@
       <p>Cada dia mostra a chuva em <strong>mm</strong>. Os dias com <strong>1 mm ou mais</strong> aparecem em azul; <strong>—</strong> indica ausência de dados. Passe o mouse ou use o teclado para consultar o detalhe.</p>
       <span class="fm-climate-source">Fonte: <a href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · ERA5 · estimativas meteorológicas</span>
     </div>
+  </section>
+
+  <section class="fm-panel panel fm-op-panel" id="operationPanel" aria-labelledby="operationTitle">
+    <div class="fm-panel-head fm-op-heading">
+      <div>
+        <span class="eyebrow">OPERAÇÃO · FÁBRICA</span>
+        <h2 id="operationTitle">Produção diária do mês</h2>
+        <p id="operationInfo" class="fm-op-info" aria-live="polite">Consultando dados operacionais...</p>
+      </div>
+      <div class="fm-op-heading-side">
+        <span class="fm-op-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor"
+            stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 20V9l6 3V7l6 3V4l6 3v13H3Z"/>
+            <path d="M7 17h2m3 0h2m3 0h2"/>
+          </svg>
+        </span>
+        <span id="operationBadge" class="fm-op-badge">Aguardando</span>
+      </div>
+    </div>
+    <div class="fm-op-stats" aria-live="polite">
+      <div class="fm-op-stat">
+        <span>Volume concretado no mês</span>
+        <div><strong id="operationTotal">—</strong><small>m³</small></div>
+      </div>
+      <div class="fm-op-stat">
+        <span>Média por dia com concretagem</span>
+        <div><strong id="operationAvgM3">—</strong><small>m³/dia</small></div>
+        <small id="operationProductionDays" class="fm-op-stat-detail">—</small>
+      </div>
+      <div class="fm-op-stat">
+        <span>Média de funcionários presentes</span>
+        <div><strong id="operationAvgPresence">—</strong><small>por dia</small></div>
+        <small id="operationAttendanceDays" class="fm-op-stat-detail">—</small>
+      </div>
+    </div>
+    <div class="fm-op-calendar-header">
+      <h3>Calendário operacional</h3>
+      <span>Concretagem (m³) e funcionários presentes</span>
+    </div>
+    <div class="fm-op-weekdays" aria-hidden="true">
+      <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+    </div>
+    <div id="operationCalendar" class="fm-op-calendar" aria-label="Calendário de produção diária e presença"></div>
+    <div class="fm-op-footer">
+      <p>Os dias com concretagem aparecem em <strong>azul</strong>. O valor superior é o volume em <strong>m³</strong>;
+      abaixo está o número de <strong>presentes</strong>. <strong>0,0 m³</strong> indica presença registrada sem
+      concretagem; <strong>—</strong> indica ausência de registro.</p>
+      <span>Fontes: Silo e Controle de Presença · Horário de Brasília</span>
+    </div>
+    <p class="fm-op-method">Presença: colaboradores com manhã e tarde registradas, sem aplicar o ajuste manual do Fechamento de Mês.</p>
   </section>
 
   <section class="fm-panel panel fm-section-form">
@@ -612,6 +663,7 @@
 <script src="js/supabase.js?v=5.1.42"></script>
 <script src="js/loading.js?v=5.1.42"></script>
 <script src="js/fechamentos-clima.js?v=7.0.6"></script>
-<script src="js/fechamentos.js?v=7.0.6"></script>
+<script src="js/fechamentos-operacao.js?v=8.0.7"></script>
+<script src="js/fechamentos.js?v=8.0.7"></script>
 </body>
 </html>

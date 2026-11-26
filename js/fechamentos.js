@@ -236,6 +236,8 @@ function montagemByMonth(rows){
 async function loadClosing({refreshClimate=false}={}){
   // A consulta de chuva roda em paralelo e nunca bloqueia os indicadores existentes.
   void window.FechamentosClima?.load(state.month,{force:refreshClimate});
+  // Consulta agregada e independente: falha de Silo/Presença não bloqueia o fechamento.
+  void window.FechamentosProducaoDiaria?.load(state.month);
   $("currentMonthLabel").textContent=monthLabel(state.month).replace(/ de /g,"/");$("formTitle").textContent=`Dados de ${monthLabel(state.month)}`;$("monthPicker").value=state.month;$("closingError").textContent="";
   loading(`Carregando fechamento de ${monthLabel(state.month)}...`);
   try{
@@ -875,6 +877,7 @@ function renderReport(){
   $("reportContent").innerHTML=`<div class="fm-report-header"><div><strong>Gestão de Fábrica</strong><span>Fechamento mensal · ${esc(monthLabel(state.month))}</span></div><span>${new Date().toLocaleDateString("pt-BR")}</span></div>
   <div class="fm-report-metrics">${cards}</div>
   ${window.FechamentosClima?.reportHtml(state.month)||""}
+  ${window.FechamentosProducaoDiaria?.reportHtml(state.month)||""}
   <h3>Comparativo com ${esc(monthLabel(previousMonth(state.month)))}</h3>
   <div class="fm-report-comparison">${previous?renderReportComparison(previous):`<p>Não há fechamento do mês anterior para comparação.</p>`}</div>
   ${reportEvolutionCharts()}`;

@@ -1771,3 +1771,116 @@
   #reportDialog .fm-report-weather-note{font-size:8px!important}
   #reportDialog .fm-climate-day.is-rainy{background:#327aee!important;color:#fff!important}
 }
+
+
+/* =========================================================
+   V8.0.7 — Produção diária do mês (Silo + Presença)
+   ========================================================= */
+.fm-op-panel{padding:22px 24px}
+.fm-op-heading{align-items:center;margin-bottom:16px}
+.fm-op-heading h2{font-size:20px}
+.fm-op-heading-side{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.fm-op-icon{display:block;color:#2563eb;line-height:1}
+.fm-op-info{font-size:12px;color:#667085;line-height:1.6;margin:8px 0 0}
+.fm-op-info.is-warning{color:#a16207}
+.fm-op-badge{display:inline-flex;align-items:center;justify-content:center;border:1px solid #dbeafe;background:#eff6ff;color:#1d4ed8;border-radius:99px;font-size:10px;font-weight:750;padding:6px 10px;white-space:nowrap}
+.fm-op-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 20px}
+.fm-op-stat{border:1px solid #e7edf6;background:#f8fbff;border-radius:14px;padding:15px 18px;min-width:0}
+.fm-op-stat > span{color:#667085;font-size:12px;display:block}
+.fm-op-stat > div{display:flex;align-items:baseline;gap:8px;margin-top:5px}
+.fm-op-stat strong{color:#102039;font-size:27px;line-height:1.2;font-weight:850;font-variant-numeric:tabular-nums}
+.fm-op-stat div small{font-size:12px;color:#667085;font-weight:650}
+.fm-op-stat-detail{display:block;margin-top:5px;font-size:10px;color:#64748b}
+.fm-op-calendar-header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}
+.fm-op-calendar-header h3{font-size:16px;margin:0}
+.fm-op-calendar-header > span{color:#667085;font-size:12px}
+.fm-op-weekdays,.fm-op-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.fm-op-weekdays{margin-bottom:5px}
+.fm-op-weekdays > span{font-size:10px;font-weight:750;color:#667085;text-align:center;padding:4px 2px}
+.fm-op-day{position:relative;min-width:0;height:76px;border:1px solid #e1e7f0;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#edf2f9;color:#344054;outline-offset:1px;font-variant-numeric:tabular-nums}
+.fm-op-day.is-blank{background:transparent;border-color:transparent}
+.fm-op-day.is-producing{background:#327aee;border-color:#327aee;color:#fff}
+.fm-op-day.is-registered{background:#eef3fa;border-color:#dce5f1;color:#344054}
+.fm-op-day.is-missing{background:#f8fafc;color:#98a2b3;border-style:dashed}
+.fm-op-number{font-size:13px;font-weight:800;line-height:1.1}
+.fm-op-volume{font-size:11px;font-weight:800;white-space:nowrap;line-height:1.15}
+.fm-op-attendance{font-size:10px;line-height:1.1;font-weight:650;white-space:nowrap}
+.fm-op-day.is-missing .fm-op-volume,.fm-op-day.is-missing .fm-op-attendance{color:#98a2b3}
+.fm-op-attendance-short,.fm-op-attendance-mini{display:none}
+.fm-op-day[tabindex]{cursor:help}
+.fm-op-day:not(.is-blank):focus-visible{outline:3px solid #f59e0b;z-index:3}
+.fm-op-day[data-tooltip]:is(:hover,:focus-visible){z-index:4}
+.fm-op-day[data-tooltip]:is(:hover,:focus-visible)::after{
+  content:attr(data-tooltip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:#12213d;color:#fff;border-radius:8px;box-shadow:0 10px 25px #12213d30;
+  padding:9px 12px;font-size:12px;font-weight:650;line-height:1.4;white-space:nowrap;pointer-events:none;z-index:5
+}
+.fm-op-footer{display:flex;align-items:start;justify-content:space-between;gap:14px;margin-top:13px}
+.fm-op-footer p{margin:0;font-size:11px;line-height:1.55;color:#667085}
+.fm-op-footer > span{font-size:10px;color:#667085;white-space:nowrap;text-align:right}
+.fm-op-method{font-size:10px;color:#7b8799;line-height:1.55;margin:7px 0 0}
+.fm-report-operation{border:1px solid #e7edf6;border-radius:12px;padding:12px;margin:20px 0;break-inside:avoid;page-break-inside:avoid}
+.fm-report-operation h3{margin:0 0 10px!important}
+.fm-report-operation h4{font-size:11px;margin:12px 0 5px}
+.fm-report-op-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.fm-report-op-summary > div{border:1px solid #e7edf6;border-radius:8px;padding:9px}
+.fm-report-op-summary span,.fm-report-op-summary strong{display:block}
+.fm-report-op-summary span{font-size:10px;color:#667085}
+.fm-report-op-summary strong{font-size:16px;margin-top:4px}
+.fm-op-calendar.is-report{gap:4px}
+.fm-op-calendar.is-report .fm-op-day{height:45px;gap:1px}
+.fm-op-calendar.is-report .fm-op-number{font-size:10px}
+.fm-op-calendar.is-report .fm-op-volume{font-size:8px}
+.fm-op-calendar.is-report .fm-op-attendance{font-size:8px}
+.fm-report-op-note{font-size:9px;line-height:1.5;color:#667085;margin:10px 0 0}
+@media(max-width:850px){
+  .fm-op-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .fm-op-stat{padding:12px}
+  .fm-op-stat strong{font-size:22px}
+  .fm-op-stat > div{flex-wrap:wrap;gap:2px 6px}
+}
+@media(max-width:700px){
+  .fm-op-panel{padding:17px 14px}
+  .fm-op-heading{align-items:flex-start}
+  .fm-op-stat strong{font-size:19px}
+  .fm-op-stat > span{font-size:10px}
+  .fm-op-stat div small{font-size:10px}
+  .fm-op-calendar-header > span{font-size:10px}
+  .fm-op-day{height:67px;gap:3px}
+  .fm-op-number{font-size:12px}
+  .fm-op-volume{font-size:9px}
+  .fm-op-attendance{font-size:9px}
+  .fm-op-attendance-full{display:none}
+  .fm-op-attendance-short{display:inline}
+  .fm-op-footer{flex-direction:column}
+  .fm-op-footer > span{text-align:left;white-space:normal}
+  .fm-op-day[data-tooltip]:is(:hover,:focus-visible)::after{white-space:normal;width:max-content;max-width:170px;font-size:10px}
+  .fm-op-day:nth-child(7n+1)[data-tooltip]:is(:hover,:focus-visible)::after{left:0;transform:none}
+  .fm-op-day:nth-child(7n)[data-tooltip]:is(:hover,:focus-visible)::after{left:auto;right:0;transform:none}
+}
+@media(max-width:470px){
+  .fm-op-heading{flex-direction:column;align-items:stretch;gap:10px}
+  .fm-op-heading-side{width:100%;flex-direction:row-reverse;justify-content:flex-end;align-items:center;gap:8px}
+  .fm-op-icon svg{width:22px;height:22px}
+  .fm-op-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fm-op-stat:first-child{grid-column:1 / -1}
+  .fm-op-calendar-header{flex-direction:column;align-items:flex-start;gap:2px}
+}
+@media(max-width:390px){
+  .fm-op-attendance-short{display:none}
+  .fm-op-attendance-mini{display:inline}
+  .fm-op-weekdays,.fm-op-calendar{gap:3px}
+  .fm-op-day{height:72px;gap:2px;border-radius:6px}
+  .fm-op-volume{font-size:8px;white-space:normal;text-align:center;overflow-wrap:normal}
+  .fm-op-attendance{font-size:8px}
+}
+@media print{
+  #reportDialog .fm-report-operation{break-inside:avoid!important;border-color:#cbd5e1!important;padding:8px!important}
+  #reportDialog .fm-report-op-summary > div{padding:5px!important}
+  #reportDialog .fm-report-op-summary strong{font-size:12px!important}
+  #reportDialog .fm-op-calendar.is-report .fm-op-day{height:39px!important}
+  #reportDialog .fm-op-calendar.is-report .fm-op-volume,
+  #reportDialog .fm-op-calendar.is-report .fm-op-attendance{font-size:8px!important}
+  #reportDialog .fm-report-op-note{font-size:8px!important}
+  #reportDialog .fm-op-day.is-producing{background:#327aee!important;color:#fff!important}
+}
